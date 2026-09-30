@@ -1,0 +1,811 @@
+diff --git a/README.md b/README.md
+index 2d7a46c..d27c3a1 100644
+--- a/README.md
++++ b/README.md
+@@ -3,13 +3,15 @@
+ En klickbar frontend-MVP för projektledningskursen.
+ 
+ ## Starta
+-Öppna `index.html` direkt i webbläsaren, eller kör en enkel lokal webbserver i mappen:
++Öppna `frontend/index.html` direkt i webbläsaren, eller kör en enkel lokal webbserver från repots rot:
+ 
+ ```bash
+ python -m http.server 8000
+ ```
+ 
+-Öppna sedan `http://localhost:8000`.
++Öppna sedan `http://localhost:8000/frontend/`.
++Rotens `index.html` skickar också vidare till frontend och behåller query-parametrar och hash.
++Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
+ 
+ ## Ingår
+ - Marknadsplats med sök, kategorier, rabattfilter och sortering
+@@ -22,3 +24,30 @@ python -m http.server 8000
+ 
+ ## Obs
+ Det här är en skol-MVP. Inga riktiga betalningar, presentkort eller verifieringar hanteras.
++
++## Filstruktur
++
++| Sökväg | Ansvar |
++| --- | --- |
++| `frontend/index.html` | Sidans HTML och vyer. |
++| `frontend/css/styles.css` | Befintlig styling och mobilanpassning. |
++| `frontend/js/app.js` | Navigation, rendering, filter, säljflöde och demoköp. |
++| `frontend/js/data/cards.js` | Befintliga demopresentkort. Laddas före app.js. |
++| `backend/README.md` | Backendens ansvar och nuvarande status. |
++| `index.html` | Vidarebefordran från repots rot till frontend. |
++| `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
++| `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
++
++## Applicera strukturpatchen
++
++Kräver Python 3 och Git. Från repots rot:
++
++```bash
++python3 scripts/apply_structure_patch.py --check
++python3 scripts/apply_structure_patch.py
++```
++
++Scriptet kontrollerar först att hela patchen går att applicera. Vid konflikt
++avbryter det utan att applicera patchen. Det skapar ingen commit och gör ingen push.
++Efter applicering kan du granska ändringarna med `git diff` och göra en egen commit.
++Patchen är skapad mot commit `a7fb446344c2a9048331c46a30f78b8b34720ccc`.
+diff --git a/backend/README.md b/backend/README.md
+new file mode 100644
+index 0000000..debbea4
+--- /dev/null
++++ b/backend/README.md
+@@ -0,0 +1,16 @@
++# Backend
++
++Här ska projektets serverkod ligga. Backend är ännu inte implementerad.
++Språk, ramverk och databas är ännu inte dokumenterade i repot.
++Därför finns inga teknikspecifika startfiler eller tomma funktionsfiler här.
++
++## Ansvar
++
++- Användarkonton, inloggning och behörighet.
++- Lagring och hantering av presentkortsannonser.
++- Köp och koppling mellan köpare, säljare och annons.
++- Verifiering av säljare, köpare och presentkort enligt projektets krav.
++
++Frontend använder tills vidare demodata och `localStorage`, precis som tidigare.
++Backendkod och databasfiler läggs till här när tekniken är vald och respektive
++funktion börjar utvecklas.
+diff --git a/styles.css b/frontend/css/styles.css
+similarity index 100%
+rename from styles.css
+rename to frontend/css/styles.css
+diff --git a/frontend/index.html b/frontend/index.html
+new file mode 100644
+index 0000000..ab1fdcd
+--- /dev/null
++++ b/frontend/index.html
+@@ -0,0 +1,338 @@
++<!doctype html>
++<html lang="sv">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <meta name="theme-color" content="#ffffff" />
++  <title>Passiton - köp och sälj presentkort</title>
++  <meta name="description" content="Passiton är en marknadsplats för verifierade presentkort. Sälj värde du inte använder och köp presentkort med rabatt." />
++  <link rel="preconnect" href="https://fonts.googleapis.com">
++  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
++  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
++  <link rel="stylesheet" href="css/styles.css" />
++</head>
++<body>
++  <header class="site-header">
++    <div class="header-inner">
++      <nav class="header-links" aria-label="Huvudnavigation">
++        <button data-nav="market">Köp</button>
++        <button data-nav="sell">Sälj</button>
++        <button data-nav="how">Så fungerar det</button>
++        <!--  <button data-nav="about">Om oss</button>*/-->
++    
++      </nav>
++
++      <button class="wordmark" data-nav="market" aria-label="Passiton startsida">Passiton</button>
++
++      <div class="header-actions">
++        <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
++          <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
++        </button>
++        <button class="icon-btn" data-nav="dashboard" title="Mitt konto" aria-label="Mitt konto">
++          <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
++        </button>
++        <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
++          <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
++        </button>
++        <button class="icon-btn bag-btn" data-nav="dashboard" title="Mina köp" aria-label="Mina köp">
++          <svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
++          <span id="bag-count" class="bag-count hidden">0</span>
++        </button>
++      </div>
++    </div>
++    <div id="header-search" class="header-search hidden">
++      <div class="header-search-inner">
++        <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
++        <input id="global-search" type="search" placeholder="Sök efter varumärke eller kategori" />
++        <button id="close-search" aria-label="Stäng sökning">Stäng</button>
++      </div>
++    </div>
++  </header>
++
++  <main>
++    <section id="market" class="view active">
++      <div class="market-hero page-width">
++        <div>
++          <!--<span class="kicker">Presentkort får ett andra liv</span> -->
++          <h1>Köp mer. Betala mindre.</h1>
++          <p>Köp och sälj presentkort på ett enkelt sätt.</p>
++        </div>
++        <button class="text-arrow" data-nav="sell">Sälj ett presentkort <span>→</span></button>
++      </div>
++
++      <div class="market-shell page-width">
++        <aside class="filters" aria-label="Filter">
++          <div class="filter-group">
++            <div class="filter-label">Sök</div>
++            <div class="filter-search">
++              <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
++              <input id="search-input" type="search" placeholder="Varumärke…" />
++            </div>
++          </div>
++
++          <div class="filter-group">
++            <div class="filter-label-row"><span>Kategorier</span><button class="tiny-link" id="clear-filters">Rensa</button></div>
++            <div class="check-list" id="category-list">
++              <label><input type="radio" name="cat" value="all" checked><span>Alla</span></label>
++              <label><input type="radio" name="cat" value="Mode"><span>Mode</span></label>
++              <label><input type="radio" name="cat" value="Hem"><span>Hem & inredning</span></label>
++              <label><input type="radio" name="cat" value="Elektronik"><span>Elektronik</span></label>
++              <label><input type="radio" name="cat" value="Mat"><span>Mat & dagligvaror</span></label>
++              <label><input type="radio" name="cat" value="Sport"><span>Sport & fritid</span></label>
++              <label><input type="radio" name="cat" value="Resor"><span>Resor & transport</span></label>
++            </div>
++          </div>
++
++          <div class="filter-group">
++            <div class="filter-label">Minsta rabatt</div>
++            <div class="range-row"><span>0%</span><strong id="discount-output">0%</strong></div>
++            <input id="discount-filter" class="range" type="range" min="0" max="20" value="0" step="1" />
++          </div>
++
++          <div class="filter-group filter-note">
++            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
++            <p><strong>Köparskydd ingår.</strong><br>Betalningen hålls tills presentkortet är mottaget och verifierat.</p>
++          </div>
++        </aside>
++
++        <div class="catalog">
++          <div class="catalog-toolbar">
++            <div><strong id="result-count">0 presentkort</strong><span>Verifierade annonser</span></div>
++            <label>Sortera
++              <select id="sort-filter">
++                <option value="popular">Mest populära</option>
++                <option value="discount">Störst rabatt</option>
++                <option value="price">Lägst pris</option>
++                <option value="value">Högst värde</option>
++              </select>
++            </label>
++          </div>
++          <div id="market-grid" class="product-grid"></div>
++          <div id="empty-state" class="empty-state hidden">Inga annonser matchar dina filter.</div>
++        </div>
++      </div>
++    </section>
++
++    <section id="product" class="view product-view">
++      <div class="page-width product-page">
++        <button id="back-to-market" class="back-link">
++          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Köp
++        </button>
++
++        <div class="breadcrumbs" id="breadcrumbs">Köp <span>›</span> Hem & inredning <span>›</span> IKEA <span>›</span> IKEA presentkort</div>
++
++        <div class="detail-layout">
++          <div>
++            <div id="gallery" class="gallery"></div>
++            <section class="about-card">
++              <h2>Om presentkortet</h2>
++              <p id="about-copy">Presentkortet kan användas i butik och online. Ett enkelt sätt att få mer för pengarna.</p>
++              <div class="fact-grid">
++                <div class="fact-item">
++                  <svg viewBox="0 0 24 24"><path d="M7 2v4m10-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z"/></svg>
++                  <div><strong>Giltighetstid</strong><span id="fact-expiry">31 dec 2026</span></div>
++                </div>
++                <div class="fact-item">
++                  <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 10h18"/></svg>
++                  <div><strong>Typ</strong><span>Digitalt presentkort</span></div>
++                </div>
++                <div class="fact-item">
++                  <svg viewBox="0 0 24 24"><path d="M3 10h18v11H3zM5 10V6l2-3h10l2 3v4M8 14v7m8-7v7"/></svg>
++                  <div><strong>Kan användas på</strong><span id="fact-use">Butik och online</span></div>
++                </div>
++              </div>
++            </section>
++          </div>
++
++          <aside class="detail-panel">
++            <div class="detail-topline">
++              <span class="verified-pill"><span>✓</span> Verifierad annons</span>
++              <div class="detail-mini-actions"><button>♡ Spara</button><button>⇧ Dela</button></div>
++            </div>
++            <h1 id="detail-title">IKEA presentkort</h1>
++            <p id="detail-subtitle">Digitalt presentkort för hem och inredning</p>
++
++            <div class="price-block">
++              <div><span>Värde</span><strong id="detail-value">1 000 kr</strong></div>
++              <div class="price-divider"></div>
++              <div><span>Pris</span><strong id="detail-price">880 kr</strong></div>
++              <span id="detail-save" class="save-badge">Spara 12%</span>
++            </div>
++
++            <div class="info-rows">
++              <div class="info-row">
++                <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Zm9 5v10l-9 5-9-5V7m9 5v10"/></svg>
++                <strong>Skick</strong><span>Oanvänt</span>
++              </div>
++              <div class="info-row">
++                <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
++                <strong>Leverans</strong><span>Direkt till e-post<small>Vanligtvis inom några minuter.</small></span>
++              </div>
++              <div class="info-row seller-row">
++                <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
++                <strong>Säljare</strong><span><b>M. A.</b> <em>✓ Verifierad säljare</em></span><span class="chev">›</span>
++              </div>
++            </div>
++
++            <button id="buy-now" class="primary-cta">Köp nu</button>
++            <button class="secondary-cta">♡ Lägg i favoriter</button>
++
++            <div class="protection-box">
++              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
++              <div><strong>Köparskydd ingår</strong><p>Din betalning hålls säker tills du har mottagit och verifierat presentkortet.</p></div>
++              <button> Läs mer </button>
++            </div>
++
++            <div class="sell-similar-box">
++              <div><strong>Vill du sälja ett liknande?</strong><p>Se vad du får efter avgift.</p></div>
++              <div class="mini-calc">
++                <div><span>Sälj för</span><b id="similar-sale">900 kr</b></div>
++                <div><span>Avgift (5 %)</span><b id="similar-fee">45 kr</b></div>
++                <div class="mini-total"><span>Du får</span><b id="similar-net">855 kr</b></div>
++                <button data-nav="sell">Sälj nu</button>
++              </div>
++            </div>
++          </aside>
++        </div>
++      </div>
++    </section>
++
++    <section id="sell" class="view">
++      <div class="page-width sell-page">
++        <div class="section-intro">
++          <span class="kicker">Sälj på Passiton</span>
++          <h1>Gör oanvänt värde till pengar.</h1>
++          <p>Skapa en demoannons på under en minut. I en riktig tjänst verifieras presentkortet innan publicering.</p>
++        </div>
++
++        <div class="sell-layout">
++          <form id="sell-form" class="sell-form">
++            <div class="form-section">
++              <span class="form-step">01</span>
++              <h2>Vilket presentkort säljer du?</h2>
++              <label>Varumärke
++                <select id="sell-brand" required>
++                  <option value="">Välj varumärke</option>
++                  <option>IKEA</option><option>Zalando</option><option>H&M</option><option>Elgiganten</option><option>Stadium</option><option>ICA</option><option>Åhléns</option><option>SJ</option>
++                </select>
++              </label>
++              <label>Kategori
++                <select id="sell-category" required>
++                  <option value="Hem">Hem & inredning</option><option value="Mode">Mode</option><option value="Elektronik">Elektronik</option><option value="Mat">Mat & dagligvaror</option><option value="Sport">Sport & fritid</option><option value="Resor">Resor & transport</option>
++                </select>
++              </label>
++            </div>
++
++            <div class="form-section">
++              <span class="form-step">02</span>
++              <h2>Pris och giltighet</h2>
++              <div class="form-row">
++                <label>Presentkortets värde
++                  <div class="money-input"><input id="sell-value" type="number" min="100" step="50" value="1000" required><span>kr</span></div>
++                </label>
++                <label>Ditt pris
++                  <div class="money-input"><input id="sell-price" type="number" min="50" step="10" value="900" required><span>kr</span></div>
++                </label>
++              </div>
++              <label>Giltigt till
++                <input id="sell-expiry" type="date" required>
++              </label>
++            </div>
++
++            <div class="form-section">
++              <span class="form-step">03</span>
++              <h2>Verifiering</h2>
++              <label>Presentkortskod <span class="field-note">(endast demo)</span>
++                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" required>
++              </label>
++              <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig och inte är använt.</span></label>
++            </div>
++
++            <button class="primary-cta" type="submit">Publicera demoannons</button>
++          </form>
++
++          <aside class="seller-preview">
++            <div class="preview-sticky">
++              <div class="preview-label">Din annons</div>
++              <div id="seller-card-preview" class="seller-card-preview brand-ikea">
++                <span class="preview-brand">IKEA</span>
++                <span class="preview-caption">PRESENTKORT</span>
++              </div>
++              <div class="preview-title-row"><strong id="preview-brand">IKEA presentkort</strong><span id="preview-save">Spara 10%</span></div>
++              <div class="preview-prices"><span>Värde <s id="preview-value">1 000 kr</s></span><strong id="preview-price">900 kr</strong></div>
++
++              <div class="payout-summary">
++                <h3>Din utbetalning</h3>
++                <div><span>Köparen betalar</span><b id="calc-price">900 kr</b></div>
++                <div><span>Passitons avgift (5%)</span><b id="calc-fee">45 kr</b></div>
++                <div class="payout-total"><span>Du får</span><b id="calc-net">855 kr</b></div>
++              </div>
++              <p id="discount-copy" class="preview-hint">Köparen sparar 100 kr (10%).</p>
++            </div>
++          </aside>
++        </div>
++      </div>
++    </section>
++
++    <section id="dashboard" class="view">
++      <div class="page-width dashboard-page">
++        <div class="section-intro">
++          <span class="kicker">Mitt Passiton</span>
++          <h1>Dina köp och annonser.</h1>
++          <p>All aktivitet i den här MVP:n sparas lokalt i din webbläsare.</p>
++        </div>
++        <div class="stats-row">
++          <div><span>Köpt värde</span><strong id="stat-bought">0 kr</strong></div>
++          <div><span>Totalt sparat</span><strong id="stat-saved">0 kr</strong></div>
++          <div><span>Aktiva annonser</span><strong id="stat-listed">0</strong></div>
++        </div>
++        <div class="dashboard-columns">
++          <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
++          <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
++        </div>
++      </div>
++    </section>
++
++    <section id="how" class="view info-page">
++      <div class="page-width info-narrow">
++        <span class="kicker">Så fungerar det</span>
++        <h1>Värdet går vidare.</h1>
++        <div class="info-steps">
++          <article><span>01</span><h2>Sälj ett presentkort</h2><p>Du anger värde och pris. Passiton verifierar kortet innan det blir synligt för köpare.</p></article>
++          <article><span>02</span><h2>Köparen gör en bättre affär</h2><p>Köparen betalar mindre än presentkortets nominella värde och får koden digitalt.</p></article>
++          <article><span>03</span><h2>Pengarna släpps</h2><p>När kortet verifierats och mottagits går pengarna vidare till säljaren, minus transaktionsavgiften.</p></article>
++        </div>
++        <button class="primary-cta inline-cta" data-nav="market">Se presentkort</button>
++      </div>
++    </section>
++
++    <section id="about" class="view info-page">
++      <div class="page-width info-narrow">
++        <span class="kicker">Om Passiton</span>
++        <h1>Oanvänt värde behöver inte gå till spillo.</h1>
++        <p class="large-copy">Passiton är ett kursprojekt: en marknadsplats där illikvida värden som presentkort kan omvandlas till pengar, samtidigt som andra får rabatt på något de ändå tänkt köpa.</p>
++        <div class="about-grid">
++          <article><strong>Säljaren</strong><p>Får likvida medel istället för ett presentkort som ligger oanvänt.</p></article>
++          <article><strong>Köparen</strong><p>Får mer köpkraft genom att köpa värdet till rabatt.</p></article>
++          <article><strong>Passiton</strong><p>Skapar tryggheten mellan parterna och tar en transaktionsavgift när affären genomförs.</p></article>
++        </div>
++      </div>
++    </section>
++  </main>
++
++  <footer class="site-footer">
++    <div class="page-width footer-inner"><strong>Passiton</strong><!--<span>Värde som får gå vidare.</span><span>Demo-MVP · Projektledningskurs 2026</span></div> -->
++  </footer>
++
++  <div id="toast" class="toast hidden"></div>
++
++  <nav class="mobile-nav" aria-label="Mobilnavigation">
++    <button data-nav="market"><span>⌂</span>Köp</button>
++    <button data-nav="sell"><span>＋</span>Sälj</button>
++    <button data-nav="dashboard"><span>♡</span>Mina</button>
++  </nav>
++
++  <script src="js/data/cards.js"></script>
++  <script src="js/app.js"></script>
++</body>
++</html>
+diff --git a/app.js b/frontend/js/app.js
+similarity index 86%
+rename from app.js
+rename to frontend/js/app.js
+index e0a98d9..7bdba6e 100644
+--- a/app.js
++++ b/frontend/js/app.js
+@@ -1,15 +1,3 @@
+-const cards = [
+-  { id: 1, brand: 'IKEA', category: 'Hem', categoryLabel: 'Hem & inredning', value: 1000, price: 880, expiry: '2027-12-31', use: 'Alla IKEA varuhus och ikea.se', cls: 'ikea', popular: 100 },
+-  { id: 2, brand: 'Zalando', category: 'Mode', categoryLabel: 'Mode', value: 1000, price: 850, expiry: '2027-09-30', use: 'Zalando.se', cls: 'zalando', popular: 95 },
+-  { id: 3, brand: 'H&M', category: 'Mode', categoryLabel: 'Mode', value: 500, price: 425, expiry: '2027-08-15', use: 'H&M butik och online', cls: 'hm', popular: 90 },
+-  { id: 4, brand: 'Elgiganten', category: 'Elektronik', categoryLabel: 'Elektronik', value: 2000, price: 1760, expiry: '2028-01-31', use: 'Elgiganten butik och online', cls: 'elgiganten', popular: 86 },
+-  { id: 5, brand: 'Stadium', category: 'Sport', categoryLabel: 'Sport & fritid', value: 750, price: 640, expiry: '2027-11-01', use: 'Stadium butik och online', cls: 'stadium', popular: 80 },
+-  { id: 6, brand: 'ICA', category: 'Mat', categoryLabel: 'Mat & dagligvaror', value: 1000, price: 940, expiry: '2027-10-01', use: 'Deltagande ICA-butiker', cls: 'ica', popular: 78 },
+-  { id: 7, brand: 'Åhléns', category: 'Mode', categoryLabel: 'Mode & skönhet', value: 800, price: 696, expiry: '2027-07-31', use: 'Åhléns butik och online', cls: 'ahlens', popular: 72 },
+-  { id: 8, brand: 'SJ', category: 'Resor', categoryLabel: 'Resor & transport', value: 500, price: 430, expiry: '2027-12-15', use: 'SJ.se och SJ-appen', cls: 'sj', popular: 70 },
+-  { id: 9, brand: 'IKEA', category: 'Hem', categoryLabel: 'Hem & inredning', value: 500, price: 445, expiry: '2028-03-01', use: 'Alla IKEA varuhus och ikea.se', cls: 'ikea', popular: 67 }
+-];
+-
+ const state = {
+   purchases: JSON.parse(localStorage.getItem('passiton-purchases') || '[]'),
+   listings: JSON.parse(localStorage.getItem('passiton-listings') || '[]'),
+diff --git a/frontend/js/data/cards.js b/frontend/js/data/cards.js
+new file mode 100644
+index 0000000..9118696
+--- /dev/null
++++ b/frontend/js/data/cards.js
+@@ -0,0 +1,11 @@
++const cards = [
++  { id: 1, brand: 'IKEA', category: 'Hem', categoryLabel: 'Hem & inredning', value: 1000, price: 880, expiry: '2027-12-31', use: 'Alla IKEA varuhus och ikea.se', cls: 'ikea', popular: 100 },
++  { id: 2, brand: 'Zalando', category: 'Mode', categoryLabel: 'Mode', value: 1000, price: 850, expiry: '2027-09-30', use: 'Zalando.se', cls: 'zalando', popular: 95 },
++  { id: 3, brand: 'H&M', category: 'Mode', categoryLabel: 'Mode', value: 500, price: 425, expiry: '2027-08-15', use: 'H&M butik och online', cls: 'hm', popular: 90 },
++  { id: 4, brand: 'Elgiganten', category: 'Elektronik', categoryLabel: 'Elektronik', value: 2000, price: 1760, expiry: '2028-01-31', use: 'Elgiganten butik och online', cls: 'elgiganten', popular: 86 },
++  { id: 5, brand: 'Stadium', category: 'Sport', categoryLabel: 'Sport & fritid', value: 750, price: 640, expiry: '2027-11-01', use: 'Stadium butik och online', cls: 'stadium', popular: 80 },
++  { id: 6, brand: 'ICA', category: 'Mat', categoryLabel: 'Mat & dagligvaror', value: 1000, price: 940, expiry: '2027-10-01', use: 'Deltagande ICA-butiker', cls: 'ica', popular: 78 },
++  { id: 7, brand: 'Åhléns', category: 'Mode', categoryLabel: 'Mode & skönhet', value: 800, price: 696, expiry: '2027-07-31', use: 'Åhléns butik och online', cls: 'ahlens', popular: 72 },
++  { id: 8, brand: 'SJ', category: 'Resor', categoryLabel: 'Resor & transport', value: 500, price: 430, expiry: '2027-12-15', use: 'SJ.se och SJ-appen', cls: 'sj', popular: 70 },
++  { id: 9, brand: 'IKEA', category: 'Hem', categoryLabel: 'Hem & inredning', value: 500, price: 445, expiry: '2028-03-01', use: 'Alla IKEA varuhus och ikea.se', cls: 'ikea', popular: 67 }
++];
+diff --git a/index.html b/index.html
+index da9eab0..55558df 100644
+--- a/index.html
++++ b/index.html
+@@ -3,335 +3,15 @@
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <meta name="theme-color" content="#ffffff" />
+-  <title>Passiton - köp och sälj presentkort</title>
+-  <meta name="description" content="Passiton är en marknadsplats för verifierade presentkort. Sälj värde du inte använder och köp presentkort med rabatt." />
+-  <link rel="preconnect" href="https://fonts.googleapis.com">
+-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+-  <link rel="stylesheet" href="styles.css" />
++  <title>Passiton</title>
+ </head>
+ <body>
+-  <header class="site-header">
+-    <div class="header-inner">
+-      <nav class="header-links" aria-label="Huvudnavigation">
+-        <button data-nav="market">Köp</button>
+-        <button data-nav="sell">Sälj</button>
+-        <button data-nav="how">Så fungerar det</button>
+-        <!--  <button data-nav="about">Om oss</button>*/-->
+-    
+-      </nav>
+-
+-      <button class="wordmark" data-nav="market" aria-label="Passiton startsida">Passiton</button>
+-
+-      <div class="header-actions">
+-        <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
+-          <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+-        </button>
+-        <button class="icon-btn" data-nav="dashboard" title="Mitt konto" aria-label="Mitt konto">
+-          <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+-        </button>
+-        <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
+-          <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
+-        </button>
+-        <button class="icon-btn bag-btn" data-nav="dashboard" title="Mina köp" aria-label="Mina köp">
+-          <svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
+-          <span id="bag-count" class="bag-count hidden">0</span>
+-        </button>
+-      </div>
+-    </div>
+-    <div id="header-search" class="header-search hidden">
+-      <div class="header-search-inner">
+-        <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+-        <input id="global-search" type="search" placeholder="Sök efter varumärke eller kategori" />
+-        <button id="close-search" aria-label="Stäng sökning">Stäng</button>
+-      </div>
+-    </div>
+-  </header>
+-
+-  <main>
+-    <section id="market" class="view active">
+-      <div class="market-hero page-width">
+-        <div>
+-          <!--<span class="kicker">Presentkort får ett andra liv</span> -->
+-          <h1>Köp mer. Betala mindre.</h1>
+-          <p>Köp och sälj presentkort på ett enkelt sätt.</p>
+-        </div>
+-        <button class="text-arrow" data-nav="sell">Sälj ett presentkort <span>→</span></button>
+-      </div>
+-
+-      <div class="market-shell page-width">
+-        <aside class="filters" aria-label="Filter">
+-          <div class="filter-group">
+-            <div class="filter-label">Sök</div>
+-            <div class="filter-search">
+-              <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+-              <input id="search-input" type="search" placeholder="Varumärke…" />
+-            </div>
+-          </div>
+-
+-          <div class="filter-group">
+-            <div class="filter-label-row"><span>Kategorier</span><button class="tiny-link" id="clear-filters">Rensa</button></div>
+-            <div class="check-list" id="category-list">
+-              <label><input type="radio" name="cat" value="all" checked><span>Alla</span></label>
+-              <label><input type="radio" name="cat" value="Mode"><span>Mode</span></label>
+-              <label><input type="radio" name="cat" value="Hem"><span>Hem & inredning</span></label>
+-              <label><input type="radio" name="cat" value="Elektronik"><span>Elektronik</span></label>
+-              <label><input type="radio" name="cat" value="Mat"><span>Mat & dagligvaror</span></label>
+-              <label><input type="radio" name="cat" value="Sport"><span>Sport & fritid</span></label>
+-              <label><input type="radio" name="cat" value="Resor"><span>Resor & transport</span></label>
+-            </div>
+-          </div>
+-
+-          <div class="filter-group">
+-            <div class="filter-label">Minsta rabatt</div>
+-            <div class="range-row"><span>0%</span><strong id="discount-output">0%</strong></div>
+-            <input id="discount-filter" class="range" type="range" min="0" max="20" value="0" step="1" />
+-          </div>
+-
+-          <div class="filter-group filter-note">
+-            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+-            <p><strong>Köparskydd ingår.</strong><br>Betalningen hålls tills presentkortet är mottaget och verifierat.</p>
+-          </div>
+-        </aside>
+-
+-        <div class="catalog">
+-          <div class="catalog-toolbar">
+-            <div><strong id="result-count">0 presentkort</strong><span>Verifierade annonser</span></div>
+-            <label>Sortera
+-              <select id="sort-filter">
+-                <option value="popular">Mest populära</option>
+-                <option value="discount">Störst rabatt</option>
+-                <option value="price">Lägst pris</option>
+-                <option value="value">Högst värde</option>
+-              </select>
+-            </label>
+-          </div>
+-          <div id="market-grid" class="product-grid"></div>
+-          <div id="empty-state" class="empty-state hidden">Inga annonser matchar dina filter.</div>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="product" class="view product-view">
+-      <div class="page-width product-page">
+-        <button id="back-to-market" class="back-link">
+-          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Köp
+-        </button>
+-
+-        <div class="breadcrumbs" id="breadcrumbs">Köp <span>›</span> Hem & inredning <span>›</span> IKEA <span>›</span> IKEA presentkort</div>
+-
+-        <div class="detail-layout">
+-          <div>
+-            <div id="gallery" class="gallery"></div>
+-            <section class="about-card">
+-              <h2>Om presentkortet</h2>
+-              <p id="about-copy">Presentkortet kan användas i butik och online. Ett enkelt sätt att få mer för pengarna.</p>
+-              <div class="fact-grid">
+-                <div class="fact-item">
+-                  <svg viewBox="0 0 24 24"><path d="M7 2v4m10-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z"/></svg>
+-                  <div><strong>Giltighetstid</strong><span id="fact-expiry">31 dec 2026</span></div>
+-                </div>
+-                <div class="fact-item">
+-                  <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 10h18"/></svg>
+-                  <div><strong>Typ</strong><span>Digitalt presentkort</span></div>
+-                </div>
+-                <div class="fact-item">
+-                  <svg viewBox="0 0 24 24"><path d="M3 10h18v11H3zM5 10V6l2-3h10l2 3v4M8 14v7m8-7v7"/></svg>
+-                  <div><strong>Kan användas på</strong><span id="fact-use">Butik och online</span></div>
+-                </div>
+-              </div>
+-            </section>
+-          </div>
+-
+-          <aside class="detail-panel">
+-            <div class="detail-topline">
+-              <span class="verified-pill"><span>✓</span> Verifierad annons</span>
+-              <div class="detail-mini-actions"><button>♡ Spara</button><button>⇧ Dela</button></div>
+-            </div>
+-            <h1 id="detail-title">IKEA presentkort</h1>
+-            <p id="detail-subtitle">Digitalt presentkort för hem och inredning</p>
+-
+-            <div class="price-block">
+-              <div><span>Värde</span><strong id="detail-value">1 000 kr</strong></div>
+-              <div class="price-divider"></div>
+-              <div><span>Pris</span><strong id="detail-price">880 kr</strong></div>
+-              <span id="detail-save" class="save-badge">Spara 12%</span>
+-            </div>
+-
+-            <div class="info-rows">
+-              <div class="info-row">
+-                <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Zm9 5v10l-9 5-9-5V7m9 5v10"/></svg>
+-                <strong>Skick</strong><span>Oanvänt</span>
+-              </div>
+-              <div class="info-row">
+-                <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
+-                <strong>Leverans</strong><span>Direkt till e-post<small>Vanligtvis inom några minuter.</small></span>
+-              </div>
+-              <div class="info-row seller-row">
+-                <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+-                <strong>Säljare</strong><span><b>M. A.</b> <em>✓ Verifierad säljare</em></span><span class="chev">›</span>
+-              </div>
+-            </div>
+-
+-            <button id="buy-now" class="primary-cta">Köp nu</button>
+-            <button class="secondary-cta">♡ Lägg i favoriter</button>
+-
+-            <div class="protection-box">
+-              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+-              <div><strong>Köparskydd ingår</strong><p>Din betalning hålls säker tills du har mottagit och verifierat presentkortet.</p></div>
+-              <button> Läs mer </button>
+-            </div>
+-
+-            <div class="sell-similar-box">
+-              <div><strong>Vill du sälja ett liknande?</strong><p>Se vad du får efter avgift.</p></div>
+-              <div class="mini-calc">
+-                <div><span>Sälj för</span><b id="similar-sale">900 kr</b></div>
+-                <div><span>Avgift (5 %)</span><b id="similar-fee">45 kr</b></div>
+-                <div class="mini-total"><span>Du får</span><b id="similar-net">855 kr</b></div>
+-                <button data-nav="sell">Sälj nu</button>
+-              </div>
+-            </div>
+-          </aside>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="sell" class="view">
+-      <div class="page-width sell-page">
+-        <div class="section-intro">
+-          <span class="kicker">Sälj på Passiton</span>
+-          <h1>Gör oanvänt värde till pengar.</h1>
+-          <p>Skapa en demoannons på under en minut. I en riktig tjänst verifieras presentkortet innan publicering.</p>
+-        </div>
+-
+-        <div class="sell-layout">
+-          <form id="sell-form" class="sell-form">
+-            <div class="form-section">
+-              <span class="form-step">01</span>
+-              <h2>Vilket presentkort säljer du?</h2>
+-              <label>Varumärke
+-                <select id="sell-brand" required>
+-                  <option value="">Välj varumärke</option>
+-                  <option>IKEA</option><option>Zalando</option><option>H&M</option><option>Elgiganten</option><option>Stadium</option><option>ICA</option><option>Åhléns</option><option>SJ</option>
+-                </select>
+-              </label>
+-              <label>Kategori
+-                <select id="sell-category" required>
+-                  <option value="Hem">Hem & inredning</option><option value="Mode">Mode</option><option value="Elektronik">Elektronik</option><option value="Mat">Mat & dagligvaror</option><option value="Sport">Sport & fritid</option><option value="Resor">Resor & transport</option>
+-                </select>
+-              </label>
+-            </div>
+-
+-            <div class="form-section">
+-              <span class="form-step">02</span>
+-              <h2>Pris och giltighet</h2>
+-              <div class="form-row">
+-                <label>Presentkortets värde
+-                  <div class="money-input"><input id="sell-value" type="number" min="100" step="50" value="1000" required><span>kr</span></div>
+-                </label>
+-                <label>Ditt pris
+-                  <div class="money-input"><input id="sell-price" type="number" min="50" step="10" value="900" required><span>kr</span></div>
+-                </label>
+-              </div>
+-              <label>Giltigt till
+-                <input id="sell-expiry" type="date" required>
+-              </label>
+-            </div>
+-
+-            <div class="form-section">
+-              <span class="form-step">03</span>
+-              <h2>Verifiering</h2>
+-              <label>Presentkortskod <span class="field-note">(endast demo)</span>
+-                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" required>
+-              </label>
+-              <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig och inte är använt.</span></label>
+-            </div>
+-
+-            <button class="primary-cta" type="submit">Publicera demoannons</button>
+-          </form>
+-
+-          <aside class="seller-preview">
+-            <div class="preview-sticky">
+-              <div class="preview-label">Din annons</div>
+-              <div id="seller-card-preview" class="seller-card-preview brand-ikea">
+-                <span class="preview-brand">IKEA</span>
+-                <span class="preview-caption">PRESENTKORT</span>
+-              </div>
+-              <div class="preview-title-row"><strong id="preview-brand">IKEA presentkort</strong><span id="preview-save">Spara 10%</span></div>
+-              <div class="preview-prices"><span>Värde <s id="preview-value">1 000 kr</s></span><strong id="preview-price">900 kr</strong></div>
+-
+-              <div class="payout-summary">
+-                <h3>Din utbetalning</h3>
+-                <div><span>Köparen betalar</span><b id="calc-price">900 kr</b></div>
+-                <div><span>Passitons avgift (5%)</span><b id="calc-fee">45 kr</b></div>
+-                <div class="payout-total"><span>Du får</span><b id="calc-net">855 kr</b></div>
+-              </div>
+-              <p id="discount-copy" class="preview-hint">Köparen sparar 100 kr (10%).</p>
+-            </div>
+-          </aside>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="dashboard" class="view">
+-      <div class="page-width dashboard-page">
+-        <div class="section-intro">
+-          <span class="kicker">Mitt Passiton</span>
+-          <h1>Dina köp och annonser.</h1>
+-          <p>All aktivitet i den här MVP:n sparas lokalt i din webbläsare.</p>
+-        </div>
+-        <div class="stats-row">
+-          <div><span>Köpt värde</span><strong id="stat-bought">0 kr</strong></div>
+-          <div><span>Totalt sparat</span><strong id="stat-saved">0 kr</strong></div>
+-          <div><span>Aktiva annonser</span><strong id="stat-listed">0</strong></div>
+-        </div>
+-        <div class="dashboard-columns">
+-          <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
+-          <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="how" class="view info-page">
+-      <div class="page-width info-narrow">
+-        <span class="kicker">Så fungerar det</span>
+-        <h1>Värdet går vidare.</h1>
+-        <div class="info-steps">
+-          <article><span>01</span><h2>Sälj ett presentkort</h2><p>Du anger värde och pris. Passiton verifierar kortet innan det blir synligt för köpare.</p></article>
+-          <article><span>02</span><h2>Köparen gör en bättre affär</h2><p>Köparen betalar mindre än presentkortets nominella värde och får koden digitalt.</p></article>
+-          <article><span>03</span><h2>Pengarna släpps</h2><p>När kortet verifierats och mottagits går pengarna vidare till säljaren, minus transaktionsavgiften.</p></article>
+-        </div>
+-        <button class="primary-cta inline-cta" data-nav="market">Se presentkort</button>
+-      </div>
+-    </section>
+-
+-    <section id="about" class="view info-page">
+-      <div class="page-width info-narrow">
+-        <span class="kicker">Om Passiton</span>
+-        <h1>Oanvänt värde behöver inte gå till spillo.</h1>
+-        <p class="large-copy">Passiton är ett kursprojekt: en marknadsplats där illikvida värden som presentkort kan omvandlas till pengar, samtidigt som andra får rabatt på något de ändå tänkt köpa.</p>
+-        <div class="about-grid">
+-          <article><strong>Säljaren</strong><p>Får likvida medel istället för ett presentkort som ligger oanvänt.</p></article>
+-          <article><strong>Köparen</strong><p>Får mer köpkraft genom att köpa värdet till rabatt.</p></article>
+-          <article><strong>Passiton</strong><p>Skapar tryggheten mellan parterna och tar en transaktionsavgift när affären genomförs.</p></article>
+-        </div>
+-      </div>
+-    </section>
+-  </main>
+-
+-  <footer class="site-footer">
+-    <div class="page-width footer-inner"><strong>Passiton</strong><!--<span>Värde som får gå vidare.</span><span>Demo-MVP · Projektledningskurs 2026</span></div> -->
+-  </footer>
+-
+-  <div id="toast" class="toast hidden"></div>
+-
+-  <nav class="mobile-nav" aria-label="Mobilnavigation">
+-    <button data-nav="market"><span>⌂</span>Köp</button>
+-    <button data-nav="sell"><span>＋</span>Sälj</button>
+-    <button data-nav="dashboard"><span>♡</span>Mina</button>
+-  </nav>
+-
+-  <script src="app.js"></script>
++  <p><a href="frontend/index.html">Öppna Passiton</a></p>
++  <script>
++    const destination = new URL('frontend/index.html', window.location.href);
++    destination.search = window.location.search;
++    destination.hash = window.location.hash;
++    window.location.replace(destination.href);
++  </script>
+ </body>
+ </html>

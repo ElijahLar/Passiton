@@ -1,0 +1,808 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..e91e1b9
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,7 @@
++node_modules/
++.env
++.env.*
++!.env.example
++__pycache__/
++*.pyc
++.DS_Store
+diff --git a/README.md b/README.md
+index d27c3a1..a492b25 100644
+--- a/README.md
++++ b/README.md
+@@ -3,7 +3,7 @@
+ En klickbar frontend-MVP för projektledningskursen.
+ 
+ ## Starta
+-Öppna `frontend/index.html` direkt i webbläsaren, eller kör en enkel lokal webbserver från repots rot:
++Frontend använder ES-moduler. Starta en lokal webbserver från repots rot:
+ 
+ ```bash
+ python -m http.server 8000
+@@ -27,27 +27,26 @@ Det här är en skol-MVP. Inga riktiga betalningar, presentkort eller verifierin
+ 
+ ## Filstruktur
+ 
+-| Sökväg | Ansvar |
+-| --- | --- |
+-| `frontend/index.html` | Sidans HTML och vyer. |
+-| `frontend/css/styles.css` | Befintlig styling och mobilanpassning. |
+-| `frontend/js/app.js` | Navigation, rendering, filter, säljflöde och demoköp. |
+-| `frontend/js/data/cards.js` | Befintliga demopresentkort. Laddas före app.js. |
+-| `backend/README.md` | Backendens ansvar och nuvarande status. |
+-| `index.html` | Vidarebefordran från repots rot till frontend. |
+-| `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
+-| `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
++- `frontend/`: HTML, CSS och JavaScript uppdelat i funktioner och gemensam kod.
++- `backend/`: Node-server, funktionsingångar och dokumenterade lagringsbehov.
++- `docs/structure.md`: koppling mellan struktur, user stories och vad som återstår.
++- `patches/`: numrerade ändringspatchar.
++- `scripts/patch-00.py`: återanvändbart script för valfri patch i patches/.
+ 
+-## Applicera strukturpatchen
++Backend startas separat med `cd backend` och `npm start` (Node.js krävs).
++Se `backend/README.md`. Frontend fortsätter att använda sin lokala demo.
+ 
+-Kräver Python 3 och Git. Från repots rot:
++## Applicera patch 00a
++
++Patch 00 ska redan vara applicerad. Patch 00a är byggd mot commit
++`46b82d90d38556bad3ba7ed6e224df92daa6d167` med den första frontend/backend-strukturen.
+ 
+ ```bash
+-python3 scripts/apply_structure_patch.py --check
+-python3 scripts/apply_structure_patch.py
++python3 scripts/patch-00.py 00a --check
++python3 scripts/patch-00.py 00a
+ ```
+ 
+-Scriptet kontrollerar först att hela patchen går att applicera. Vid konflikt
+-avbryter det utan att applicera patchen. Det skapar ingen commit och gör ingen push.
+-Efter applicering kan du granska ändringarna med `git diff` och göra en egen commit.
+-Patchen är skapad mot commit `a7fb446344c2a9048331c46a30f78b8b34720ccc`.
++Samma script används för nästa patch genom att byta argument. Ange antingen dess
++unika nummer (exempelvis `00a`) eller filnamnet i `patches/`.
++Scriptet kontrollerar hela patchen före applicering. Konflikter och upprepad
++applicering ger fel utan att några ändringar appliceras. Ingen commit eller push görs.
+diff --git a/backend/README.md b/backend/README.md
+index debbea4..8b5e0fe 100644
+--- a/backend/README.md
++++ b/backend/README.md
+@@ -1,16 +1,23 @@
+-# Backend
++# Passiton backend
+ 
+-Här ska projektets serverkod ligga. Backend är ännu inte implementerad.
+-Språk, ramverk och databas är ännu inte dokumenterade i repot.
+-Därför finns inga teknikspecifika startfiler eller tomma funktionsfiler här.
++Node.js med ES-moduler och inbyggt HTTP-stöd. Inga externa paket krävs.
++Kör `npm start` i denna mapp. `npm run dev` startar med Nodes watch-läge.
++Servern lyssnar på `127.0.0.1:3000`; `HOST` och `PORT` kan anges i miljön.
+ 
+-## Ansvar
++- `src/server.js`: startar HTTP-servern.
++- `src/app.js`: fördelar anrop mellan funktionsområden.
++- `src/routes/accounts.js`: konto och inloggning.
++- `src/routes/listings.js`: annonser och marknadsplats.
++- `src/routes/orders.js`: köp, kodleverans och köphistorik.
++- `src/routes/verification.js`: identitet och presentkortsverifiering.
++- `src/routes/payments.js`: betalning, avgift och utbetalning.
++- `src/http.js`: gemensamma JSON-svar.
++- `database/`: dokumenterade lagringsbehov inför databasval.
+ 
+-- Användarkonton, inloggning och behörighet.
+-- Lagring och hantering av presentkortsannonser.
+-- Köp och koppling mellan köpare, säljare och annons.
+-- Verifiering av säljare, köpare och presentkort enligt projektets krav.
++`GET /api/health` svarar 200. Anrop under `/api/accounts`, `/api/listings`,
++`/api/orders`, `/api/verification` och `/api/payments` svarar 501 (inte implementerat).
++Övriga anrop svarar 404. Funktionsingångarna är en struktur för fortsatt utveckling,
++inte en färdig API-specifikation eller fungerande affärslogik.
+ 
+-Frontend använder tills vidare demodata och `localStorage`, precis som tidigare.
+-Backendkod och databasfiler läggs till här när tekniken är vald och respektive
+-funktion börjar utvecklas.
++Frontend är fortfarande en fristående demo och använder inte denna server.
++Använd inte riktiga personuppgifter, presentkortskoder eller betalningar här.
+diff --git a/backend/database/README.md b/backend/database/README.md
+new file mode 100644
+index 0000000..4f521dd
+--- /dev/null
++++ b/backend/database/README.md
+@@ -0,0 +1,13 @@
++# Lagring
++
++Databasteknik är ännu inte vald. Lägg schema och migrationer här när den är bestämd.
++
++Följande lagringsbehov följer av user stories:
++- Användarkonton och identitetsverifiering (US01–US02).
++- Presentkort, annonser, ägarskap och verifieringsstatus (US03–US07, US11–US15).
++- Order, köpare, säljare, köpstatus och behörig kodleverans (US08–US10).
++- Betalningsreferenser, avgift och utbetalningsstatus (US12, US18–US19).
++- Reservation eller motsvarande atomiskt skydd mot dubbel försäljning (US17, US19).
++
++Detta är lagringsbehov, inte en färdig tabellmodell. Verifiering och betalning
++behöver samordnas med orderstatus. Frontendens localStorage är endast för demon.
+diff --git a/backend/package.json b/backend/package.json
+new file mode 100644
+index 0000000..38e1b1c
+--- /dev/null
++++ b/backend/package.json
+@@ -0,0 +1,10 @@
++{
++  "name": "passiton-backend",
++  "version": "0.1.0",
++  "private": true,
++  "type": "module",
++  "scripts": {
++    "start": "node src/server.js",
++    "dev": "node --watch src/server.js"
++  }
++}
+diff --git a/backend/src/app.js b/backend/src/app.js
+new file mode 100644
+index 0000000..cd36501
+--- /dev/null
++++ b/backend/src/app.js
+@@ -0,0 +1,22 @@
++import { sendJson } from './http.js';
++import { accounts } from './routes/accounts.js';
++import { listings } from './routes/listings.js';
++import { orders } from './routes/orders.js';
++import { verification } from './routes/verification.js';
++import { payments } from './routes/payments.js';
++
++const routes = { accounts, listings, orders, verification, payments };
++
++export function app(request, response) {
++  const pathname = (request.url || '/').split('?')[0];
++  if (request.method === 'GET' && pathname === '/api/health') {
++    sendJson(response, 200, { status: 'ok' });
++    return;
++  }
++  const match = /^\/api\/([^/]+)(?:\/|$)/.exec(pathname);
++  if (match && Object.hasOwn(routes, match[1])) {
++    routes[match[1]](request, response);
++    return;
++  }
++  sendJson(response, 404, { error: 'NOT_FOUND' });
++}
+diff --git a/backend/src/http.js b/backend/src/http.js
+new file mode 100644
+index 0000000..f3016b2
+--- /dev/null
++++ b/backend/src/http.js
+@@ -0,0 +1,11 @@
++export function sendJson(response, status, body) {
++  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
++  response.end(JSON.stringify(body));
++}
++
++export function notImplemented(response, feature) {
++  sendJson(response, 501, {
++    error: 'NOT_IMPLEMENTED',
++    message: `${feature} är ännu inte implementerat.`,
++  });
++}
+diff --git a/backend/src/routes/accounts.js b/backend/src/routes/accounts.js
+new file mode 100644
+index 0000000..ce0e47d
+--- /dev/null
++++ b/backend/src/routes/accounts.js
+@@ -0,0 +1,7 @@
++import { notImplemented } from '../http.js';
++
++// US01: registrering, inloggning och behörighet.
++// Ersätt med riktiga endpoint-handlers när denna funktion utvecklas.
++export function accounts(request, response) {
++  notImplemented(response, 'Kontohantering');
++}
+diff --git a/backend/src/routes/listings.js b/backend/src/routes/listings.js
+new file mode 100644
+index 0000000..74e112c
+--- /dev/null
++++ b/backend/src/routes/listings.js
+@@ -0,0 +1,7 @@
++import { notImplemented } from '../http.js';
++
++// US03–US07, US11–US15: lista, sök, filtrera, visa och hantera annonser.
++// Ersätt med riktiga endpoint-handlers när denna funktion utvecklas.
++export function listings(request, response) {
++  notImplemented(response, 'Annonser');
++}
+diff --git a/backend/src/routes/orders.js b/backend/src/routes/orders.js
+new file mode 100644
+index 0000000..3f638dc
+--- /dev/null
++++ b/backend/src/routes/orders.js
+@@ -0,0 +1,7 @@
++import { notImplemented } from '../http.js';
++
++// US08–US10, US17, US19: köp, kodleverans, köphistorik och skydd mot dubbel försäljning.
++// Ersätt med riktiga endpoint-handlers när denna funktion utvecklas.
++export function orders(request, response) {
++  notImplemented(response, 'Orderhantering');
++}
+diff --git a/backend/src/routes/payments.js b/backend/src/routes/payments.js
+new file mode 100644
+index 0000000..22dcc01
+--- /dev/null
++++ b/backend/src/routes/payments.js
+@@ -0,0 +1,7 @@
++import { notImplemented } from '../http.js';
++
++// US12, US18–US19: avgift, reserverad betalning och villkorad utbetalning.
++// Ersätt med riktiga endpoint-handlers när denna funktion utvecklas.
++export function payments(request, response) {
++  notImplemented(response, 'Betalningar');
++}
+diff --git a/backend/src/routes/verification.js b/backend/src/routes/verification.js
+new file mode 100644
+index 0000000..53e118b
+--- /dev/null
++++ b/backend/src/routes/verification.js
+@@ -0,0 +1,7 @@
++import { notImplemented } from '../http.js';
++
++// US02, US07, US13–US14: identitet, presentkort och verifieringsstatus.
++// Ersätt med riktiga endpoint-handlers när denna funktion utvecklas.
++export function verification(request, response) {
++  notImplemented(response, 'Verifiering');
++}
+diff --git a/backend/src/server.js b/backend/src/server.js
+new file mode 100644
+index 0000000..880ccd2
+--- /dev/null
++++ b/backend/src/server.js
+@@ -0,0 +1,8 @@
++import { createServer } from 'node:http';
++import { app } from './app.js';
++
++const port = Number(process.env.PORT || 3000);
++const host = process.env.HOST || '127.0.0.1';
++createServer(app).listen(port, host, () => {
++  console.log(`Passiton backend: http://${host}:${port}`);
++});
+diff --git a/docs/structure.md b/docs/structure.md
+new file mode 100644
+index 0000000..d438659
+--- /dev/null
++++ b/docs/structure.md
+@@ -0,0 +1,31 @@
++# Struktur och user stories
++
++Underlag: det tidigare förslaget till krav och US01–US19. Tabellen visar ansvar och
++nuvarande kodstatus; den ersätter inte kravdokumentets fullständiga acceptanskriterier.
++
++| User stories | Frontend | Backend | Status |
++| --- | --- | --- | --- |
++| US01 Konto | Ny kontovy läggs till vid implementation | routes/accounts.js | Återstår |
++| US02 Identitetsverifiering | Verifieringsflöde läggs till vid implementation | routes/verification.js | Återstår |
++| US03–US05 Lista, söka, filtrera/sortera | features/market.js | routes/listings.js | Frontenddemo finns |
++| US06–US07 Detaljer och verifieringsinformation | features/product.js | routes/listings.js, routes/verification.js | Frontenddemo; ingen verklig verifiering |
++| US08–US09 Köpa och få kod | features/product.js | routes/orders.js | Endast simulerat köp; kodleverans återstår |
++| US10 Tidigare köp | features/dashboard.js | routes/orders.js | Lokal demohistorik |
++| US11–US12 Annons och avgiftsberäkning | features/sell.js | routes/listings.js, routes/payments.js | Frontenddemo med 5 % avgift |
++| US13–US14 Verifiering och annonsstatus | features/sell.js, features/dashboard.js | routes/verification.js, routes/listings.js | Verklig process återstår |
++| US15 Ta bort annons (Could) | features/dashboard.js | routes/listings.js | Återstår |
++| US16 Förstå tjänsten | index.html, befintliga informationsvyer | Inget eget serverområde | Informationsvyer finns |
++| US17 Skydd mot dubbel försäljning | features/product.js | routes/orders.js och database/ | Återstår |
++| US18–US19 Säker betalning och utbetalning | Köp- och säljarvyer | routes/payments.js, routes/orders.js och database/ | Återstår |
++
++## Gemensam frontendkod
++
++`app.js` startar och kopplar ihop funktionerna. `state.js` håller demotillstånd,
++`storage.js` sparar demoköp och demoannonser, `utils.js` innehåller DOM- och
++formateringshjälp, `ui.js` sköter navigation, meddelanden och köpindikatorn.
++`data/cards.js` innehåller demopresentkort. CSS och HTML behåller nuvarande utseende.
++
++Skapa kontovyer och konkreta databasfiler när respektive funktion implementeras.
++Dela vidare i controllers, services eller repositories först när verklig kod
++behöver den ansvarsfördelningen. Konto och verifiering är kända krav, men får inte
++låtsas vara klara genom att tomma frontendfiler läggs till.
+diff --git a/frontend/index.html b/frontend/index.html
+index ab1fdcd..b81c98f 100644
+--- a/frontend/index.html
++++ b/frontend/index.html
+@@ -332,7 +332,6 @@
+     <button data-nav="dashboard"><span>♡</span>Mina</button>
+   </nav>
+ 
+-  <script src="js/data/cards.js"></script>
+-  <script src="js/app.js"></script>
++  <script type="module" src="js/app.js"></script>
+ </body>
+ </html>
+diff --git a/frontend/js/app.js b/frontend/js/app.js
+index 7bdba6e..8a5a667 100644
+--- a/frontend/js/app.js
++++ b/frontend/js/app.js
+@@ -1,187 +1,19 @@
+-const state = {
+-  purchases: JSON.parse(localStorage.getItem('passiton-purchases') || '[]'),
+-  listings: JSON.parse(localStorage.getItem('passiton-listings') || '[]'),
+-  selectedId: 1,
+-  search: '',
+-  category: 'all',
+-  minDiscount: 0,
+-  sort: 'popular'
+-};
+-
+-const $ = sel => document.querySelector(sel);
+-const $$ = sel => [...document.querySelectorAll(sel)];
+-const money = n => new Intl.NumberFormat('sv-SE').format(Math.round(n)) + ' kr';
+-const pct = c => Math.round((1 - c.price / c.value) * 100);
+-const escapeHTML = str => String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+-
+-function navTo(id){
+-  $$('.view').forEach(v => v.classList.toggle('active', v.id === id));
+-  window.scrollTo({top:0,behavior:'smooth'});
+-  if(id === 'market') renderMarket();
+-  if(id === 'dashboard') renderDashboard();
+-}
+-
+-$$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.dataset.nav)));
+-
+-function artHTML(card){
+-  return `<div class="product-art brand-${card.cls}">
+-    <button class="heart-float" aria-label="Spara annons">♡</button>
+-    <div class="brand-card">${escapeHTML(card.brand)}</div>
+-  </div>`;
+-}
+-
+-function cardHTML(card){
+-  return `<article class="product-card" data-card-id="${card.id}" tabindex="0" role="button" aria-label="Öppna ${escapeHTML(card.brand)} presentkort">
+-    ${artHTML(card)}
+-    <div class="product-meta">
+-      <div><h3>${escapeHTML(card.brand)} presentkort</h3><p>Värde ${money(card.value)} · Verifierad</p></div>
+-      <div class="product-meta-price"><strong>${money(card.price)}</strong><span>Spara ${pct(card)}%</span></div>
+-    </div>
+-  </article>`;
+-}
+-
+-function filteredCards(){
+-  let list = cards.filter(c => {
+-    const q = state.search.toLowerCase();
+-    const matchesSearch = !q || c.brand.toLowerCase().includes(q) || c.categoryLabel.toLowerCase().includes(q);
+-    const matchesCategory = state.category === 'all' || c.category === state.category;
+-    return matchesSearch && matchesCategory && pct(c) >= state.minDiscount;
+-  });
+-  list = [...list].sort((a,b) => {
+-    if(state.sort === 'discount') return pct(b) - pct(a);
+-    if(state.sort === 'price') return a.price - b.price;
+-    if(state.sort === 'value') return b.value - a.value;
+-    return b.popular - a.popular;
+-  });
+-  return list;
+-}
+-
+-function renderMarket(){
+-  const list = filteredCards();
+-  $('#market-grid').innerHTML = list.map(cardHTML).join('');
+-  $('#result-count').textContent = `${list.length} presentkort`;
+-  $('#empty-state').classList.toggle('hidden', list.length > 0);
+-  $$('.product-card').forEach(card => {
+-    const open = e => {
+-      if(e.target.closest('.heart-float')) return;
+-      openProduct(Number(card.dataset.cardId));
+-    };
+-    card.addEventListener('click', open);
+-    card.addEventListener('keydown', e => {if(e.key === 'Enter') open(e)});
+-  });
+-  $$('.heart-float').forEach(btn => btn.addEventListener('click', e => {e.stopPropagation(); btn.textContent = btn.textContent === '♡' ? '♥' : '♡';}));
+-}
+-
+-function brandCardMarkup(card, size='main'){
+-  return `<div class="scene-wall"></div><div class="scene-floor"></div><div class="scene-table"></div><div class="scene-plant"></div><div class="scene-card brand-${card.cls}"><span class="brand-card" style="position:static;transform:none;width:100%;height:100%;box-shadow:none">${escapeHTML(card.brand)}</span></div>`;
+-}
+-
+-function galleryHTML(card){
+-  return `
+-    <div class="gallery-shot">${brandCardMarkup(card)}</div>
+-    <div class="gallery-shot small">${brandCardMarkup(card,'small')}</div>
+-    <div class="gallery-shot store" data-brand="${escapeHTML(card.brand)}"></div>
+-    <div class="gallery-shot abstract"></div>`;
+-}
+-
+-function openProduct(id){
+-  const card = cards.find(c => c.id === id) || cards[0];
+-  state.selectedId = card.id;
+-  $('#gallery').innerHTML = galleryHTML(card);
+-  $('#breadcrumbs').innerHTML = `Köp <span>›</span> ${escapeHTML(card.categoryLabel)} <span>›</span> ${escapeHTML(card.brand)} <span>›</span> ${escapeHTML(card.brand)} presentkort`;
+-  $('#detail-title').textContent = `${card.brand} presentkort`;
+-  $('#detail-subtitle').textContent = `Digitalt presentkort för ${card.categoryLabel.toLowerCase()}`;
+-  $('#detail-value').textContent = money(card.value);
+-  $('#detail-price').textContent = money(card.price);
+-  $('#detail-save').textContent = `Spara ${pct(card)}%`;
+-  $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
+-  $('#fact-use').textContent = card.use;
+-  $('#about-copy').textContent = `${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
+-  const suggested = Math.round(card.value * .90 / 10) * 10;
+-  const fee = Math.round(suggested * .05);
+-  $('#similar-sale').textContent = money(suggested);
+-  $('#similar-fee').textContent = money(fee);
+-  $('#similar-net').textContent = money(suggested - fee);
+-  $('#buy-now').textContent = `Köp nu · ${money(card.price)}`;
+-  navTo('product');
+-}
+-
+-$('#back-to-market').addEventListener('click', () => navTo('market'));
+-$('#buy-now').addEventListener('click', () => {
+-  const card = cards.find(c => c.id === state.selectedId);
+-  state.purchases.unshift({...card,boughtAt:new Date().toISOString()});
+-  localStorage.setItem('passiton-purchases',JSON.stringify(state.purchases));
+-  updateBag();
+-  toast(`${card.brand}-presentkortet är köpt i demon ✓`);
+-  navTo('dashboard');
+-});
+-
+-$('#search-input').addEventListener('input', e => {state.search = e.target.value.trim(); renderMarket();});
+-$('#sort-filter').addEventListener('change', e => {state.sort = e.target.value; renderMarket();});
+-$('#discount-filter').addEventListener('input', e => {state.minDiscount = Number(e.target.value); $('#discount-output').textContent = `${e.target.value}%`; renderMarket();});
+-$$('input[name="cat"]').forEach(r => r.addEventListener('change', e => {state.category=e.target.value; renderMarket();}));
+-$('#clear-filters').addEventListener('click', () => {
+-  state.search='';state.category='all';state.minDiscount=0;state.sort='popular';
+-  $('#search-input').value='';$('#discount-filter').value=0;$('#discount-output').textContent='0%';$('#sort-filter').value='popular';
+-  $('input[name="cat"][value="all"]').checked=true;renderMarket();
+-});
+-
+-$('.search-toggle').addEventListener('click', () => {$('#header-search').classList.toggle('hidden'); if(!$('#header-search').classList.contains('hidden')) $('#global-search').focus();});
+-$('#close-search').addEventListener('click', () => $('#header-search').classList.add('hidden'));
+-$('#global-search').addEventListener('keydown', e => {
+-  if(e.key === 'Enter'){
+-    state.search=e.target.value.trim();$('#search-input').value=state.search;$('#header-search').classList.add('hidden');navTo('market');
+-  }
++import { $$ } from './utils.js';
++import { navTo } from './ui.js';
++import { initMarket, renderMarket } from './features/market.js';
++import { initProduct } from './features/product.js';
++import { initSell } from './features/sell.js';
++import { renderDashboard } from './features/dashboard.js';
++
++$$('[data-nav]').forEach(button => {
++  button.addEventListener('click', () => navTo(button.dataset.nav));
+ });
+-
+-const expiryInput = $('#sell-expiry');
+-const future = new Date(); future.setFullYear(future.getFullYear()+1); expiryInput.value = future.toISOString().slice(0,10);
+-const brandClass = brand => ({IKEA:'ikea',Zalando:'zalando','H&M':'hm',Elgiganten:'elgiganten',Stadium:'stadium',ICA:'ica','Åhléns':'ahlens',SJ:'sj'}[brand] || 'ikea');
+-
+-function updateSellerPreview(){
+-  const brand = $('#sell-brand').value || 'IKEA';
+-  const value = Math.max(Number($('#sell-value').value)||0,0);
+-  const price = Math.max(Number($('#sell-price').value)||0,0);
+-  const fee = Math.round(price*.05);
+-  const net = Math.max(price-fee,0);
+-  const savings = Math.max(value-price,0);
+-  const savingsPct = value ? Math.round((savings/value)*100) : 0;
+-  $('#seller-card-preview').className = `seller-card-preview brand-${brandClass(brand)}`;
+-  $('.preview-brand').textContent = brand;
+-  $('#preview-brand').textContent = `${brand} presentkort`;
+-  $('#preview-value').textContent = money(value);
+-  $('#preview-price').textContent = money(price);
+-  $('#preview-save').textContent = `Spara ${Math.max(savingsPct,0)}%`;
+-  $('#calc-price').textContent = money(price);
+-  $('#calc-fee').textContent = money(fee);
+-  $('#calc-net').textContent = money(net);
+-  $('#discount-copy').textContent = `Köparen sparar ${money(savings)} (${Math.max(savingsPct,0)}%).`;
+-}
+-['sell-brand','sell-value','sell-price'].forEach(id => $('#'+id).addEventListener('input',updateSellerPreview));
+-updateSellerPreview();
+-
+-$('#sell-form').addEventListener('submit', e => {
+-  e.preventDefault();
+-  const brand=$('#sell-brand').value, category=$('#sell-category').value, value=Number($('#sell-value').value), price=Number($('#sell-price').value);
+-  if(price >= value){toast('Priset måste vara lägre än presentkortets värde.');return;}
+-  const listing={id:Date.now(),brand,category,value,price,expiry:$('#sell-expiry').value,cls:brandClass(brand),createdAt:new Date().toISOString()};
+-  state.listings.unshift(listing);localStorage.setItem('passiton-listings',JSON.stringify(state.listings));
+-  e.target.reset();expiryInput.value=future.toISOString().slice(0,10);$('#sell-value').value=1000;$('#sell-price').value=900;updateSellerPreview();
+-  toast('Demoannonsen är publicerad ✓');navTo('dashboard');
++document.addEventListener('viewchange', event => {
++  if (event.detail === 'market') renderMarket();
++  if (event.detail === 'dashboard') renderDashboard();
+ });
+-
+-function activityHTML(item,type){
+-  const savings=item.value-item.price;
+-  return `<div class="activity-item"><div class="activity-brand brand-${item.cls}">${escapeHTML(item.brand)}</div><div class="activity-copy"><strong>${escapeHTML(item.brand)} presentkort</strong><span>Värde ${money(item.value)} · ${type==='purchase'?'Köpt i demon':'Giltig till '+item.expiry}</span></div><div class="activity-amount"><strong>${money(item.price)}</strong><span>${type==='purchase'?'Sparat '+money(savings):'Aktiv annons'}</span></div></div>`;
+-}
+-function renderDashboard(){
+-  const bought=state.purchases.reduce((s,p)=>s+p.value,0);const saved=state.purchases.reduce((s,p)=>s+(p.value-p.price),0);
+-  $('#stat-bought').textContent=money(bought);$('#stat-saved').textContent=money(saved);$('#stat-listed').textContent=state.listings.length;
+-  $('#purchase-list').innerHTML=state.purchases.length?state.purchases.map(i=>activityHTML(i,'purchase')).join(''):'<div class="empty-mini">Du har inte gjort något demoköp ännu.</div>';
+-  $('#listing-list').innerHTML=state.listings.length?state.listings.map(i=>activityHTML(i,'listing')).join(''):'<div class="empty-mini">Du har inga aktiva demoannonser.</div>';
+-  updateBag();
+-}
+-function updateBag(){const count=state.purchases.length;$('#bag-count').textContent=count;$('#bag-count').classList.toggle('hidden',!count)}
+-let toastTimer;function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),2600)}
+-
+-renderMarket();renderDashboard();updateBag();
++initMarket();
++initProduct();
++initSell();
++renderMarket();
++renderDashboard();
+diff --git a/frontend/js/data/cards.js b/frontend/js/data/cards.js
+index 9118696..234bffa 100644
+--- a/frontend/js/data/cards.js
++++ b/frontend/js/data/cards.js
+@@ -1,4 +1,4 @@
+-const cards = [
++export const cards = [
+   { id: 1, brand: 'IKEA', category: 'Hem', categoryLabel: 'Hem & inredning', value: 1000, price: 880, expiry: '2027-12-31', use: 'Alla IKEA varuhus och ikea.se', cls: 'ikea', popular: 100 },
+   { id: 2, brand: 'Zalando', category: 'Mode', categoryLabel: 'Mode', value: 1000, price: 850, expiry: '2027-09-30', use: 'Zalando.se', cls: 'zalando', popular: 95 },
+   { id: 3, brand: 'H&M', category: 'Mode', categoryLabel: 'Mode', value: 500, price: 425, expiry: '2027-08-15', use: 'H&M butik och online', cls: 'hm', popular: 90 },
+diff --git a/frontend/js/features/dashboard.js b/frontend/js/features/dashboard.js
+new file mode 100644
+index 0000000..610f390
+--- /dev/null
++++ b/frontend/js/features/dashboard.js
+@@ -0,0 +1,15 @@
++import { $, money, escapeHTML } from '../utils.js';
++import { state } from '../state.js';
++import { updateBag } from '../ui.js';
++
++function activityHTML(item,type){
++  const savings=item.value-item.price;
++  return `<div class="activity-item"><div class="activity-brand brand-${item.cls}">${escapeHTML(item.brand)}</div><div class="activity-copy"><strong>${escapeHTML(item.brand)} presentkort</strong><span>Värde ${money(item.value)} · ${type==='purchase'?'Köpt i demon':'Giltig till '+item.expiry}</span></div><div class="activity-amount"><strong>${money(item.price)}</strong><span>${type==='purchase'?'Sparat '+money(savings):'Aktiv annons'}</span></div></div>`;
++}
++export function renderDashboard(){
++  const bought=state.purchases.reduce((s,p)=>s+p.value,0);const saved=state.purchases.reduce((s,p)=>s+(p.value-p.price),0);
++  $('#stat-bought').textContent=money(bought);$('#stat-saved').textContent=money(saved);$('#stat-listed').textContent=state.listings.length;
++  $('#purchase-list').innerHTML=state.purchases.length?state.purchases.map(i=>activityHTML(i,'purchase')).join(''):'<div class="empty-mini">Du har inte gjort något demoköp ännu.</div>';
++  $('#listing-list').innerHTML=state.listings.length?state.listings.map(i=>activityHTML(i,'listing')).join(''):'<div class="empty-mini">Du har inga aktiva demoannonser.</div>';
++  updateBag();
++}
+diff --git a/frontend/js/features/market.js b/frontend/js/features/market.js
+new file mode 100644
+index 0000000..09838f5
+--- /dev/null
++++ b/frontend/js/features/market.js
+@@ -0,0 +1,76 @@
++import { $, $$, money, pct, escapeHTML } from '../utils.js';
++import { state } from '../state.js';
++import { cards } from '../data/cards.js';
++import { navTo } from '../ui.js';
++import { openProduct } from './product.js';
++
++function artHTML(card){
++  return `<div class="product-art brand-${card.cls}">
++    <button class="heart-float" aria-label="Spara annons">♡</button>
++    <div class="brand-card">${escapeHTML(card.brand)}</div>
++  </div>`;
++}
++
++function cardHTML(card){
++  return `<article class="product-card" data-card-id="${card.id}" tabindex="0" role="button" aria-label="Öppna ${escapeHTML(card.brand)} presentkort">
++    ${artHTML(card)}
++    <div class="product-meta">
++      <div><h3>${escapeHTML(card.brand)} presentkort</h3><p>Värde ${money(card.value)} · Verifierad</p></div>
++      <div class="product-meta-price"><strong>${money(card.price)}</strong><span>Spara ${pct(card)}%</span></div>
++    </div>
++  </article>`;
++}
++
++function filteredCards(){
++  let list = cards.filter(c => {
++    const q = state.search.toLowerCase();
++    const matchesSearch = !q || c.brand.toLowerCase().includes(q) || c.categoryLabel.toLowerCase().includes(q);
++    const matchesCategory = state.category === 'all' || c.category === state.category;
++    return matchesSearch && matchesCategory && pct(c) >= state.minDiscount;
++  });
++  list = [...list].sort((a,b) => {
++    if(state.sort === 'discount') return pct(b) - pct(a);
++    if(state.sort === 'price') return a.price - b.price;
++    if(state.sort === 'value') return b.value - a.value;
++    return b.popular - a.popular;
++  });
++  return list;
++}
++
++export function renderMarket(){
++  const list = filteredCards();
++  $('#market-grid').innerHTML = list.map(cardHTML).join('');
++  $('#result-count').textContent = `${list.length} presentkort`;
++  $('#empty-state').classList.toggle('hidden', list.length > 0);
++  $$('.product-card').forEach(card => {
++    const open = e => {
++      if(e.target.closest('.heart-float')) return;
++      openProduct(Number(card.dataset.cardId));
++    };
++    card.addEventListener('click', open);
++    card.addEventListener('keydown', e => {if(e.key === 'Enter') open(e)});
++  });
++  $$('.heart-float').forEach(btn => btn.addEventListener('click', e => {e.stopPropagation(); btn.textContent = btn.textContent === '♡' ? '♥' : '♡';}));
++}
++
++
++export function initMarket() {
++  $('#search-input').addEventListener('input', e => {state.search = e.target.value.trim(); renderMarket();});
++  $('#sort-filter').addEventListener('change', e => {state.sort = e.target.value; renderMarket();});
++  $('#discount-filter').addEventListener('input', e => {state.minDiscount = Number(e.target.value); $('#discount-output').textContent = `${e.target.value}%`; renderMarket();});
++  $$('input[name="cat"]').forEach(r => r.addEventListener('change', e => {state.category=e.target.value; renderMarket();}));
++  $('#clear-filters').addEventListener('click', () => {
++    state.search='';state.category='all';state.minDiscount=0;state.sort='popular';
++    $('#search-input').value='';$('#discount-filter').value=0;$('#discount-output').textContent='0%';$('#sort-filter').value='popular';
++    $('input[name="cat"][value="all"]').checked=true;renderMarket();
++  });
++
++  $('.search-toggle').addEventListener('click', () => {$('#header-search').classList.toggle('hidden'); if(!$('#header-search').classList.contains('hidden')) $('#global-search').focus();});
++  $('#close-search').addEventListener('click', () => $('#header-search').classList.add('hidden'));
++  $('#global-search').addEventListener('keydown', e => {
++    if(e.key === 'Enter'){
++      state.search=e.target.value.trim();$('#search-input').value=state.search;$('#header-search').classList.add('hidden');navTo('market');
++    }
++  });
++
++}
+diff --git a/frontend/js/features/product.js b/frontend/js/features/product.js
+new file mode 100644
+index 0000000..e61fa68
+--- /dev/null
++++ b/frontend/js/features/product.js
+@@ -0,0 +1,53 @@
++import { $, money, pct, escapeHTML } from '../utils.js';
++import { state } from '../state.js';
++import { cards } from '../data/cards.js';
++import { navTo, updateBag, toast } from '../ui.js';
++import { savePurchases } from '../storage.js';
++
++function brandCardMarkup(card, size='main'){
++  return `<div class="scene-wall"></div><div class="scene-floor"></div><div class="scene-table"></div><div class="scene-plant"></div><div class="scene-card brand-${card.cls}"><span class="brand-card" style="position:static;transform:none;width:100%;height:100%;box-shadow:none">${escapeHTML(card.brand)}</span></div>`;
++}
++
++function galleryHTML(card){
++  return `
++    <div class="gallery-shot">${brandCardMarkup(card)}</div>
++    <div class="gallery-shot small">${brandCardMarkup(card,'small')}</div>
++    <div class="gallery-shot store" data-brand="${escapeHTML(card.brand)}"></div>
++    <div class="gallery-shot abstract"></div>`;
++}
++
++export function openProduct(id){
++  const card = cards.find(c => c.id === id) || cards[0];
++  state.selectedId = card.id;
++  $('#gallery').innerHTML = galleryHTML(card);
++  $('#breadcrumbs').innerHTML = `Köp <span>›</span> ${escapeHTML(card.categoryLabel)} <span>›</span> ${escapeHTML(card.brand)} <span>›</span> ${escapeHTML(card.brand)} presentkort`;
++  $('#detail-title').textContent = `${card.brand} presentkort`;
++  $('#detail-subtitle').textContent = `Digitalt presentkort för ${card.categoryLabel.toLowerCase()}`;
++  $('#detail-value').textContent = money(card.value);
++  $('#detail-price').textContent = money(card.price);
++  $('#detail-save').textContent = `Spara ${pct(card)}%`;
++  $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
++  $('#fact-use').textContent = card.use;
++  $('#about-copy').textContent = `${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
++  const suggested = Math.round(card.value * .90 / 10) * 10;
++  const fee = Math.round(suggested * .05);
++  $('#similar-sale').textContent = money(suggested);
++  $('#similar-fee').textContent = money(fee);
++  $('#similar-net').textContent = money(suggested - fee);
++  $('#buy-now').textContent = `Köp nu · ${money(card.price)}`;
++  navTo('product');
++}
++
++
++export function initProduct() {
++  $('#back-to-market').addEventListener('click', () => navTo('market'));
++  $('#buy-now').addEventListener('click', () => {
++    const card = cards.find(c => c.id === state.selectedId);
++    state.purchases.unshift({...card,boughtAt:new Date().toISOString()});
++    savePurchases();
++    updateBag();
++    toast(`${card.brand}-presentkortet är köpt i demon ✓`);
++    navTo('dashboard');
++  });
++
++}
+diff --git a/frontend/js/features/sell.js b/frontend/js/features/sell.js
+new file mode 100644
+index 0000000..75c07b7
+--- /dev/null
++++ b/frontend/js/features/sell.js
+@@ -0,0 +1,43 @@
++import { $, money } from '../utils.js';
++import { state } from '../state.js';
++import { navTo, toast } from '../ui.js';
++import { saveListings } from '../storage.js';
++
++export function initSell() {
++  const expiryInput = $('#sell-expiry');
++  const future = new Date(); future.setFullYear(future.getFullYear()+1); expiryInput.value = future.toISOString().slice(0,10);
++  const brandClass = brand => ({IKEA:'ikea',Zalando:'zalando','H&M':'hm',Elgiganten:'elgiganten',Stadium:'stadium',ICA:'ica','Åhléns':'ahlens',SJ:'sj'}[brand] || 'ikea');
++
++  function updateSellerPreview(){
++    const brand = $('#sell-brand').value || 'IKEA';
++    const value = Math.max(Number($('#sell-value').value)||0,0);
++    const price = Math.max(Number($('#sell-price').value)||0,0);
++    const fee = Math.round(price*.05);
++    const net = Math.max(price-fee,0);
++    const savings = Math.max(value-price,0);
++    const savingsPct = value ? Math.round((savings/value)*100) : 0;
++    $('#seller-card-preview').className = `seller-card-preview brand-${brandClass(brand)}`;
++    $('.preview-brand').textContent = brand;
++    $('#preview-brand').textContent = `${brand} presentkort`;
++    $('#preview-value').textContent = money(value);
++    $('#preview-price').textContent = money(price);
++    $('#preview-save').textContent = `Spara ${Math.max(savingsPct,0)}%`;
++    $('#calc-price').textContent = money(price);
++    $('#calc-fee').textContent = money(fee);
++    $('#calc-net').textContent = money(net);
++    $('#discount-copy').textContent = `Köparen sparar ${money(savings)} (${Math.max(savingsPct,0)}%).`;
++  }
++  ['sell-brand','sell-value','sell-price'].forEach(id => $('#'+id).addEventListener('input',updateSellerPreview));
++  updateSellerPreview();
++
++  $('#sell-form').addEventListener('submit', e => {
++    e.preventDefault();
++    const brand=$('#sell-brand').value, category=$('#sell-category').value, value=Number($('#sell-value').value), price=Number($('#sell-price').value);
++    if(price >= value){toast('Priset måste vara lägre än presentkortets värde.');return;}
++    const listing={id:Date.now(),brand,category,value,price,expiry:$('#sell-expiry').value,cls:brandClass(brand),createdAt:new Date().toISOString()};
++    state.listings.unshift(listing);saveListings();
++    e.target.reset();expiryInput.value=future.toISOString().slice(0,10);$('#sell-value').value=1000;$('#sell-price').value=900;updateSellerPreview();
++    toast('Demoannonsen är publicerad ✓');navTo('dashboard');
++  });
++
++}
+diff --git a/frontend/js/state.js b/frontend/js/state.js
+new file mode 100644
+index 0000000..ef79d47
+--- /dev/null
++++ b/frontend/js/state.js
+@@ -0,0 +1,9 @@
++export const state = {
++  purchases: JSON.parse(localStorage.getItem('passiton-purchases') || '[]'),
++  listings: JSON.parse(localStorage.getItem('passiton-listings') || '[]'),
++  selectedId: 1,
++  search: '',
++  category: 'all',
++  minDiscount: 0,
++  sort: 'popular'
++};
+diff --git a/frontend/js/storage.js b/frontend/js/storage.js
+new file mode 100644
+index 0000000..5344dd6
+--- /dev/null
++++ b/frontend/js/storage.js
+@@ -0,0 +1,9 @@
++import { state } from './state.js';
++
++export function savePurchases() {
++  localStorage.setItem('passiton-purchases', JSON.stringify(state.purchases));
++}
++
++export function saveListings() {
++  localStorage.setItem('passiton-listings', JSON.stringify(state.listings));
++}
+diff --git a/frontend/js/ui.js b/frontend/js/ui.js
+new file mode 100644
+index 0000000..ede408e
+--- /dev/null
++++ b/frontend/js/ui.js
+@@ -0,0 +1,11 @@
++import { $, $$ } from './utils.js';
++import { state } from './state.js';
++
++export function navTo(id){
++  $$('.view').forEach(v => v.classList.toggle('active', v.id === id));
++  window.scrollTo({top:0,behavior:'smooth'});
++  document.dispatchEvent(new CustomEvent('viewchange', { detail: id }));
++}
++
++export function updateBag(){const count=state.purchases.length;$('#bag-count').textContent=count;$('#bag-count').classList.toggle('hidden',!count)}
++let toastTimer;export function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),2600)}
+diff --git a/frontend/js/utils.js b/frontend/js/utils.js
+new file mode 100644
+index 0000000..7da8bf0
+--- /dev/null
++++ b/frontend/js/utils.js
+@@ -0,0 +1,5 @@
++export const $ = sel => document.querySelector(sel);
++export const $$ = sel => [...document.querySelectorAll(sel)];
++export const money = n => new Intl.NumberFormat('sv-SE').format(Math.round(n)) + ' kr';
++export const pct = c => Math.round((1 - c.price / c.value) * 100);
++export const escapeHTML = str => String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
