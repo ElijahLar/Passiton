@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Kontrollera och applicera Passitons strukturpatch utan commit eller push."""
+"""Kontrollera och applicera en vald Passiton-patch utan commit eller push."""
 
 import argparse
 from pathlib import Path
@@ -17,11 +17,26 @@ def git(repo, *args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('patch', help='Unikt patchnummer eller filnamn i patches/, t.ex. 00a.')
     parser.add_argument('--check', action='store_true',
                         help='Kontrollera patchen utan att ändra några filer.')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
-    patch = repo / 'patches' / '001-project-structure.patch'
+    patch_dir = repo / 'patches'
+    name = args.patch
+    if Path(name).name != name or '/' in name or '\\' in name:
+        parser.error('Ange ett patchnummer eller filnamn, inte en sökväg.')
+    candidates = sorted(patch_dir.glob('*.patch'))
+    matches = [p for p in candidates if p.name == name or p.stem == name
+               or p.stem.split('-', 1)[0] == name]
+    if len(matches) != 1:
+        print('Patchnamnet måste matcha exakt en fil i patches/.', file=sys.stderr)
+        print('Tillgängliga: ' + ', '.join(p.name for p in candidates), file=sys.stderr)
+        return 1
+    patch = matches[0].resolve()
+    if patch.parent != patch_dir.resolve():
+        print('Patchen måste ligga i patches/.', file=sys.stderr)
+        return 1
 
     if not shutil.which('git'):
         print('Git måste vara installerat.', file=sys.stderr)
@@ -38,7 +53,7 @@ def main():
     if check.returncode:
         reverse = git(repo, 'apply', '--reverse', '--check', str(patch))
         if reverse.returncode == 0:
-            print('Strukturpatchen är redan applicerad. Inga filer ändrades.')
+            print('Patchen är redan applicerad. Inga filer ändrades.')
         else:
             print('Patchen kan inte appliceras. Inga filer ändrades.', file=sys.stderr)
             print(check.stderr.strip(), file=sys.stderr)
@@ -52,7 +67,7 @@ def main():
         print('Git kunde inte applicera patchen.', file=sys.stderr)
         print(result.stderr.strip(), file=sys.stderr)
         return 1
-    print('Strukturpatchen är applicerad. Granska ändringarna med git diff.')
+    print('Patchen är applicerad. Granska ändringarna med git diff.')
     print('Ingen commit eller push har gjorts.')
     return 0
 
