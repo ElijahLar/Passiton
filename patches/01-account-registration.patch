@@ -1,0 +1,1492 @@
+diff --git a/.gitignore b/.gitignore
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,7 +1,10 @@
+-node_modules/
+-.env
+-.env.*
+-!.env.example
+-__pycache__/
+-*.pyc
+-.DS_Store
++node_modules/
++.env
++.env.*
++!.env.example
++__pycache__/
++*.pyc
++.DS_Store
++
++backend/database/*.sqlite
++backend/database/*.sqlite-*
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -1,52 +1,62 @@
+-# Passiton MVP
+-
+-En klickbar frontend-MVP för projektledningskursen.
+-
+-## Starta
+-Frontend använder ES-moduler. Starta en lokal webbserver från repots rot:
+-
+-```bash
+-python -m http.server 8000
+-```
+-
+-Öppna sedan `http://localhost:8000/frontend/`.
+-Rotens `index.html` skickar också vidare till frontend och behåller query-parametrar och hash.
+-Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
+-
+-## Ingår
+-- Marknadsplats med sök, kategorier, rabattfilter och sortering
+-- Produktdetaljsida inspirerad av ren skandinavisk e-handel
+-- Simulerat köp
+-- Säljflöde med 5 % transaktionsavgift och live-förhandsvisning
+-- Dashboard för köp och annonser
+-- Responsiv mobilvy
+-- Demo-data lagras i `localStorage`
+-
+-## Obs
+-Det här är en skol-MVP. Inga riktiga betalningar, presentkort eller verifieringar hanteras.
+-
+-## Filstruktur
+-
+-- `frontend/`: HTML, CSS och JavaScript uppdelat i funktioner och gemensam kod.
+-- `backend/`: Node-server, funktionsingångar och dokumenterade lagringsbehov.
+-- `docs/structure.md`: koppling mellan struktur, user stories och vad som återstår.
+-- `patches/`: numrerade ändringspatchar.
+-- `scripts/patch-00.py`: återanvändbart script för valfri patch i patches/.
+-
+-Backend startas separat med `cd backend` och `npm start` (Node.js krävs).
+-Se `backend/README.md`. Frontend fortsätter att använda sin lokala demo.
+-
+-## Applicera patch 00a
+-
+-Patch 00 ska redan vara applicerad. Patch 00a är byggd mot commit
+-`46b82d90d38556bad3ba7ed6e224df92daa6d167` med den första frontend/backend-strukturen.
+-
+-```bash
+-python3 scripts/patch-00.py 00a --check
+-python3 scripts/patch-00.py 00a
+-```
+-
+-Samma script används för nästa patch genom att byta argument. Ange antingen dess
+-unika nummer (exempelvis `00a`) eller filnamnet i `patches/`.
+-Scriptet kontrollerar hela patchen före applicering. Konflikter och upprepad
+-applicering ger fel utan att några ändringar appliceras. Ingen commit eller push görs.
++# Passiton MVP
++
++Passiton är ett skolprojekt och en marknadsplats för att köpa och sälja presentkort.
++
++## Förutsättningar
++
++- Node.js 22.5 eller senare (backend använder inbyggda `node:sqlite`)
++- npm
++- Python 3 endast om du vill använda patch-scriptet
++
++## Starta backend
++
++```bash
++cd backend
++npm install
++npm start
++```
++
++Backend kör på `http://127.0.0.1:3000` och skapar SQLite-databasen
++`backend/database/passiton.sqlite` automatiskt.
++
++## Starta frontend
++
++I en separat terminal:
++
++```bash
++cd frontend
++npm install
++npm run dev
++```
++
++Öppna `http://127.0.0.1:5173`. Frontendens devserver proxar `/api` till backend
++på port 3000. Ingen frontendramverk har införts; befintlig HTML/CSS/JavaScript används.
++
++## US01
++
++Registreringsvyn skickar ett riktigt API-anrop till `POST /api/accounts/register`.
++E-post och lösenord valideras i både frontend och backend. Konton sparas beständigt
++i SQLite och lösenord hashas med scrypt. Inloggning och identitetsverifiering ingår
++inte i US01.
++
++Övriga köp- och säljfunktioner är fortfarande skol-MVP/demo där tidigare beteende
++med `localStorage` används.
++
++## Struktur
++
++- `frontend/`: HTML, CSS, JavaScript och lokal devserver.
++- `backend/`: Node-server, API-routes och SQLite-lagring.
++- `docs/structure.md`: koppling mellan struktur och user stories.
++- `patches/`: numrerade ändringspatchar.
++- `scripts/patch-00.py`: återanvändbart script för valfri patch i `patches/`.
++
++## Applicera patch 01
++
++Patch 00a ska vara applicerad först.
++
++```bash
++python3 scripts/patch-00.py 01 --check
++python3 scripts/patch-00.py 01
++```
++
++Scriptet skapar ingen commit och gör ingen push.
+diff --git a/backend/README.md b/backend/README.md
+--- a/backend/README.md
++++ b/backend/README.md
+@@ -1,23 +1,22 @@
+-# Passiton backend
+-
+-Node.js med ES-moduler och inbyggt HTTP-stöd. Inga externa paket krävs.
+-Kör `npm start` i denna mapp. `npm run dev` startar med Nodes watch-läge.
+-Servern lyssnar på `127.0.0.1:3000`; `HOST` och `PORT` kan anges i miljön.
+-
+-- `src/server.js`: startar HTTP-servern.
+-- `src/app.js`: fördelar anrop mellan funktionsområden.
+-- `src/routes/accounts.js`: konto och inloggning.
+-- `src/routes/listings.js`: annonser och marknadsplats.
+-- `src/routes/orders.js`: köp, kodleverans och köphistorik.
+-- `src/routes/verification.js`: identitet och presentkortsverifiering.
+-- `src/routes/payments.js`: betalning, avgift och utbetalning.
+-- `src/http.js`: gemensamma JSON-svar.
+-- `database/`: dokumenterade lagringsbehov inför databasval.
+-
+-`GET /api/health` svarar 200. Anrop under `/api/accounts`, `/api/listings`,
+-`/api/orders`, `/api/verification` och `/api/payments` svarar 501 (inte implementerat).
+-Övriga anrop svarar 404. Funktionsingångarna är en struktur för fortsatt utveckling,
+-inte en färdig API-specifikation eller fungerande affärslogik.
+-
+-Frontend är fortfarande en fristående demo och använder inte denna server.
+-Använd inte riktiga personuppgifter, presentkortskoder eller betalningar här.
++# Passiton backend
++
++Node.js med ES-moduler, inbyggt HTTP-stöd och Nodes inbyggda SQLite-stöd.
++Kräver Node.js 22.5 eller senare. Kör `npm install` och sedan `npm start`.
++`npm run dev` startar med Nodes watch-läge. Servern lyssnar på
++`127.0.0.1:3000`; `HOST`, `PORT` och `DATABASE_PATH` kan anges i miljön.
++
++## US01 – registrering
++
++`POST /api/accounts/register` tar emot `email`, `password` och
++`passwordConfirmation`. E-post normaliseras till små bokstäver och valideras på
++servern. Lösenord måste vara 8–128 tecken och innehålla bokstav och siffra.
++
++Konton sparas i `database/passiton.sqlite`. Lösenord hashas med `crypto.scrypt`
++och endast hash + salt lagras. Varken lösenord eller hash returneras i API-svar.
++Databasens unika constraint och `INSERT OR IGNORE` skyddar mot dubbla konton även
++om registreringsanrop når servern samtidigt.
++
++`GET /api/health` svarar 200. Övriga funktionsområden är fortfarande stommar
++och svarar 501.
++
++Använd inte riktiga personuppgifter, presentkortskoder eller betalningar i skol-MVP:n.
+diff --git a/backend/database/README.md b/backend/database/README.md
+--- a/backend/database/README.md
++++ b/backend/database/README.md
+@@ -1,13 +1,13 @@
+-# Lagring
+-
+-Databasteknik är ännu inte vald. Lägg schema och migrationer här när den är bestämd.
+-
+-Följande lagringsbehov följer av user stories:
+-- Användarkonton och identitetsverifiering (US01–US02).
+-- Presentkort, annonser, ägarskap och verifieringsstatus (US03–US07, US11–US15).
+-- Order, köpare, säljare, köpstatus och behörig kodleverans (US08–US10).
+-- Betalningsreferenser, avgift och utbetalningsstatus (US12, US18–US19).
+-- Reservation eller motsvarande atomiskt skydd mot dubbel försäljning (US17, US19).
+-
+-Detta är lagringsbehov, inte en färdig tabellmodell. Verifiering och betalning
+-behöver samordnas med orderstatus. Frontendens localStorage är endast för demon.
++# Lagring
++
++US01 använder SQLite via Nodes inbyggda `node:sqlite`. Databasen skapas automatiskt
++som `passiton.sqlite` i denna mapp när backend startas. Filen versionshanteras inte.
++
++Tabellen `users` innehåller:
++- `id`
++- normaliserad och unik `email`
++- `password_hash` (scrypt med unik salt)
++- `created_at`
++
++Övriga lagringsbehov för annonser, verifiering, order och betalningar modelleras när
++respektive user story implementeras.
+diff --git a/backend/package.json b/backend/package.json
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -1,10 +1,11 @@
+-{
+-  "name": "passiton-backend",
+-  "version": "0.1.0",
+-  "private": true,
+-  "type": "module",
+-  "scripts": {
+-    "start": "node src/server.js",
+-    "dev": "node --watch src/server.js"
+-  }
+-}
++{
++  "name": "passiton-backend",
++  "version": "0.1.0",
++  "private": true,
++  "type": "module",
++  "engines": { "node": ">=22.5" },
++  "scripts": {
++    "start": "node src/server.js",
++    "dev": "node --watch src/server.js"
++  }
++}
+diff --git a/backend/package-lock.json b/backend/package-lock.json
+new file mode 100644
+--- /dev/null
++++ b/backend/package-lock.json
+@@ -0,0 +1,15 @@
++{
++  "name": "passiton-backend",
++  "version": "0.1.0",
++  "lockfileVersion": 3,
++  "requires": true,
++  "packages": {
++    "": {
++      "name": "passiton-backend",
++      "version": "0.1.0",
++      "engines": {
++        "node": ">=22.5"
++      }
++    }
++  }
++}
+diff --git a/backend/src/account-store.js b/backend/src/account-store.js
+new file mode 100644
+--- /dev/null
++++ b/backend/src/account-store.js
+@@ -0,0 +1,30 @@
++import { mkdirSync } from 'node:fs';
++import { dirname, resolve } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { DatabaseSync } from 'node:sqlite';
++
++const here = dirname(fileURLToPath(import.meta.url));
++const databaseDir = resolve(here, '../database');
++mkdirSync(databaseDir, { recursive: true });
++
++const databasePath = process.env.DATABASE_PATH || resolve(databaseDir, 'passiton.sqlite');
++const db = new DatabaseSync(databasePath);
++db.exec(`
++  CREATE TABLE IF NOT EXISTS users (
++    id TEXT PRIMARY KEY,
++    email TEXT NOT NULL UNIQUE,
++    password_hash TEXT NOT NULL,
++    created_at TEXT NOT NULL
++  );
++`);
++
++const insertUser = db.prepare(`
++  INSERT OR IGNORE INTO users (id, email, password_hash, created_at)
++  VALUES (?, ?, ?, ?)
++`);
++
++export function createUser({ id, email, passwordHash, createdAt }) {
++  const result = insertUser.run(id, email, passwordHash, createdAt);
++  if (result.changes !== 1) return null;
++  return { id, email, createdAt };
++}
+diff --git a/frontend/package.json b/frontend/package.json
+new file mode 100644
+--- /dev/null
++++ b/frontend/package.json
+@@ -0,0 +1,12 @@
++{
++  "name": "passiton-frontend",
++  "version": "0.1.0",
++  "private": true,
++  "type": "module",
++  "scripts": {
++    "dev": "node dev-server.js"
++  },
++  "engines": {
++    "node": ">=18"
++  }
++}
+diff --git a/backend/src/routes/accounts.js b/backend/src/routes/accounts.js
+--- a/backend/src/routes/accounts.js
++++ b/backend/src/routes/accounts.js
+@@ -1,7 +1,77 @@
+-import { notImplemented } from '../http.js';
+-
+-// US01: registrering, inloggning och behörighet.
+-// Ersätt med riktiga endpoint-handlers när denna funktion utvecklas.
+-export function accounts(request, response) {
+-  notImplemented(response, 'Kontohantering');
+-}
++import { promisify } from 'node:util';
++import { randomBytes, randomUUID, scrypt } from 'node:crypto';
++import { createUser } from '../account-store.js';
++import { sendJson } from '../http.js';
++
++const scryptAsync = promisify(scrypt);
++const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++
++function readJson(request) {
++  return new Promise((resolve, reject) => {
++    let body = '';
++    request.setEncoding('utf8');
++    request.on('data', chunk => {
++      body += chunk;
++      if (body.length > 16_384) reject(Object.assign(new Error('TOO_LARGE'), { status: 413 }));
++    });
++    request.on('end', () => {
++      try { resolve(JSON.parse(body || '{}')); }
++      catch { reject(Object.assign(new Error('INVALID_JSON'), { status: 400 })); }
++    });
++    request.on('error', reject);
++  });
++}
++
++function validate({ email, password, passwordConfirmation }) {
++  if (typeof email !== 'string' || !emailPattern.test(email.trim()) || email.trim().length > 254) {
++    return 'Ange en giltig e-postadress.';
++  }
++  if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
++    return 'Lösenordet måste vara mellan 8 och 128 tecken.';
++  }
++  if (!/[A-Za-zÅÄÖåäö]/.test(password) || !/\d/.test(password)) {
++    return 'Lösenordet måste innehålla både bokstav och siffra.';
++  }
++  if (password !== passwordConfirmation) return 'Lösenorden matchar inte.';
++  return '';
++}
++
++async function passwordHash(password) {
++  const salt = randomBytes(16);
++  const derived = await scryptAsync(password, salt, 64);
++  return `scrypt$${salt.toString('hex')}$${derived.toString('hex')}`;
++}
++
++async function register(request, response) {
++  const data = await readJson(request);
++  const problem = validate(data);
++  if (problem) return sendJson(response, 400, { error: 'VALIDATION_ERROR', message: problem });
++
++  const email = data.email.trim().toLowerCase();
++  const user = createUser({
++    id: randomUUID(),
++    email,
++    passwordHash: await passwordHash(data.password),
++    createdAt: new Date().toISOString(),
++  });
++
++  if (!user) return sendJson(response, 409, { error: 'EMAIL_EXISTS', message: 'Det finns redan ett konto med den e-postadressen.' });
++  sendJson(response, 201, { message: 'Kontot är skapat.', user });
++}
++
++export function accounts(request, response) {
++  const pathname = (request.url || '/').split('?')[0];
++  if (request.method === 'POST' && pathname === '/api/accounts/register') {
++    register(request, response).catch(error => {
++      if (!response.headersSent) {
++        const status = error.status || 500;
++        sendJson(response, status, {
++          error: status === 500 ? 'INTERNAL_ERROR' : error.message,
++          message: status === 500 ? 'Ett serverfel inträffade.' : 'Begäran kunde inte läsas.',
++        });
++      }
++    });
++    return;
++  }
++  sendJson(response, 404, { error: 'NOT_FOUND', message: 'Konto-endpointen finns inte.' });
++}
+diff --git a/docs/structure.md b/docs/structure.md
+--- a/docs/structure.md
++++ b/docs/structure.md
+@@ -1,31 +1,31 @@
+-# Struktur och user stories
+-
+-Underlag: det tidigare förslaget till krav och US01–US19. Tabellen visar ansvar och
+-nuvarande kodstatus; den ersätter inte kravdokumentets fullständiga acceptanskriterier.
+-
+-| User stories | Frontend | Backend | Status |
+-| --- | --- | --- | --- |
+-| US01 Konto | Ny kontovy läggs till vid implementation | routes/accounts.js | Återstår |
+-| US02 Identitetsverifiering | Verifieringsflöde läggs till vid implementation | routes/verification.js | Återstår |
+-| US03–US05 Lista, söka, filtrera/sortera | features/market.js | routes/listings.js | Frontenddemo finns |
+-| US06–US07 Detaljer och verifieringsinformation | features/product.js | routes/listings.js, routes/verification.js | Frontenddemo; ingen verklig verifiering |
+-| US08–US09 Köpa och få kod | features/product.js | routes/orders.js | Endast simulerat köp; kodleverans återstår |
+-| US10 Tidigare köp | features/dashboard.js | routes/orders.js | Lokal demohistorik |
+-| US11–US12 Annons och avgiftsberäkning | features/sell.js | routes/listings.js, routes/payments.js | Frontenddemo med 5 % avgift |
+-| US13–US14 Verifiering och annonsstatus | features/sell.js, features/dashboard.js | routes/verification.js, routes/listings.js | Verklig process återstår |
+-| US15 Ta bort annons (Could) | features/dashboard.js | routes/listings.js | Återstår |
+-| US16 Förstå tjänsten | index.html, befintliga informationsvyer | Inget eget serverområde | Informationsvyer finns |
+-| US17 Skydd mot dubbel försäljning | features/product.js | routes/orders.js och database/ | Återstår |
+-| US18–US19 Säker betalning och utbetalning | Köp- och säljarvyer | routes/payments.js, routes/orders.js och database/ | Återstår |
+-
+-## Gemensam frontendkod
+-
+-`app.js` startar och kopplar ihop funktionerna. `state.js` håller demotillstånd,
+-`storage.js` sparar demoköp och demoannonser, `utils.js` innehåller DOM- och
+-formateringshjälp, `ui.js` sköter navigation, meddelanden och köpindikatorn.
+-`data/cards.js` innehåller demopresentkort. CSS och HTML behåller nuvarande utseende.
+-
+-Skapa kontovyer och konkreta databasfiler när respektive funktion implementeras.
+-Dela vidare i controllers, services eller repositories först när verklig kod
+-behöver den ansvarsfördelningen. Konto och verifiering är kända krav, men får inte
+-låtsas vara klara genom att tomma frontendfiler läggs till.
++# Struktur och user stories
++
++Underlag: det tidigare förslaget till krav och US01–US19. Tabellen visar ansvar och
++nuvarande kodstatus; den ersätter inte kravdokumentets fullständiga acceptanskriterier.
++
++| User stories | Frontend | Backend | Status |
++| --- | --- | --- | --- |
++| US01 Konto | features/account.js | routes/accounts.js, account-store.js, SQLite | Implementerad |
++| US02 Identitetsverifiering | Verifieringsflöde läggs till vid implementation | routes/verification.js | Återstår |
++| US03–US05 Lista, söka, filtrera/sortera | features/market.js | routes/listings.js | Frontenddemo finns |
++| US06–US07 Detaljer och verifieringsinformation | features/product.js | routes/listings.js, routes/verification.js | Frontenddemo; ingen verklig verifiering |
++| US08–US09 Köpa och få kod | features/product.js | routes/orders.js | Endast simulerat köp; kodleverans återstår |
++| US10 Tidigare köp | features/dashboard.js | routes/orders.js | Lokal demohistorik |
++| US11–US12 Annons och avgiftsberäkning | features/sell.js | routes/listings.js, routes/payments.js | Frontenddemo med 5 % avgift |
++| US13–US14 Verifiering och annonsstatus | features/sell.js, features/dashboard.js | routes/verification.js, routes/listings.js | Verklig process återstår |
++| US15 Ta bort annons (Could) | features/dashboard.js | routes/listings.js | Återstår |
++| US16 Förstå tjänsten | index.html, befintliga informationsvyer | Inget eget serverområde | Informationsvyer finns |
++| US17 Skydd mot dubbel försäljning | features/product.js | routes/orders.js och database/ | Återstår |
++| US18–US19 Säker betalning och utbetalning | Köp- och säljarvyer | routes/payments.js, routes/orders.js och database/ | Återstår |
++
++## Gemensam frontendkod
++
++`app.js` startar och kopplar ihop funktionerna. `state.js` håller demotillstånd,
++`storage.js` sparar demoköp och demoannonser, `utils.js` innehåller DOM- och
++formateringshjälp, `ui.js` sköter navigation, meddelanden och köpindikatorn.
++`data/cards.js` innehåller demopresentkort. CSS och HTML behåller nuvarande utseende.
++
++US01 använder nu en kontovy, riktigt API-anrop och beständig SQLite-lagring. Övriga kontofunktioner som inloggning och identitetsverifiering återstår.
++Dela vidare i controllers, services eller repositories först när verklig kod
++behöver den ansvarsfördelningen. Konto och verifiering är kända krav, men får inte
++låtsas vara klara genom att tomma frontendfiler läggs till.
+diff --git a/frontend/css/styles.css b/frontend/css/styles.css
+--- a/frontend/css/styles.css
++++ b/frontend/css/styles.css
+@@ -1,57 +1,73 @@
+-:root{
+-  --text:#111311;
+-  --muted:#6c716d;
+-  --soft:#f6f7f5;
+-  --line:#dedfdb;
+-  --line-dark:#b9bdb8;
+-  --green:#0c5a43;
+-  --green-dark:#084532;
+-  --green-soft:#e9f4ee;
+-  --white:#fff;
+-  --max:1380px;
+-}
+-*{box-sizing:border-box}
+-html{scroll-behavior:smooth}
+-body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--text);background:#fff;font-size:15px;line-height:1.45}
+-button,input,select{font:inherit}
+-button{cursor:pointer}
+-svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+-.hidden{display:none!important}
+-.page-width{width:min(var(--max),calc(100% - 64px));margin:0 auto}
+-.view{display:none}.view.active{display:block}
+-
+-.site-header{position:sticky;top:0;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);z-index:50;border-bottom:1px solid transparent}
+-.header-inner{height:78px;width:min(var(--max),calc(100% - 64px));margin:auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;position:relative}
+-.header-links{display:flex;gap:28px}.header-links button,.wordmark,.header-actions button{background:none;border:0;color:var(--text)}
+-.header-links button{padding:10px 0;font-weight:600;font-size:13px}.header-links button:hover{text-decoration:underline;text-underline-offset:5px}
+-.wordmark{font-size:25px;font-weight:700;letter-spacing:-1px;padding:10px 18px}
+-.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:4px}.icon-btn{width:40px;height:40px;border-radius:50%!important;display:grid;place-items:center;position:relative}.icon-btn:hover{background:var(--soft)}.icon-btn svg{width:20px;height:20px}.bag-count{position:absolute;right:1px;top:1px;background:var(--green);color:#fff;font-size:9px;font-weight:700;border-radius:20px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px}
+-.header-search{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}.header-search-inner{height:64px;width:min(900px,calc(100% - 48px));margin:auto;display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center}.header-search svg{width:20px}.header-search input{border:0;outline:0;font-size:18px;width:100%}.header-search button{border:0;background:none;text-decoration:underline}
+-
+-.market-hero{padding:64px 0 52px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line)}
+-.kicker{text-transform:uppercase;font-weight:700;letter-spacing:.16em;font-size:11px;color:var(--green);display:block;margin-bottom:12px}.market-hero h1,.section-intro h1,.info-page h1{font-size:clamp(42px,5vw,72px);line-height:.98;letter-spacing:-.055em;margin:0 0 16px;font-weight:600}.market-hero p{font-size:18px;color:var(--muted);max-width:650px;margin:0}.text-arrow{border:0;background:none;font-weight:600;padding:14px 0;white-space:nowrap}.text-arrow span{display:inline-block;margin-left:10px;transition:.2s}.text-arrow:hover span{transform:translateX(5px)}
+-
+-.market-shell{display:grid;grid-template-columns:230px 1fr;gap:42px;padding:34px 0 92px}.filters{padding-right:20px}.filter-group{padding:8px 0 26px;border-bottom:1px solid var(--line);margin-bottom:18px}.filter-label,.filter-label-row{font-size:13px;font-weight:700;margin-bottom:12px}.filter-label-row{display:flex;justify-content:space-between}.tiny-link{border:0;background:none;color:var(--muted);font-size:12px;text-decoration:underline;padding:0}.filter-search{height:42px;border:1px solid var(--line-dark);display:flex;align-items:center;gap:8px;padding:0 11px}.filter-search svg{width:17px}.filter-search input{border:0;outline:0;width:100%;min-width:0}.check-list{display:grid;gap:10px}.check-list label{display:flex;align-items:center;gap:9px;color:#383c39;font-size:13px;cursor:pointer}.check-list input{appearance:none;width:15px;height:15px;border:1px solid #8d938e;margin:0;position:relative}.check-list input:checked{background:var(--green);border-color:var(--green)}.check-list input:checked:after{content:"";position:absolute;width:5px;height:8px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);left:4px;top:1px}.range-row{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:8px}.range-row strong{color:var(--text)}.range{width:100%;accent-color:var(--green)}.filter-note{display:flex;gap:10px;border:0;background:var(--soft);padding:15px;margin-top:26px}.filter-note svg{width:22px;flex:0 0 auto;color:var(--green)}.filter-note p{font-size:11px;color:var(--muted);margin:0}.filter-note strong{color:var(--text)}
+-.catalog-toolbar{height:48px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}.catalog-toolbar>div{display:flex;flex-direction:column}.catalog-toolbar strong{font-size:14px}.catalog-toolbar span{font-size:12px;color:var(--muted);margin-top:2px}.catalog-toolbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px}.catalog-toolbar select{border:0;border-bottom:1px solid var(--text);background:#fff;padding:4px 20px 5px 4px;font-size:12px;outline:none}
+-.product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px 22px}.product-card{cursor:pointer;min-width:0}.product-art{aspect-ratio:1.22/1;background:#f3f3f1;position:relative;overflow:hidden;margin-bottom:12px}.product-art:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 50%)}.brand-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-6deg);width:66%;height:44%;display:flex;align-items:center;justify-content:center;border-radius:5px;box-shadow:0 18px 26px rgba(0,0,0,.16);font-size:clamp(20px,2.2vw,38px);font-weight:700;letter-spacing:-1px}.product-art:after{content:"";position:absolute;width:58%;height:18%;background:rgba(0,0,0,.08);filter:blur(18px);bottom:8%;left:23%;border-radius:50%}.brand-ikea .brand-card{background:#0757a7;color:#ffd925}.brand-zalando .brand-card{background:#f0ede9;color:#111}.brand-zalando .brand-card:before{content:"▶";color:#ff6500;font-size:.55em;margin-right:8px}.brand-hm .brand-card{background:#fff;color:#d90020;font-family:Georgia,serif;font-style:italic}.brand-elgiganten .brand-card{background:#071d3b;color:#fff}.brand-stadium .brand-card{background:#111;color:#fff;text-transform:lowercase}.brand-ica .brand-card{background:#fff;color:#e50046}.brand-ahlens .brand-card{background:#c51e2d;color:#fff}.brand-sj .brand-card{background:#e6ece6;color:#111}.heart-float{position:absolute;right:12px;top:12px;border:0;background:#fff;width:34px;height:34px;border-radius:50%;font-size:18px;display:grid;place-items:center;z-index:2}.product-meta{display:flex;justify-content:space-between;gap:12px}.product-meta h3{font-size:14px;margin:0 0 4px}.product-meta p{margin:0;color:var(--muted);font-size:12px}.product-meta-price{text-align:right;white-space:nowrap}.product-meta-price strong{display:block;font-size:14px}.product-meta-price span{font-size:11px;color:var(--green);font-weight:600}.empty-state{padding:80px 20px;text-align:center;color:var(--muted);border:1px solid var(--line)}
+-
+-.product-page{padding:25px 0 90px}.back-link{display:none}.breadcrumbs{font-size:12px;color:#626862;margin:10px 0 24px}.breadcrumbs span{margin:0 10px;color:#a2a7a2}.detail-layout{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(360px,.9fr);gap:48px;align-items:start}.gallery{display:grid;grid-template-columns:1.1fr 1fr;grid-template-rows:repeat(2,330px);gap:8px}.gallery-shot{position:relative;overflow:hidden;background:#f4f3ef}.gallery-shot:first-child{grid-row:1/3}.scene-wall{position:absolute;inset:0 0 42%;background:#ecebe6}.scene-floor{position:absolute;inset:58% 0 0;background:linear-gradient(90deg,#d9c6a6,#eee0c4)}.scene-plant{position:absolute;width:120px;height:190px;right:5%;top:11%;background:radial-gradient(ellipse at 50% 80%,#4d7149 0 11%,transparent 12%),radial-gradient(ellipse at 30% 58%,#5f8357 0 16%,transparent 17%),radial-gradient(ellipse at 64% 45%,#3c6b40 0 15%,transparent 16%),radial-gradient(ellipse at 46% 24%,#6f8e62 0 14%,transparent 15%)}.scene-table{position:absolute;width:80%;height:42%;left:10%;bottom:3%;background:#cda86f;transform:perspective(700px) rotateX(65deg);transform-origin:bottom}.scene-card{position:absolute;width:48%;height:26%;left:24%;top:40%;z-index:4;display:flex;align-items:center;justify-content:center;border-radius:4px;font-weight:700;font-size:clamp(22px,3vw,48px);box-shadow:0 18px 32px rgba(0,0,0,.2);transform:rotate(-5deg)}.gallery-shot.small .scene-card{width:56%;height:30%;left:22%;top:35%;font-size:28px}.gallery-shot.store:before{content:"";position:absolute;inset:25% 5% 5%;background:#0a58a8}.gallery-shot.store:after{content:attr(data-brand);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:52px;font-weight:700;color:#ffd926}.gallery-shot.abstract{background:linear-gradient(135deg,#f4f2ed 0 55%,#ddd8cf 55%)}.gallery-shot.abstract:before{content:"";position:absolute;width:55%;height:48%;left:14%;top:22%;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.09);transform:rotate(-7deg)}.gallery-shot.abstract:after{content:"Pass it on.";position:absolute;left:24%;top:43%;font-size:30px;font-weight:600;letter-spacing:-1px;transform:rotate(-7deg)}
+-.about-card{padding:42px 0 0}.about-card h2{font-size:21px;margin:0 0 14px}.about-card>p{margin:0;color:var(--muted);max-width:760px}.fact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:38px}.fact-item{display:flex;gap:12px}.fact-item svg{width:28px;height:28px;flex:0 0 auto}.fact-item div{display:flex;flex-direction:column;gap:4px}.fact-item strong{font-size:13px}.fact-item span{font-size:12px;color:var(--muted)}
+-.detail-panel{padding-top:0;position:sticky;top:104px}.detail-topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.verified-pill{font-size:12px;font-weight:600;color:#24624c;background:var(--green-soft);padding:7px 10px}.verified-pill span{background:#2b9a68;color:#fff;width:15px;height:15px;border-radius:50%;display:inline-grid;place-items:center;font-size:9px;margin-right:4px}.detail-mini-actions{display:flex;gap:12px}.detail-mini-actions button{border:0;background:none;font-size:12px}.detail-panel h1{font-size:36px;letter-spacing:-.035em;margin:0 0 3px}.detail-panel>p{margin:0;color:var(--muted)}.price-block{display:grid;grid-template-columns:1fr 1px 1fr auto;gap:24px;align-items:end;margin:34px 0 26px;padding-bottom:26px;border-bottom:1px solid var(--line)}.price-block>div:not(.price-divider){display:flex;flex-direction:column;gap:3px}.price-block span{font-size:12px;color:var(--muted)}.price-block strong{font-size:25px}.price-block>div:first-child strong{text-decoration:line-through;color:#6e736f}.price-divider{height:52px;background:var(--line)}.save-badge{background:#d8f0df!important;color:#174f37!important;font-weight:600;padding:10px 13px;border-radius:5px;align-self:center;white-space:nowrap}.info-rows{border-bottom:1px solid var(--line)}.info-row{min-height:64px;border-top:1px solid var(--line);display:grid;grid-template-columns:24px 110px 1fr auto;align-items:center;gap:12px;font-size:13px}.info-row svg{width:22px;height:22px}.info-row strong{font-size:12px}.info-row span{color:#292d2a}.info-row small{display:block;color:var(--muted);margin-top:3px;font-size:11px}.info-row em{font-style:normal;color:#1b704e;font-size:11px;margin-left:8px}.chev{font-size:24px!important;color:#555!important}.primary-cta{width:100%;border:0;background:var(--green);color:white;padding:16px 20px;margin-top:22px;font-weight:600;transition:.2s}.primary-cta:hover{background:var(--green-dark)}.secondary-cta{width:100%;border:1px solid var(--line-dark);background:#fff;color:var(--text);padding:14px 20px;margin-top:10px;font-weight:600}.protection-box{background:#eef7f1;margin-top:18px;padding:17px;display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:start}.protection-box svg{width:28px;color:var(--green)}.protection-box strong{font-size:13px}.protection-box p{font-size:11px;color:var(--muted);margin:3px 0 0}.protection-box button{border:0;background:none;color:var(--green);font-size:11px;text-decoration:underline}.sell-similar-box{margin-top:18px;background:var(--soft);padding:18px;display:grid;grid-template-columns:1fr 180px;gap:20px}.sell-similar-box>div>strong{font-size:13px}.sell-similar-box p{font-size:11px;color:var(--muted);margin:3px 0 0}.mini-calc{font-size:11px}.mini-calc div{display:flex;justify-content:space-between;padding:3px 0}.mini-calc .mini-total{border-top:1px solid var(--line);margin-top:5px;padding-top:8px;font-size:13px}.mini-calc button{width:100%;border:1px solid #87968d;background:white;margin-top:10px;padding:7px;font-weight:600}
+-
+-.sell-page,.dashboard-page{padding:64px 0 100px}.section-intro{max-width:780px;margin-bottom:54px}.section-intro h1{font-size:58px}.section-intro p{font-size:17px;color:var(--muted);max-width:650px}.sell-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(330px,.7fr);gap:70px;align-items:start}.sell-form{border-top:1px solid var(--text)}.form-section{display:grid;grid-template-columns:90px 1fr;gap:0 24px;padding:28px 0;border-bottom:1px solid var(--line)}.form-step{font-size:12px;color:var(--muted);grid-row:1/5}.form-section h2{font-size:20px;margin:0 0 22px}.form-section label{display:block;font-size:12px;font-weight:600;margin-bottom:18px}.form-section input,.form-section select{display:block;width:100%;height:48px;margin-top:7px;border:1px solid var(--line-dark);border-radius:0;background:#fff;padding:0 13px;outline:0}.form-section input:focus,.form-section select:focus{border-color:var(--text)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.money-input{position:relative}.money-input input{padding-right:45px}.money-input span{position:absolute;right:14px;top:22px;color:var(--muted);font-size:12px}.field-note{font-weight:400;color:var(--muted)}.confirm-line{display:flex!important;align-items:flex-start;gap:10px;font-weight:400!important;color:var(--muted)}.confirm-line input{width:16px!important;height:16px!important;margin:2px 0 0!important;accent-color:var(--green)}.sell-form>.primary-cta{max-width:360px}.preview-sticky{position:sticky;top:108px;border:1px solid var(--line);padding:22px}.preview-label{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-bottom:14px}.seller-card-preview{height:220px;background:#f1f2ef;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}.seller-card-preview:before{content:"";position:absolute;width:66%;height:48%;background:#0757a7;transform:rotate(-7deg);box-shadow:0 18px 30px rgba(0,0,0,.16)}.seller-card-preview.brand-zalando:before{background:#f0ede9}.seller-card-preview.brand-hm:before{background:#fff}.seller-card-preview.brand-elgiganten:before{background:#071d3b}.seller-card-preview.brand-stadium:before{background:#111}.seller-card-preview.brand-ica:before{background:#fff}.seller-card-preview.brand-ahlens:before{background:#c51e2d}.seller-card-preview.brand-sj:before{background:#dfe8df}.preview-brand,.preview-caption{position:relative;z-index:2}.preview-brand{font-size:34px;font-weight:700;color:#ffd925}.brand-zalando .preview-brand{color:#111}.brand-hm .preview-brand{color:#d90020;font-family:Georgia,serif;font-style:italic}.brand-elgiganten .preview-brand,.brand-stadium .preview-brand,.brand-ahlens .preview-brand{color:#fff}.brand-ica .preview-brand{color:#e50046}.brand-sj .preview-brand{color:#111}.preview-caption{font-size:9px;color:#fff;margin-top:3px;letter-spacing:.18em}.brand-zalando .preview-caption,.brand-hm .preview-caption,.brand-ica .preview-caption,.brand-sj .preview-caption{color:#4c504d}.preview-title-row{display:flex;justify-content:space-between;margin-top:15px}.preview-title-row strong{font-size:14px}.preview-title-row span{font-size:11px;color:var(--green);font-weight:600}.preview-prices{display:flex;justify-content:space-between;align-items:end;margin-top:9px;font-size:12px;color:var(--muted)}.preview-prices strong{font-size:18px;color:var(--text)}.payout-summary{margin-top:24px;border-top:1px solid var(--line);padding-top:18px}.payout-summary h3{font-size:13px;margin:0 0 10px}.payout-summary div{display:flex;justify-content:space-between;font-size:12px;padding:4px 0}.payout-summary .payout-total{border-top:1px solid var(--line);margin-top:7px;padding-top:11px;font-size:15px}.preview-hint{font-size:11px;color:var(--muted);margin:14px 0 0}
+-
+-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--text);border-bottom:1px solid var(--line);margin-bottom:54px}.stats-row div{padding:24px 22px 24px 0;border-right:1px solid var(--line);display:flex;flex-direction:column}.stats-row div+div{padding-left:22px}.stats-row span{font-size:12px;color:var(--muted)}.stats-row strong{font-size:34px;margin-top:4px}.dashboard-columns{display:grid;grid-template-columns:1fr 1fr;gap:40px}.dash-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--text);padding-bottom:10px}.dash-head h2{font-size:18px;margin:0}.dash-head span{font-size:11px;color:var(--muted)}.activity-item{display:grid;grid-template-columns:54px 1fr auto;gap:14px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}.activity-brand{height:54px;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:12px}.activity-copy strong{display:block;font-size:13px}.activity-copy span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.activity-amount{text-align:right}.activity-amount strong{display:block;font-size:13px}.activity-amount span{font-size:10px;color:var(--green)}.empty-mini{padding:32px 0;color:var(--muted);font-size:13px}
+-
+-.info-page{padding:100px 0 130px}.info-narrow{max-width:1040px}.info-page h1{max-width:830px}.large-copy{font-size:22px;line-height:1.55;color:var(--muted);max-width:800px}.info-steps{margin-top:70px;border-top:1px solid var(--text)}.info-steps article{display:grid;grid-template-columns:100px 320px 1fr;gap:25px;padding:28px 0;border-bottom:1px solid var(--line)}.info-steps article>span{font-size:12px;color:var(--muted)}.info-steps h2{font-size:18px;margin:0}.info-steps p{margin:0;color:var(--muted)}.inline-cta{width:auto;min-width:200px}.about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);margin-top:64px;border:1px solid var(--line)}.about-grid article{background:#fff;padding:30px}.about-grid strong{font-size:17px}.about-grid p{color:var(--muted);font-size:13px}
+-
+-.site-footer{border-top:1px solid var(--line);padding:28px 0 34px}.footer-inner{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;font-size:11px;color:var(--muted)}.footer-inner strong{font-size:16px;color:var(--text)}.footer-inner span:nth-child(2){text-align:center}.footer-inner span:last-child{text-align:right}
+-.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#171a18;color:#fff;padding:12px 18px;font-size:12px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.15)}.mobile-nav{display:none}
+-
+-@media (max-width:1050px){
+-  .page-width,.header-inner{width:min(100% - 36px,var(--max))}.header-links{gap:16px}.market-shell{grid-template-columns:190px 1fr;gap:24px}.product-grid{grid-template-columns:repeat(2,1fr)}.detail-layout{grid-template-columns:1.2fr .9fr;gap:26px}.gallery{grid-template-rows:repeat(2,260px)}.price-block{gap:12px}.detail-panel h1{font-size:30px}.sell-layout{gap:36px}.info-row{grid-template-columns:22px 88px 1fr auto}
+-}
+-@media (max-width:760px){
+-  body{padding-bottom:64px}.site-header{position:sticky}.header-inner{height:62px;grid-template-columns:1fr auto}.header-links{display:none}.wordmark{justify-self:start;padding-left:0}.header-actions{grid-column:2}.header-actions .icon-btn:nth-child(2),.header-actions .icon-btn:nth-child(3){display:none}.page-width{width:calc(100% - 28px)}.market-hero{padding:38px 0 32px;display:block}.market-hero h1,.section-intro h1,.info-page h1{font-size:42px}.market-hero p{font-size:15px}.text-arrow{margin-top:14px}.market-shell{display:block;padding-top:20px}.filters{padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}.filter-group{display:none}.filter-group:first-child{display:block;grid-column:1/3;border:0;padding:0;margin:0}.catalog-toolbar{margin-top:10px}.product-grid{grid-template-columns:1fr 1fr;gap:24px 10px}.product-meta{display:block}.product-meta-price{text-align:left;margin-top:5px}.product-art{margin-bottom:8px}.brand-card{width:72%;height:46%;font-size:22px}.breadcrumbs{display:none}.back-link{display:flex;align-items:center;gap:4px;border:0;background:none;padding:4px 0 16px}.back-link svg{width:18px}.product-page{padding-top:16px}.detail-layout{display:block}.gallery{grid-template-columns:1fr;grid-template-rows:430px}.gallery-shot{display:none}.gallery-shot:first-child{display:block;grid-row:auto}.detail-panel{position:static;padding-top:28px}.detail-topline{margin-bottom:14px}.detail-mini-actions{display:none}.detail-panel h1{font-size:30px}.price-block{grid-template-columns:1fr 1px 1fr auto}.about-card{padding-top:36px}.fact-grid{grid-template-columns:1fr;gap:18px}.sell-page,.dashboard-page{padding:40px 0 80px}.section-intro{margin-bottom:34px}.sell-layout{display:block}.seller-preview{margin-top:28px}.preview-sticky{position:static}.form-section{grid-template-columns:44px 1fr;gap:0 10px}.form-row{grid-template-columns:1fr}.dashboard-columns{grid-template-columns:1fr;gap:38px}.stats-row{grid-template-columns:1fr}.stats-row div{border-right:0;border-bottom:1px solid var(--line);padding:18px 0!important}.info-page{padding:55px 0 90px}.large-copy{font-size:18px}.info-steps article{grid-template-columns:42px 1fr;gap:8px}.info-steps h2{grid-column:2}.info-steps p{grid-column:2}.about-grid{grid-template-columns:1fr}.footer-inner{grid-template-columns:1fr;gap:7px;text-align:left}.footer-inner span:nth-child(2),.footer-inner span:last-child{text-align:left}.site-footer{padding-bottom:84px}.mobile-nav{display:grid;position:fixed;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid var(--line);grid-template-columns:repeat(3,1fr);z-index:60}.mobile-nav button{border:0;background:none;font-size:10px;font-weight:600}.mobile-nav span{display:block;font-size:18px;margin-bottom:1px}.toast{bottom:78px;left:14px;right:14px;transform:none;text-align:center}.protection-box{grid-template-columns:28px 1fr}.protection-box button{display:none}.sell-similar-box{grid-template-columns:1fr}.header-search-inner{width:calc(100% - 28px)}
+-}
+-@media (max-width:430px){.product-grid{grid-template-columns:1fr}.gallery{grid-template-rows:330px}.price-block{gap:10px}.save-badge{padding:8px;font-size:11px}.detail-panel h1{font-size:27px}.market-hero h1,.section-intro h1,.info-page h1{font-size:36px}}
++:root{
++  --text:#111311;
++  --muted:#6c716d;
++  --soft:#f6f7f5;
++  --line:#dedfdb;
++  --line-dark:#b9bdb8;
++  --green:#0c5a43;
++  --green-dark:#084532;
++  --green-soft:#e9f4ee;
++  --white:#fff;
++  --max:1380px;
++}
++*{box-sizing:border-box}
++html{scroll-behavior:smooth}
++body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--text);background:#fff;font-size:15px;line-height:1.45}
++button,input,select{font:inherit}
++button{cursor:pointer}
++svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
++.hidden{display:none!important}
++.page-width{width:min(var(--max),calc(100% - 64px));margin:0 auto}
++.view{display:none}.view.active{display:block}
++
++.site-header{position:sticky;top:0;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);z-index:50;border-bottom:1px solid transparent}
++.header-inner{height:78px;width:min(var(--max),calc(100% - 64px));margin:auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;position:relative}
++.header-links{display:flex;gap:28px}.header-links button,.wordmark,.header-actions button{background:none;border:0;color:var(--text)}
++.header-links button{padding:10px 0;font-weight:600;font-size:13px}.header-links button:hover{text-decoration:underline;text-underline-offset:5px}
++.wordmark{font-size:25px;font-weight:700;letter-spacing:-1px;padding:10px 18px}
++.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:4px}.icon-btn{width:40px;height:40px;border-radius:50%!important;display:grid;place-items:center;position:relative}.icon-btn:hover{background:var(--soft)}.icon-btn svg{width:20px;height:20px}.bag-count{position:absolute;right:1px;top:1px;background:var(--green);color:#fff;font-size:9px;font-weight:700;border-radius:20px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px}
++.header-search{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}.header-search-inner{height:64px;width:min(900px,calc(100% - 48px));margin:auto;display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center}.header-search svg{width:20px}.header-search input{border:0;outline:0;font-size:18px;width:100%}.header-search button{border:0;background:none;text-decoration:underline}
++
++.market-hero{padding:64px 0 52px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line)}
++.kicker{text-transform:uppercase;font-weight:700;letter-spacing:.16em;font-size:11px;color:var(--green);display:block;margin-bottom:12px}.market-hero h1,.section-intro h1,.info-page h1{font-size:clamp(42px,5vw,72px);line-height:.98;letter-spacing:-.055em;margin:0 0 16px;font-weight:600}.market-hero p{font-size:18px;color:var(--muted);max-width:650px;margin:0}.text-arrow{border:0;background:none;font-weight:600;padding:14px 0;white-space:nowrap}.text-arrow span{display:inline-block;margin-left:10px;transition:.2s}.text-arrow:hover span{transform:translateX(5px)}
++
++.market-shell{display:grid;grid-template-columns:230px 1fr;gap:42px;padding:34px 0 92px}.filters{padding-right:20px}.filter-group{padding:8px 0 26px;border-bottom:1px solid var(--line);margin-bottom:18px}.filter-label,.filter-label-row{font-size:13px;font-weight:700;margin-bottom:12px}.filter-label-row{display:flex;justify-content:space-between}.tiny-link{border:0;background:none;color:var(--muted);font-size:12px;text-decoration:underline;padding:0}.filter-search{height:42px;border:1px solid var(--line-dark);display:flex;align-items:center;gap:8px;padding:0 11px}.filter-search svg{width:17px}.filter-search input{border:0;outline:0;width:100%;min-width:0}.check-list{display:grid;gap:10px}.check-list label{display:flex;align-items:center;gap:9px;color:#383c39;font-size:13px;cursor:pointer}.check-list input{appearance:none;width:15px;height:15px;border:1px solid #8d938e;margin:0;position:relative}.check-list input:checked{background:var(--green);border-color:var(--green)}.check-list input:checked:after{content:"";position:absolute;width:5px;height:8px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);left:4px;top:1px}.range-row{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:8px}.range-row strong{color:var(--text)}.range{width:100%;accent-color:var(--green)}.filter-note{display:flex;gap:10px;border:0;background:var(--soft);padding:15px;margin-top:26px}.filter-note svg{width:22px;flex:0 0 auto;color:var(--green)}.filter-note p{font-size:11px;color:var(--muted);margin:0}.filter-note strong{color:var(--text)}
++.catalog-toolbar{height:48px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}.catalog-toolbar>div{display:flex;flex-direction:column}.catalog-toolbar strong{font-size:14px}.catalog-toolbar span{font-size:12px;color:var(--muted);margin-top:2px}.catalog-toolbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px}.catalog-toolbar select{border:0;border-bottom:1px solid var(--text);background:#fff;padding:4px 20px 5px 4px;font-size:12px;outline:none}
++.product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px 22px}.product-card{cursor:pointer;min-width:0}.product-art{aspect-ratio:1.22/1;background:#f3f3f1;position:relative;overflow:hidden;margin-bottom:12px}.product-art:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 50%)}.brand-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-6deg);width:66%;height:44%;display:flex;align-items:center;justify-content:center;border-radius:5px;box-shadow:0 18px 26px rgba(0,0,0,.16);font-size:clamp(20px,2.2vw,38px);font-weight:700;letter-spacing:-1px}.product-art:after{content:"";position:absolute;width:58%;height:18%;background:rgba(0,0,0,.08);filter:blur(18px);bottom:8%;left:23%;border-radius:50%}.brand-ikea .brand-card{background:#0757a7;color:#ffd925}.brand-zalando .brand-card{background:#f0ede9;color:#111}.brand-zalando .brand-card:before{content:"▶";color:#ff6500;font-size:.55em;margin-right:8px}.brand-hm .brand-card{background:#fff;color:#d90020;font-family:Georgia,serif;font-style:italic}.brand-elgiganten .brand-card{background:#071d3b;color:#fff}.brand-stadium .brand-card{background:#111;color:#fff;text-transform:lowercase}.brand-ica .brand-card{background:#fff;color:#e50046}.brand-ahlens .brand-card{background:#c51e2d;color:#fff}.brand-sj .brand-card{background:#e6ece6;color:#111}.heart-float{position:absolute;right:12px;top:12px;border:0;background:#fff;width:34px;height:34px;border-radius:50%;font-size:18px;display:grid;place-items:center;z-index:2}.product-meta{display:flex;justify-content:space-between;gap:12px}.product-meta h3{font-size:14px;margin:0 0 4px}.product-meta p{margin:0;color:var(--muted);font-size:12px}.product-meta-price{text-align:right;white-space:nowrap}.product-meta-price strong{display:block;font-size:14px}.product-meta-price span{font-size:11px;color:var(--green);font-weight:600}.empty-state{padding:80px 20px;text-align:center;color:var(--muted);border:1px solid var(--line)}
++
++.product-page{padding:25px 0 90px}.back-link{display:none}.breadcrumbs{font-size:12px;color:#626862;margin:10px 0 24px}.breadcrumbs span{margin:0 10px;color:#a2a7a2}.detail-layout{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(360px,.9fr);gap:48px;align-items:start}.gallery{display:grid;grid-template-columns:1.1fr 1fr;grid-template-rows:repeat(2,330px);gap:8px}.gallery-shot{position:relative;overflow:hidden;background:#f4f3ef}.gallery-shot:first-child{grid-row:1/3}.scene-wall{position:absolute;inset:0 0 42%;background:#ecebe6}.scene-floor{position:absolute;inset:58% 0 0;background:linear-gradient(90deg,#d9c6a6,#eee0c4)}.scene-plant{position:absolute;width:120px;height:190px;right:5%;top:11%;background:radial-gradient(ellipse at 50% 80%,#4d7149 0 11%,transparent 12%),radial-gradient(ellipse at 30% 58%,#5f8357 0 16%,transparent 17%),radial-gradient(ellipse at 64% 45%,#3c6b40 0 15%,transparent 16%),radial-gradient(ellipse at 46% 24%,#6f8e62 0 14%,transparent 15%)}.scene-table{position:absolute;width:80%;height:42%;left:10%;bottom:3%;background:#cda86f;transform:perspective(700px) rotateX(65deg);transform-origin:bottom}.scene-card{position:absolute;width:48%;height:26%;left:24%;top:40%;z-index:4;display:flex;align-items:center;justify-content:center;border-radius:4px;font-weight:700;font-size:clamp(22px,3vw,48px);box-shadow:0 18px 32px rgba(0,0,0,.2);transform:rotate(-5deg)}.gallery-shot.small .scene-card{width:56%;height:30%;left:22%;top:35%;font-size:28px}.gallery-shot.store:before{content:"";position:absolute;inset:25% 5% 5%;background:#0a58a8}.gallery-shot.store:after{content:attr(data-brand);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:52px;font-weight:700;color:#ffd926}.gallery-shot.abstract{background:linear-gradient(135deg,#f4f2ed 0 55%,#ddd8cf 55%)}.gallery-shot.abstract:before{content:"";position:absolute;width:55%;height:48%;left:14%;top:22%;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.09);transform:rotate(-7deg)}.gallery-shot.abstract:after{content:"Pass it on.";position:absolute;left:24%;top:43%;font-size:30px;font-weight:600;letter-spacing:-1px;transform:rotate(-7deg)}
++.about-card{padding:42px 0 0}.about-card h2{font-size:21px;margin:0 0 14px}.about-card>p{margin:0;color:var(--muted);max-width:760px}.fact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:38px}.fact-item{display:flex;gap:12px}.fact-item svg{width:28px;height:28px;flex:0 0 auto}.fact-item div{display:flex;flex-direction:column;gap:4px}.fact-item strong{font-size:13px}.fact-item span{font-size:12px;color:var(--muted)}
++.detail-panel{padding-top:0;position:sticky;top:104px}.detail-topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.verified-pill{font-size:12px;font-weight:600;color:#24624c;background:var(--green-soft);padding:7px 10px}.verified-pill span{background:#2b9a68;color:#fff;width:15px;height:15px;border-radius:50%;display:inline-grid;place-items:center;font-size:9px;margin-right:4px}.detail-mini-actions{display:flex;gap:12px}.detail-mini-actions button{border:0;background:none;font-size:12px}.detail-panel h1{font-size:36px;letter-spacing:-.035em;margin:0 0 3px}.detail-panel>p{margin:0;color:var(--muted)}.price-block{display:grid;grid-template-columns:1fr 1px 1fr auto;gap:24px;align-items:end;margin:34px 0 26px;padding-bottom:26px;border-bottom:1px solid var(--line)}.price-block>div:not(.price-divider){display:flex;flex-direction:column;gap:3px}.price-block span{font-size:12px;color:var(--muted)}.price-block strong{font-size:25px}.price-block>div:first-child strong{text-decoration:line-through;color:#6e736f}.price-divider{height:52px;background:var(--line)}.save-badge{background:#d8f0df!important;color:#174f37!important;font-weight:600;padding:10px 13px;border-radius:5px;align-self:center;white-space:nowrap}.info-rows{border-bottom:1px solid var(--line)}.info-row{min-height:64px;border-top:1px solid var(--line);display:grid;grid-template-columns:24px 110px 1fr auto;align-items:center;gap:12px;font-size:13px}.info-row svg{width:22px;height:22px}.info-row strong{font-size:12px}.info-row span{color:#292d2a}.info-row small{display:block;color:var(--muted);margin-top:3px;font-size:11px}.info-row em{font-style:normal;color:#1b704e;font-size:11px;margin-left:8px}.chev{font-size:24px!important;color:#555!important}.primary-cta{width:100%;border:0;background:var(--green);color:white;padding:16px 20px;margin-top:22px;font-weight:600;transition:.2s}.primary-cta:hover{background:var(--green-dark)}.secondary-cta{width:100%;border:1px solid var(--line-dark);background:#fff;color:var(--text);padding:14px 20px;margin-top:10px;font-weight:600}.protection-box{background:#eef7f1;margin-top:18px;padding:17px;display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:start}.protection-box svg{width:28px;color:var(--green)}.protection-box strong{font-size:13px}.protection-box p{font-size:11px;color:var(--muted);margin:3px 0 0}.protection-box button{border:0;background:none;color:var(--green);font-size:11px;text-decoration:underline}.sell-similar-box{margin-top:18px;background:var(--soft);padding:18px;display:grid;grid-template-columns:1fr 180px;gap:20px}.sell-similar-box>div>strong{font-size:13px}.sell-similar-box p{font-size:11px;color:var(--muted);margin:3px 0 0}.mini-calc{font-size:11px}.mini-calc div{display:flex;justify-content:space-between;padding:3px 0}.mini-calc .mini-total{border-top:1px solid var(--line);margin-top:5px;padding-top:8px;font-size:13px}.mini-calc button{width:100%;border:1px solid #87968d;background:white;margin-top:10px;padding:7px;font-weight:600}
++
++.sell-page,.dashboard-page{padding:64px 0 100px}.section-intro{max-width:780px;margin-bottom:54px}.section-intro h1{font-size:58px}.section-intro p{font-size:17px;color:var(--muted);max-width:650px}.sell-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(330px,.7fr);gap:70px;align-items:start}.sell-form{border-top:1px solid var(--text)}.form-section{display:grid;grid-template-columns:90px 1fr;gap:0 24px;padding:28px 0;border-bottom:1px solid var(--line)}.form-step{font-size:12px;color:var(--muted);grid-row:1/5}.form-section h2{font-size:20px;margin:0 0 22px}.form-section label{display:block;font-size:12px;font-weight:600;margin-bottom:18px}.form-section input,.form-section select{display:block;width:100%;height:48px;margin-top:7px;border:1px solid var(--line-dark);border-radius:0;background:#fff;padding:0 13px;outline:0}.form-section input:focus,.form-section select:focus{border-color:var(--text)}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.money-input{position:relative}.money-input input{padding-right:45px}.money-input span{position:absolute;right:14px;top:22px;color:var(--muted);font-size:12px}.field-note{font-weight:400;color:var(--muted)}.confirm-line{display:flex!important;align-items:flex-start;gap:10px;font-weight:400!important;color:var(--muted)}.confirm-line input{width:16px!important;height:16px!important;margin:2px 0 0!important;accent-color:var(--green)}.sell-form>.primary-cta{max-width:360px}.preview-sticky{position:sticky;top:108px;border:1px solid var(--line);padding:22px}.preview-label{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-bottom:14px}.seller-card-preview{height:220px;background:#f1f2ef;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}.seller-card-preview:before{content:"";position:absolute;width:66%;height:48%;background:#0757a7;transform:rotate(-7deg);box-shadow:0 18px 30px rgba(0,0,0,.16)}.seller-card-preview.brand-zalando:before{background:#f0ede9}.seller-card-preview.brand-hm:before{background:#fff}.seller-card-preview.brand-elgiganten:before{background:#071d3b}.seller-card-preview.brand-stadium:before{background:#111}.seller-card-preview.brand-ica:before{background:#fff}.seller-card-preview.brand-ahlens:before{background:#c51e2d}.seller-card-preview.brand-sj:before{background:#dfe8df}.preview-brand,.preview-caption{position:relative;z-index:2}.preview-brand{font-size:34px;font-weight:700;color:#ffd925}.brand-zalando .preview-brand{color:#111}.brand-hm .preview-brand{color:#d90020;font-family:Georgia,serif;font-style:italic}.brand-elgiganten .preview-brand,.brand-stadium .preview-brand,.brand-ahlens .preview-brand{color:#fff}.brand-ica .preview-brand{color:#e50046}.brand-sj .preview-brand{color:#111}.preview-caption{font-size:9px;color:#fff;margin-top:3px;letter-spacing:.18em}.brand-zalando .preview-caption,.brand-hm .preview-caption,.brand-ica .preview-caption,.brand-sj .preview-caption{color:#4c504d}.preview-title-row{display:flex;justify-content:space-between;margin-top:15px}.preview-title-row strong{font-size:14px}.preview-title-row span{font-size:11px;color:var(--green);font-weight:600}.preview-prices{display:flex;justify-content:space-between;align-items:end;margin-top:9px;font-size:12px;color:var(--muted)}.preview-prices strong{font-size:18px;color:var(--text)}.payout-summary{margin-top:24px;border-top:1px solid var(--line);padding-top:18px}.payout-summary h3{font-size:13px;margin:0 0 10px}.payout-summary div{display:flex;justify-content:space-between;font-size:12px;padding:4px 0}.payout-summary .payout-total{border-top:1px solid var(--line);margin-top:7px;padding-top:11px;font-size:15px}.preview-hint{font-size:11px;color:var(--muted);margin:14px 0 0}
++
++.stats-row{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--text);border-bottom:1px solid var(--line);margin-bottom:54px}.stats-row div{padding:24px 22px 24px 0;border-right:1px solid var(--line);display:flex;flex-direction:column}.stats-row div+div{padding-left:22px}.stats-row span{font-size:12px;color:var(--muted)}.stats-row strong{font-size:34px;margin-top:4px}.dashboard-columns{display:grid;grid-template-columns:1fr 1fr;gap:40px}.dash-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--text);padding-bottom:10px}.dash-head h2{font-size:18px;margin:0}.dash-head span{font-size:11px;color:var(--muted)}.activity-item{display:grid;grid-template-columns:54px 1fr auto;gap:14px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}.activity-brand{height:54px;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:12px}.activity-copy strong{display:block;font-size:13px}.activity-copy span{display:block;font-size:11px;color:var(--muted);margin-top:3px}.activity-amount{text-align:right}.activity-amount strong{display:block;font-size:13px}.activity-amount span{font-size:10px;color:var(--green)}.empty-mini{padding:32px 0;color:var(--muted);font-size:13px}
++
++.info-page{padding:100px 0 130px}.info-narrow{max-width:1040px}.info-page h1{max-width:830px}.large-copy{font-size:22px;line-height:1.55;color:var(--muted);max-width:800px}.info-steps{margin-top:70px;border-top:1px solid var(--text)}.info-steps article{display:grid;grid-template-columns:100px 320px 1fr;gap:25px;padding:28px 0;border-bottom:1px solid var(--line)}.info-steps article>span{font-size:12px;color:var(--muted)}.info-steps h2{font-size:18px;margin:0}.info-steps p{margin:0;color:var(--muted)}.inline-cta{width:auto;min-width:200px}.about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);margin-top:64px;border:1px solid var(--line)}.about-grid article{background:#fff;padding:30px}.about-grid strong{font-size:17px}.about-grid p{color:var(--muted);font-size:13px}
++
++.site-footer{border-top:1px solid var(--line);padding:28px 0 34px}.footer-inner{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;font-size:11px;color:var(--muted)}.footer-inner strong{font-size:16px;color:var(--text)}.footer-inner span:nth-child(2){text-align:center}.footer-inner span:last-child{text-align:right}
++.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#171a18;color:#fff;padding:12px 18px;font-size:12px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.15)}.mobile-nav{display:none}
++
++@media (max-width:1050px){
++  .page-width,.header-inner{width:min(100% - 36px,var(--max))}.header-links{gap:16px}.market-shell{grid-template-columns:190px 1fr;gap:24px}.product-grid{grid-template-columns:repeat(2,1fr)}.detail-layout{grid-template-columns:1.2fr .9fr;gap:26px}.gallery{grid-template-rows:repeat(2,260px)}.price-block{gap:12px}.detail-panel h1{font-size:30px}.sell-layout{gap:36px}.info-row{grid-template-columns:22px 88px 1fr auto}
++}
++@media (max-width:760px){
++  body{padding-bottom:64px}.site-header{position:sticky}.header-inner{height:62px;grid-template-columns:1fr auto}.header-links{display:none}.wordmark{justify-self:start;padding-left:0}.header-actions{grid-column:2}.header-actions .icon-btn:nth-child(2),.header-actions .icon-btn:nth-child(3){display:none}.page-width{width:calc(100% - 28px)}.market-hero{padding:38px 0 32px;display:block}.market-hero h1,.section-intro h1,.info-page h1{font-size:42px}.market-hero p{font-size:15px}.text-arrow{margin-top:14px}.market-shell{display:block;padding-top:20px}.filters{padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}.filter-group{display:none}.filter-group:first-child{display:block;grid-column:1/3;border:0;padding:0;margin:0}.catalog-toolbar{margin-top:10px}.product-grid{grid-template-columns:1fr 1fr;gap:24px 10px}.product-meta{display:block}.product-meta-price{text-align:left;margin-top:5px}.product-art{margin-bottom:8px}.brand-card{width:72%;height:46%;font-size:22px}.breadcrumbs{display:none}.back-link{display:flex;align-items:center;gap:4px;border:0;background:none;padding:4px 0 16px}.back-link svg{width:18px}.product-page{padding-top:16px}.detail-layout{display:block}.gallery{grid-template-columns:1fr;grid-template-rows:430px}.gallery-shot{display:none}.gallery-shot:first-child{display:block;grid-row:auto}.detail-panel{position:static;padding-top:28px}.detail-topline{margin-bottom:14px}.detail-mini-actions{display:none}.detail-panel h1{font-size:30px}.price-block{grid-template-columns:1fr 1px 1fr auto}.about-card{padding-top:36px}.fact-grid{grid-template-columns:1fr;gap:18px}.sell-page,.dashboard-page{padding:40px 0 80px}.section-intro{margin-bottom:34px}.sell-layout{display:block}.seller-preview{margin-top:28px}.preview-sticky{position:static}.form-section{grid-template-columns:44px 1fr;gap:0 10px}.form-row{grid-template-columns:1fr}.dashboard-columns{grid-template-columns:1fr;gap:38px}.stats-row{grid-template-columns:1fr}.stats-row div{border-right:0;border-bottom:1px solid var(--line);padding:18px 0!important}.info-page{padding:55px 0 90px}.large-copy{font-size:18px}.info-steps article{grid-template-columns:42px 1fr;gap:8px}.info-steps h2{grid-column:2}.info-steps p{grid-column:2}.about-grid{grid-template-columns:1fr}.footer-inner{grid-template-columns:1fr;gap:7px;text-align:left}.footer-inner span:nth-child(2),.footer-inner span:last-child{text-align:left}.site-footer{padding-bottom:84px}.mobile-nav{display:grid;position:fixed;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid var(--line);grid-template-columns:repeat(3,1fr);z-index:60}.mobile-nav button{border:0;background:none;font-size:10px;font-weight:600}.mobile-nav span{display:block;font-size:18px;margin-bottom:1px}.toast{bottom:78px;left:14px;right:14px;transform:none;text-align:center}.protection-box{grid-template-columns:28px 1fr}.protection-box button{display:none}.sell-similar-box{grid-template-columns:1fr}.header-search-inner{width:calc(100% - 28px)}
++}
++@media (max-width:430px){.product-grid{grid-template-columns:1fr}.gallery{grid-template-rows:330px}.price-block{gap:10px}.save-badge{padding:8px;font-size:11px}.detail-panel h1{font-size:27px}.market-hero h1,.section-intro h1,.info-page h1{font-size:36px}}
++
++.account-page{padding:72px 0 110px;display:grid;place-items:start center}
++.account-card{width:min(560px,100%);border:1px solid var(--line);padding:42px;background:#fff}
++.account-card h1{font-size:42px;line-height:1;letter-spacing:-.04em;margin:0 0 14px}
++.account-card>p{color:var(--muted);margin:0 0 30px}
++.account-form{display:grid;gap:18px}
++.account-form label{display:grid;gap:7px;font-size:13px;font-weight:600}
++.account-form input{height:46px;border:1px solid var(--line-dark);padding:0 12px;outline:none}
++.account-form input:focus{border-color:var(--green);box-shadow:0 0 0 2px var(--green-soft)}
++.account-form small{font-weight:400;color:var(--muted)}
++.account-form .primary-cta{margin-top:4px}
++.account-form .primary-cta:disabled{opacity:.65;cursor:wait}
++.form-status{min-height:22px;margin:0;font-size:13px;color:var(--muted)}
++.form-status.error{color:#a32626}
++.form-status.success{color:var(--green);font-weight:600}
++@media(max-width:640px){.account-page{padding:34px 0 90px}.account-card{padding:26px 20px}.account-card h1{font-size:34px}}
+diff --git a/frontend/index.html b/frontend/index.html
+--- a/frontend/index.html
++++ b/frontend/index.html
+@@ -1,337 +1,362 @@
+-<!doctype html>
+-<html lang="sv">
+-<head>
+-  <meta charset="UTF-8" />
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <meta name="theme-color" content="#ffffff" />
+-  <title>Passiton - köp och sälj presentkort</title>
+-  <meta name="description" content="Passiton är en marknadsplats för verifierade presentkort. Sälj värde du inte använder och köp presentkort med rabatt." />
+-  <link rel="preconnect" href="https://fonts.googleapis.com">
+-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+-  <link rel="stylesheet" href="css/styles.css" />
+-</head>
+-<body>
+-  <header class="site-header">
+-    <div class="header-inner">
+-      <nav class="header-links" aria-label="Huvudnavigation">
+-        <button data-nav="market">Köp</button>
+-        <button data-nav="sell">Sälj</button>
+-        <button data-nav="how">Så fungerar det</button>
+-        <!--  <button data-nav="about">Om oss</button>*/-->
+-    
+-      </nav>
+-
+-      <button class="wordmark" data-nav="market" aria-label="Passiton startsida">Passiton</button>
+-
+-      <div class="header-actions">
+-        <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
+-          <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+-        </button>
+-        <button class="icon-btn" data-nav="dashboard" title="Mitt konto" aria-label="Mitt konto">
+-          <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+-        </button>
+-        <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
+-          <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
+-        </button>
+-        <button class="icon-btn bag-btn" data-nav="dashboard" title="Mina köp" aria-label="Mina köp">
+-          <svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
+-          <span id="bag-count" class="bag-count hidden">0</span>
+-        </button>
+-      </div>
+-    </div>
+-    <div id="header-search" class="header-search hidden">
+-      <div class="header-search-inner">
+-        <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+-        <input id="global-search" type="search" placeholder="Sök efter varumärke eller kategori" />
+-        <button id="close-search" aria-label="Stäng sökning">Stäng</button>
+-      </div>
+-    </div>
+-  </header>
+-
+-  <main>
+-    <section id="market" class="view active">
+-      <div class="market-hero page-width">
+-        <div>
+-          <!--<span class="kicker">Presentkort får ett andra liv</span> -->
+-          <h1>Köp mer. Betala mindre.</h1>
+-          <p>Köp och sälj presentkort på ett enkelt sätt.</p>
+-        </div>
+-        <button class="text-arrow" data-nav="sell">Sälj ett presentkort <span>→</span></button>
+-      </div>
+-
+-      <div class="market-shell page-width">
+-        <aside class="filters" aria-label="Filter">
+-          <div class="filter-group">
+-            <div class="filter-label">Sök</div>
+-            <div class="filter-search">
+-              <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+-              <input id="search-input" type="search" placeholder="Varumärke…" />
+-            </div>
+-          </div>
+-
+-          <div class="filter-group">
+-            <div class="filter-label-row"><span>Kategorier</span><button class="tiny-link" id="clear-filters">Rensa</button></div>
+-            <div class="check-list" id="category-list">
+-              <label><input type="radio" name="cat" value="all" checked><span>Alla</span></label>
+-              <label><input type="radio" name="cat" value="Mode"><span>Mode</span></label>
+-              <label><input type="radio" name="cat" value="Hem"><span>Hem & inredning</span></label>
+-              <label><input type="radio" name="cat" value="Elektronik"><span>Elektronik</span></label>
+-              <label><input type="radio" name="cat" value="Mat"><span>Mat & dagligvaror</span></label>
+-              <label><input type="radio" name="cat" value="Sport"><span>Sport & fritid</span></label>
+-              <label><input type="radio" name="cat" value="Resor"><span>Resor & transport</span></label>
+-            </div>
+-          </div>
+-
+-          <div class="filter-group">
+-            <div class="filter-label">Minsta rabatt</div>
+-            <div class="range-row"><span>0%</span><strong id="discount-output">0%</strong></div>
+-            <input id="discount-filter" class="range" type="range" min="0" max="20" value="0" step="1" />
+-          </div>
+-
+-          <div class="filter-group filter-note">
+-            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+-            <p><strong>Köparskydd ingår.</strong><br>Betalningen hålls tills presentkortet är mottaget och verifierat.</p>
+-          </div>
+-        </aside>
+-
+-        <div class="catalog">
+-          <div class="catalog-toolbar">
+-            <div><strong id="result-count">0 presentkort</strong><span>Verifierade annonser</span></div>
+-            <label>Sortera
+-              <select id="sort-filter">
+-                <option value="popular">Mest populära</option>
+-                <option value="discount">Störst rabatt</option>
+-                <option value="price">Lägst pris</option>
+-                <option value="value">Högst värde</option>
+-              </select>
+-            </label>
+-          </div>
+-          <div id="market-grid" class="product-grid"></div>
+-          <div id="empty-state" class="empty-state hidden">Inga annonser matchar dina filter.</div>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="product" class="view product-view">
+-      <div class="page-width product-page">
+-        <button id="back-to-market" class="back-link">
+-          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Köp
+-        </button>
+-
+-        <div class="breadcrumbs" id="breadcrumbs">Köp <span>›</span> Hem & inredning <span>›</span> IKEA <span>›</span> IKEA presentkort</div>
+-
+-        <div class="detail-layout">
+-          <div>
+-            <div id="gallery" class="gallery"></div>
+-            <section class="about-card">
+-              <h2>Om presentkortet</h2>
+-              <p id="about-copy">Presentkortet kan användas i butik och online. Ett enkelt sätt att få mer för pengarna.</p>
+-              <div class="fact-grid">
+-                <div class="fact-item">
+-                  <svg viewBox="0 0 24 24"><path d="M7 2v4m10-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z"/></svg>
+-                  <div><strong>Giltighetstid</strong><span id="fact-expiry">31 dec 2026</span></div>
+-                </div>
+-                <div class="fact-item">
+-                  <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 10h18"/></svg>
+-                  <div><strong>Typ</strong><span>Digitalt presentkort</span></div>
+-                </div>
+-                <div class="fact-item">
+-                  <svg viewBox="0 0 24 24"><path d="M3 10h18v11H3zM5 10V6l2-3h10l2 3v4M8 14v7m8-7v7"/></svg>
+-                  <div><strong>Kan användas på</strong><span id="fact-use">Butik och online</span></div>
+-                </div>
+-              </div>
+-            </section>
+-          </div>
+-
+-          <aside class="detail-panel">
+-            <div class="detail-topline">
+-              <span class="verified-pill"><span>✓</span> Verifierad annons</span>
+-              <div class="detail-mini-actions"><button>♡ Spara</button><button>⇧ Dela</button></div>
+-            </div>
+-            <h1 id="detail-title">IKEA presentkort</h1>
+-            <p id="detail-subtitle">Digitalt presentkort för hem och inredning</p>
+-
+-            <div class="price-block">
+-              <div><span>Värde</span><strong id="detail-value">1 000 kr</strong></div>
+-              <div class="price-divider"></div>
+-              <div><span>Pris</span><strong id="detail-price">880 kr</strong></div>
+-              <span id="detail-save" class="save-badge">Spara 12%</span>
+-            </div>
+-
+-            <div class="info-rows">
+-              <div class="info-row">
+-                <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Zm9 5v10l-9 5-9-5V7m9 5v10"/></svg>
+-                <strong>Skick</strong><span>Oanvänt</span>
+-              </div>
+-              <div class="info-row">
+-                <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
+-                <strong>Leverans</strong><span>Direkt till e-post<small>Vanligtvis inom några minuter.</small></span>
+-              </div>
+-              <div class="info-row seller-row">
+-                <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+-                <strong>Säljare</strong><span><b>M. A.</b> <em>✓ Verifierad säljare</em></span><span class="chev">›</span>
+-              </div>
+-            </div>
+-
+-            <button id="buy-now" class="primary-cta">Köp nu</button>
+-            <button class="secondary-cta">♡ Lägg i favoriter</button>
+-
+-            <div class="protection-box">
+-              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+-              <div><strong>Köparskydd ingår</strong><p>Din betalning hålls säker tills du har mottagit och verifierat presentkortet.</p></div>
+-              <button> Läs mer </button>
+-            </div>
+-
+-            <div class="sell-similar-box">
+-              <div><strong>Vill du sälja ett liknande?</strong><p>Se vad du får efter avgift.</p></div>
+-              <div class="mini-calc">
+-                <div><span>Sälj för</span><b id="similar-sale">900 kr</b></div>
+-                <div><span>Avgift (5 %)</span><b id="similar-fee">45 kr</b></div>
+-                <div class="mini-total"><span>Du får</span><b id="similar-net">855 kr</b></div>
+-                <button data-nav="sell">Sälj nu</button>
+-              </div>
+-            </div>
+-          </aside>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="sell" class="view">
+-      <div class="page-width sell-page">
+-        <div class="section-intro">
+-          <span class="kicker">Sälj på Passiton</span>
+-          <h1>Gör oanvänt värde till pengar.</h1>
+-          <p>Skapa en demoannons på under en minut. I en riktig tjänst verifieras presentkortet innan publicering.</p>
+-        </div>
+-
+-        <div class="sell-layout">
+-          <form id="sell-form" class="sell-form">
+-            <div class="form-section">
+-              <span class="form-step">01</span>
+-              <h2>Vilket presentkort säljer du?</h2>
+-              <label>Varumärke
+-                <select id="sell-brand" required>
+-                  <option value="">Välj varumärke</option>
+-                  <option>IKEA</option><option>Zalando</option><option>H&M</option><option>Elgiganten</option><option>Stadium</option><option>ICA</option><option>Åhléns</option><option>SJ</option>
+-                </select>
+-              </label>
+-              <label>Kategori
+-                <select id="sell-category" required>
+-                  <option value="Hem">Hem & inredning</option><option value="Mode">Mode</option><option value="Elektronik">Elektronik</option><option value="Mat">Mat & dagligvaror</option><option value="Sport">Sport & fritid</option><option value="Resor">Resor & transport</option>
+-                </select>
+-              </label>
+-            </div>
+-
+-            <div class="form-section">
+-              <span class="form-step">02</span>
+-              <h2>Pris och giltighet</h2>
+-              <div class="form-row">
+-                <label>Presentkortets värde
+-                  <div class="money-input"><input id="sell-value" type="number" min="100" step="50" value="1000" required><span>kr</span></div>
+-                </label>
+-                <label>Ditt pris
+-                  <div class="money-input"><input id="sell-price" type="number" min="50" step="10" value="900" required><span>kr</span></div>
+-                </label>
+-              </div>
+-              <label>Giltigt till
+-                <input id="sell-expiry" type="date" required>
+-              </label>
+-            </div>
+-
+-            <div class="form-section">
+-              <span class="form-step">03</span>
+-              <h2>Verifiering</h2>
+-              <label>Presentkortskod <span class="field-note">(endast demo)</span>
+-                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" required>
+-              </label>
+-              <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig och inte är använt.</span></label>
+-            </div>
+-
+-            <button class="primary-cta" type="submit">Publicera demoannons</button>
+-          </form>
+-
+-          <aside class="seller-preview">
+-            <div class="preview-sticky">
+-              <div class="preview-label">Din annons</div>
+-              <div id="seller-card-preview" class="seller-card-preview brand-ikea">
+-                <span class="preview-brand">IKEA</span>
+-                <span class="preview-caption">PRESENTKORT</span>
+-              </div>
+-              <div class="preview-title-row"><strong id="preview-brand">IKEA presentkort</strong><span id="preview-save">Spara 10%</span></div>
+-              <div class="preview-prices"><span>Värde <s id="preview-value">1 000 kr</s></span><strong id="preview-price">900 kr</strong></div>
+-
+-              <div class="payout-summary">
+-                <h3>Din utbetalning</h3>
+-                <div><span>Köparen betalar</span><b id="calc-price">900 kr</b></div>
+-                <div><span>Passitons avgift (5%)</span><b id="calc-fee">45 kr</b></div>
+-                <div class="payout-total"><span>Du får</span><b id="calc-net">855 kr</b></div>
+-              </div>
+-              <p id="discount-copy" class="preview-hint">Köparen sparar 100 kr (10%).</p>
+-            </div>
+-          </aside>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="dashboard" class="view">
+-      <div class="page-width dashboard-page">
+-        <div class="section-intro">
+-          <span class="kicker">Mitt Passiton</span>
+-          <h1>Dina köp och annonser.</h1>
+-          <p>All aktivitet i den här MVP:n sparas lokalt i din webbläsare.</p>
+-        </div>
+-        <div class="stats-row">
+-          <div><span>Köpt värde</span><strong id="stat-bought">0 kr</strong></div>
+-          <div><span>Totalt sparat</span><strong id="stat-saved">0 kr</strong></div>
+-          <div><span>Aktiva annonser</span><strong id="stat-listed">0</strong></div>
+-        </div>
+-        <div class="dashboard-columns">
+-          <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
+-          <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
+-        </div>
+-      </div>
+-    </section>
+-
+-    <section id="how" class="view info-page">
+-      <div class="page-width info-narrow">
+-        <span class="kicker">Så fungerar det</span>
+-        <h1>Värdet går vidare.</h1>
+-        <div class="info-steps">
+-          <article><span>01</span><h2>Sälj ett presentkort</h2><p>Du anger värde och pris. Passiton verifierar kortet innan det blir synligt för köpare.</p></article>
+-          <article><span>02</span><h2>Köparen gör en bättre affär</h2><p>Köparen betalar mindre än presentkortets nominella värde och får koden digitalt.</p></article>
+-          <article><span>03</span><h2>Pengarna släpps</h2><p>När kortet verifierats och mottagits går pengarna vidare till säljaren, minus transaktionsavgiften.</p></article>
+-        </div>
+-        <button class="primary-cta inline-cta" data-nav="market">Se presentkort</button>
+-      </div>
+-    </section>
+-
+-    <section id="about" class="view info-page">
+-      <div class="page-width info-narrow">
+-        <span class="kicker">Om Passiton</span>
+-        <h1>Oanvänt värde behöver inte gå till spillo.</h1>
+-        <p class="large-copy">Passiton är ett kursprojekt: en marknadsplats där illikvida värden som presentkort kan omvandlas till pengar, samtidigt som andra får rabatt på något de ändå tänkt köpa.</p>
+-        <div class="about-grid">
+-          <article><strong>Säljaren</strong><p>Får likvida medel istället för ett presentkort som ligger oanvänt.</p></article>
+-          <article><strong>Köparen</strong><p>Får mer köpkraft genom att köpa värdet till rabatt.</p></article>
+-          <article><strong>Passiton</strong><p>Skapar tryggheten mellan parterna och tar en transaktionsavgift när affären genomförs.</p></article>
+-        </div>
+-      </div>
+-    </section>
+-  </main>
+-
+-  <footer class="site-footer">
+-    <div class="page-width footer-inner"><strong>Passiton</strong><!--<span>Värde som får gå vidare.</span><span>Demo-MVP · Projektledningskurs 2026</span></div> -->
+-  </footer>
+-
+-  <div id="toast" class="toast hidden"></div>
+-
+-  <nav class="mobile-nav" aria-label="Mobilnavigation">
+-    <button data-nav="market"><span>⌂</span>Köp</button>
+-    <button data-nav="sell"><span>＋</span>Sälj</button>
+-    <button data-nav="dashboard"><span>♡</span>Mina</button>
+-  </nav>
+-
+-  <script type="module" src="js/app.js"></script>
+-</body>
+-</html>
++<!doctype html>
++<html lang="sv">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <meta name="theme-color" content="#ffffff" />
++  <title>Passiton - köp och sälj presentkort</title>
++  <meta name="description" content="Passiton är en marknadsplats för verifierade presentkort. Sälj värde du inte använder och köp presentkort med rabatt." />
++  <link rel="preconnect" href="https://fonts.googleapis.com">
++  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
++  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
++  <link rel="stylesheet" href="css/styles.css" />
++</head>
++<body>
++  <header class="site-header">
++    <div class="header-inner">
++      <nav class="header-links" aria-label="Huvudnavigation">
++        <button data-nav="market">Köp</button>
++        <button data-nav="sell">Sälj</button>
++        <button data-nav="how">Så fungerar det</button>
++        <!--  <button data-nav="about">Om oss</button>*/-->
++    
++      </nav>
++
++      <button class="wordmark" data-nav="market" aria-label="Passiton startsida">Passiton</button>
++
++      <div class="header-actions">
++        <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
++          <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
++        </button>
++        <button class="icon-btn" data-nav="register" title="Skapa konto" aria-label="Mitt konto">
++          <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
++        </button>
++        <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
++          <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
++        </button>
++        <button class="icon-btn bag-btn" data-nav="dashboard" title="Mina köp" aria-label="Mina köp">
++          <svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
++          <span id="bag-count" class="bag-count hidden">0</span>
++        </button>
++      </div>
++    </div>
++    <div id="header-search" class="header-search hidden">
++      <div class="header-search-inner">
++        <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
++        <input id="global-search" type="search" placeholder="Sök efter varumärke eller kategori" />
++        <button id="close-search" aria-label="Stäng sökning">Stäng</button>
++      </div>
++    </div>
++  </header>
++
++  <main>
++    <section id="market" class="view active">
++      <div class="market-hero page-width">
++        <div>
++          <!--<span class="kicker">Presentkort får ett andra liv</span> -->
++          <h1>Köp mer. Betala mindre.</h1>
++          <p>Köp och sälj presentkort på ett enkelt sätt.</p>
++        </div>
++        <button class="text-arrow" data-nav="sell">Sälj ett presentkort <span>→</span></button>
++      </div>
++
++      <div class="market-shell page-width">
++        <aside class="filters" aria-label="Filter">
++          <div class="filter-group">
++            <div class="filter-label">Sök</div>
++            <div class="filter-search">
++              <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
++              <input id="search-input" type="search" placeholder="Varumärke…" />
++            </div>
++          </div>
++
++          <div class="filter-group">
++            <div class="filter-label-row"><span>Kategorier</span><button class="tiny-link" id="clear-filters">Rensa</button></div>
++            <div class="check-list" id="category-list">
++              <label><input type="radio" name="cat" value="all" checked><span>Alla</span></label>
++              <label><input type="radio" name="cat" value="Mode"><span>Mode</span></label>
++              <label><input type="radio" name="cat" value="Hem"><span>Hem & inredning</span></label>
++              <label><input type="radio" name="cat" value="Elektronik"><span>Elektronik</span></label>
++              <label><input type="radio" name="cat" value="Mat"><span>Mat & dagligvaror</span></label>
++              <label><input type="radio" name="cat" value="Sport"><span>Sport & fritid</span></label>
++              <label><input type="radio" name="cat" value="Resor"><span>Resor & transport</span></label>
++            </div>
++          </div>
++
++          <div class="filter-group">
++            <div class="filter-label">Minsta rabatt</div>
++            <div class="range-row"><span>0%</span><strong id="discount-output">0%</strong></div>
++            <input id="discount-filter" class="range" type="range" min="0" max="20" value="0" step="1" />
++          </div>
++
++          <div class="filter-group filter-note">
++            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
++            <p><strong>Köparskydd ingår.</strong><br>Betalningen hålls tills presentkortet är mottaget och verifierat.</p>
++          </div>
++        </aside>
++
++        <div class="catalog">
++          <div class="catalog-toolbar">
++            <div><strong id="result-count">0 presentkort</strong><span>Verifierade annonser</span></div>
++            <label>Sortera
++              <select id="sort-filter">
++                <option value="popular">Mest populära</option>
++                <option value="discount">Störst rabatt</option>
++                <option value="price">Lägst pris</option>
++                <option value="value">Högst värde</option>
++              </select>
++            </label>
++          </div>
++          <div id="market-grid" class="product-grid"></div>
++          <div id="empty-state" class="empty-state hidden">Inga annonser matchar dina filter.</div>
++        </div>
++      </div>
++    </section>
++
++    <section id="product" class="view product-view">
++      <div class="page-width product-page">
++        <button id="back-to-market" class="back-link">
++          <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Köp
++        </button>
++
++        <div class="breadcrumbs" id="breadcrumbs">Köp <span>›</span> Hem & inredning <span>›</span> IKEA <span>›</span> IKEA presentkort</div>
++
++        <div class="detail-layout">
++          <div>
++            <div id="gallery" class="gallery"></div>
++            <section class="about-card">
++              <h2>Om presentkortet</h2>
++              <p id="about-copy">Presentkortet kan användas i butik och online. Ett enkelt sätt att få mer för pengarna.</p>
++              <div class="fact-grid">
++                <div class="fact-item">
++                  <svg viewBox="0 0 24 24"><path d="M7 2v4m10-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z"/></svg>
++                  <div><strong>Giltighetstid</strong><span id="fact-expiry">31 dec 2026</span></div>
++                </div>
++                <div class="fact-item">
++                  <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 10h18"/></svg>
++                  <div><strong>Typ</strong><span>Digitalt presentkort</span></div>
++                </div>
++                <div class="fact-item">
++                  <svg viewBox="0 0 24 24"><path d="M3 10h18v11H3zM5 10V6l2-3h10l2 3v4M8 14v7m8-7v7"/></svg>
++                  <div><strong>Kan användas på</strong><span id="fact-use">Butik och online</span></div>
++                </div>
++              </div>
++            </section>
++          </div>
++
++          <aside class="detail-panel">
++            <div class="detail-topline">
++              <span class="verified-pill"><span>✓</span> Verifierad annons</span>
++              <div class="detail-mini-actions"><button>♡ Spara</button><button>⇧ Dela</button></div>
++            </div>
++            <h1 id="detail-title">IKEA presentkort</h1>
++            <p id="detail-subtitle">Digitalt presentkort för hem och inredning</p>
++
++            <div class="price-block">
++              <div><span>Värde</span><strong id="detail-value">1 000 kr</strong></div>
++              <div class="price-divider"></div>
++              <div><span>Pris</span><strong id="detail-price">880 kr</strong></div>
++              <span id="detail-save" class="save-badge">Spara 12%</span>
++            </div>
++
++            <div class="info-rows">
++              <div class="info-row">
++                <svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Zm9 5v10l-9 5-9-5V7m9 5v10"/></svg>
++                <strong>Skick</strong><span>Oanvänt</span>
++              </div>
++              <div class="info-row">
++                <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
++                <strong>Leverans</strong><span>Direkt till e-post<small>Vanligtvis inom några minuter.</small></span>
++              </div>
++              <div class="info-row seller-row">
++                <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
++                <strong>Säljare</strong><span><b>M. A.</b> <em>✓ Verifierad säljare</em></span><span class="chev">›</span>
++              </div>
++            </div>
++
++            <button id="buy-now" class="primary-cta">Köp nu</button>
++            <button class="secondary-cta">♡ Lägg i favoriter</button>
++
++            <div class="protection-box">
++              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
++              <div><strong>Köparskydd ingår</strong><p>Din betalning hålls säker tills du har mottagit och verifierat presentkortet.</p></div>
++              <button> Läs mer </button>
++            </div>
++
++            <div class="sell-similar-box">
++              <div><strong>Vill du sälja ett liknande?</strong><p>Se vad du får efter avgift.</p></div>
++              <div class="mini-calc">
++                <div><span>Sälj för</span><b id="similar-sale">900 kr</b></div>
++                <div><span>Avgift (5 %)</span><b id="similar-fee">45 kr</b></div>
++                <div class="mini-total"><span>Du får</span><b id="similar-net">855 kr</b></div>
++                <button data-nav="sell">Sälj nu</button>
++              </div>
++            </div>
++          </aside>
++        </div>
++      </div>
++    </section>
++
++    <section id="sell" class="view">
++      <div class="page-width sell-page">
++        <div class="section-intro">
++          <span class="kicker">Sälj på Passiton</span>
++          <h1>Gör oanvänt värde till pengar.</h1>
++          <p>Skapa en demoannons på under en minut. I en riktig tjänst verifieras presentkortet innan publicering.</p>
++        </div>
++
++        <div class="sell-layout">
++          <form id="sell-form" class="sell-form">
++            <div class="form-section">
++              <span class="form-step">01</span>
++              <h2>Vilket presentkort säljer du?</h2>
++              <label>Varumärke
++                <select id="sell-brand" required>
++                  <option value="">Välj varumärke</option>
++                  <option>IKEA</option><option>Zalando</option><option>H&M</option><option>Elgiganten</option><option>Stadium</option><option>ICA</option><option>Åhléns</option><option>SJ</option>
++                </select>
++              </label>
++              <label>Kategori
++                <select id="sell-category" required>
++                  <option value="Hem">Hem & inredning</option><option value="Mode">Mode</option><option value="Elektronik">Elektronik</option><option value="Mat">Mat & dagligvaror</option><option value="Sport">Sport & fritid</option><option value="Resor">Resor & transport</option>
++                </select>
++              </label>
++            </div>
++
++            <div class="form-section">
++              <span class="form-step">02</span>
++              <h2>Pris och giltighet</h2>
++              <div class="form-row">
++                <label>Presentkortets värde
++                  <div class="money-input"><input id="sell-value" type="number" min="100" step="50" value="1000" required><span>kr</span></div>
++                </label>
++                <label>Ditt pris
++                  <div class="money-input"><input id="sell-price" type="number" min="50" step="10" value="900" required><span>kr</span></div>
++                </label>
++              </div>
++              <label>Giltigt till
++                <input id="sell-expiry" type="date" required>
++              </label>
++            </div>
++
++            <div class="form-section">
++              <span class="form-step">03</span>
++              <h2>Verifiering</h2>
++              <label>Presentkortskod <span class="field-note">(endast demo)</span>
++                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" required>
++              </label>
++              <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig och inte är använt.</span></label>
++            </div>
++
++            <button class="primary-cta" type="submit">Publicera demoannons</button>
++          </form>
++
++          <aside class="seller-preview">
++            <div class="preview-sticky">
++              <div class="preview-label">Din annons</div>
++              <div id="seller-card-preview" class="seller-card-preview brand-ikea">
++                <span class="preview-brand">IKEA</span>
++                <span class="preview-caption">PRESENTKORT</span>
++              </div>
++              <div class="preview-title-row"><strong id="preview-brand">IKEA presentkort</strong><span id="preview-save">Spara 10%</span></div>
++              <div class="preview-prices"><span>Värde <s id="preview-value">1 000 kr</s></span><strong id="preview-price">900 kr</strong></div>
++
++              <div class="payout-summary">
++                <h3>Din utbetalning</h3>
++                <div><span>Köparen betalar</span><b id="calc-price">900 kr</b></div>
++                <div><span>Passitons avgift (5%)</span><b id="calc-fee">45 kr</b></div>
++                <div class="payout-total"><span>Du får</span><b id="calc-net">855 kr</b></div>
++              </div>
++              <p id="discount-copy" class="preview-hint">Köparen sparar 100 kr (10%).</p>
++            </div>
++          </aside>
++        </div>
++      </div>
++    </section>
++
++
++    <section id="register" class="view">
++      <div class="page-width account-page">
++        <div class="account-card">
++          <span class="kicker">Skapa konto</span>
++          <h1>Börja köpa och sälja.</h1>
++          <p>Skapa ett konto med din e-postadress. Inloggning och identitetsverifiering byggs i senare user stories.</p>
++          <form id="register-form" class="account-form" novalidate>
++            <label>E-postadress
++              <input id="register-email" type="email" autocomplete="email" maxlength="254" required placeholder="namn@exempel.se">
++            </label>
++            <label>Lösenord
++              <input id="register-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
++              <small>8–128 tecken, minst en bokstav och en siffra.</small>
++            </label>
++            <label>Bekräfta lösenord
++              <input id="register-password-confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
++            </label>
++            <button id="register-submit" class="primary-cta" type="submit">Skapa konto</button>
++            <p id="register-status" class="form-status" role="status" aria-live="polite"></p>
++          </form>
++        </div>
++      </div>
++    </section>
++
++    <section id="dashboard" class="view">
++      <div class="page-width dashboard-page">
++        <div class="section-intro">
++          <span class="kicker">Mitt Passiton</span>
++          <h1>Dina köp och annonser.</h1>
++          <p>All aktivitet i den här MVP:n sparas lokalt i din webbläsare.</p>
++        </div>
++        <div class="stats-row">
++          <div><span>Köpt värde</span><strong id="stat-bought">0 kr</strong></div>
++          <div><span>Totalt sparat</span><strong id="stat-saved">0 kr</strong></div>
++          <div><span>Aktiva annonser</span><strong id="stat-listed">0</strong></div>
++        </div>
++        <div class="dashboard-columns">
++          <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
++          <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
++        </div>
++      </div>
++    </section>
++
++    <section id="how" class="view info-page">
++      <div class="page-width info-narrow">
++        <span class="kicker">Så fungerar det</span>
++        <h1>Värdet går vidare.</h1>
++        <div class="info-steps">
++          <article><span>01</span><h2>Sälj ett presentkort</h2><p>Du anger värde och pris. Passiton verifierar kortet innan det blir synligt för köpare.</p></article>
++          <article><span>02</span><h2>Köparen gör en bättre affär</h2><p>Köparen betalar mindre än presentkortets nominella värde och får koden digitalt.</p></article>
++          <article><span>03</span><h2>Pengarna släpps</h2><p>När kortet verifierats och mottagits går pengarna vidare till säljaren, minus transaktionsavgiften.</p></article>
++        </div>
++        <button class="primary-cta inline-cta" data-nav="market">Se presentkort</button>
++      </div>
++    </section>
++
++    <section id="about" class="view info-page">
++      <div class="page-width info-narrow">
++        <span class="kicker">Om Passiton</span>
++        <h1>Oanvänt värde behöver inte gå till spillo.</h1>
++        <p class="large-copy">Passiton är ett kursprojekt: en marknadsplats där illikvida värden som presentkort kan omvandlas till pengar, samtidigt som andra får rabatt på något de ändå tänkt köpa.</p>
++        <div class="about-grid">
++          <article><strong>Säljaren</strong><p>Får likvida medel istället för ett presentkort som ligger oanvänt.</p></article>
++          <article><strong>Köparen</strong><p>Får mer köpkraft genom att köpa värdet till rabatt.</p></article>
++          <article><strong>Passiton</strong><p>Skapar tryggheten mellan parterna och tar en transaktionsavgift när affären genomförs.</p></article>
++        </div>
++      </div>
++    </section>
++  </main>
++
++  <footer class="site-footer">
++    <div class="page-width footer-inner"><strong>Passiton</strong><!--<span>Värde som får gå vidare.</span><span>Demo-MVP · Projektledningskurs 2026</span></div> -->
++  </footer>
++
++  <div id="toast" class="toast hidden"></div>
++
++  <nav class="mobile-nav" aria-label="Mobilnavigation">
++    <button data-nav="market"><span>⌂</span>Köp</button>
++    <button data-nav="sell"><span>＋</span>Sälj</button>
++    <button data-nav="dashboard"><span>♡</span>Mina</button>
++  </nav>
++
++  <script type="module" src="js/app.js"></script>
++</body>
++</html>
+diff --git a/frontend/js/app.js b/frontend/js/app.js
+--- a/frontend/js/app.js
++++ b/frontend/js/app.js
+@@ -1,19 +1,21 @@
+-import { $$ } from './utils.js';
+-import { navTo } from './ui.js';
+-import { initMarket, renderMarket } from './features/market.js';
+-import { initProduct } from './features/product.js';
+-import { initSell } from './features/sell.js';
+-import { renderDashboard } from './features/dashboard.js';
+-
+-$$('[data-nav]').forEach(button => {
+-  button.addEventListener('click', () => navTo(button.dataset.nav));
+-});
+-document.addEventListener('viewchange', event => {
+-  if (event.detail === 'market') renderMarket();
+-  if (event.detail === 'dashboard') renderDashboard();
+-});
+-initMarket();
+-initProduct();
+-initSell();
+-renderMarket();
+-renderDashboard();
++import { $$ } from './utils.js';
++import { navTo } from './ui.js';
++import { initMarket, renderMarket } from './features/market.js';
++import { initProduct } from './features/product.js';
++import { initSell } from './features/sell.js';
++import { renderDashboard } from './features/dashboard.js';
++import { initAccount } from './features/account.js';
++
++$$('[data-nav]').forEach(button => {
++  button.addEventListener('click', () => navTo(button.dataset.nav));
++});
++document.addEventListener('viewchange', event => {
++  if (event.detail === 'market') renderMarket();
++  if (event.detail === 'dashboard') renderDashboard();
++});
++initMarket();
++initProduct();
++initSell();
++initAccount();
++renderMarket();
++renderDashboard();
+diff --git a/frontend/package-lock.json b/frontend/package-lock.json
+new file mode 100644
+--- /dev/null
++++ b/frontend/package-lock.json
+@@ -0,0 +1,15 @@
++{
++  "name": "passiton-frontend",
++  "version": "0.1.0",
++  "lockfileVersion": 3,
++  "requires": true,
++  "packages": {
++    "": {
++      "name": "passiton-frontend",
++      "version": "0.1.0",
++      "engines": {
++        "node": ">=18"
++      }
++    }
++  }
++}
+diff --git a/frontend/dev-server.js b/frontend/dev-server.js
+new file mode 100644
+--- /dev/null
++++ b/frontend/dev-server.js
+@@ -0,0 +1,57 @@
++import { createReadStream, statSync } from 'node:fs';
++import { createServer, request as proxyRequest } from 'node:http';
++import { extname, resolve, sep } from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const root = fileURLToPath(new URL('.', import.meta.url));
++const host = process.env.HOST || '127.0.0.1';
++const port = Number(process.env.PORT || 5173);
++const backend = new URL(process.env.API_URL || 'http://127.0.0.1:3000');
++const mime = {
++  '.css': 'text/css; charset=utf-8',
++  '.html': 'text/html; charset=utf-8',
++  '.js': 'text/javascript; charset=utf-8',
++  '.json': 'application/json; charset=utf-8',
++  '.svg': 'image/svg+xml',
++};
++
++function proxy(req, res) {
++  const upstream = proxyRequest({
++    hostname: backend.hostname,
++    port: backend.port || 80,
++    path: req.url,
++    method: req.method,
++    headers: { ...req.headers, host: backend.host },
++  }, upstreamRes => {
++    res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
++    upstreamRes.pipe(res);
++  });
++  upstream.on('error', () => {
++    res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
++    res.end(JSON.stringify({ error: 'BACKEND_UNAVAILABLE', message: 'Backend kunde inte nås.' }));
++  });
++  req.pipe(upstream);
++}
++
++createServer((req, res) => {
++  const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
++  if (url.pathname.startsWith('/api/')) return proxy(req, res);
++
++  const requested = url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname.slice(1));
++  const file = resolve(root, requested);
++  if (file !== root && !file.startsWith(root + sep)) {
++    res.writeHead(403).end('Forbidden');
++    return;
++  }
++  try {
++    if (!statSync(file).isFile()) throw new Error('Not a file');
++    res.writeHead(200, { 'Content-Type': mime[extname(file)] || 'application/octet-stream' });
++    createReadStream(file).pipe(res);
++  } catch {
++    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
++    res.end('Not found');
++  }
++}).listen(port, host, () => {
++  console.log(`Passiton frontend: http://${host}:${port}`);
++  console.log(`API proxy: ${backend.origin}`);
++});
+diff --git a/frontend/js/features/account.js b/frontend/js/features/account.js
+new file mode 100644
+--- /dev/null
++++ b/frontend/js/features/account.js
+@@ -0,0 +1,55 @@
++import { $ } from '../utils.js';
++
++const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++
++function showStatus(message, type = '') {
++  const status = $('#register-status');
++  status.textContent = message;
++  status.className = `form-status ${type}`.trim();
++}
++
++function validate(email, password, confirmation) {
++  if (!emailPattern.test(email) || email.length > 254) return 'Ange en giltig e-postadress.';
++  if (password.length < 8 || password.length > 128) return 'Lösenordet måste vara mellan 8 och 128 tecken.';
++  if (!/[A-Za-zÅÄÖåäö]/.test(password) || !/\d/.test(password)) return 'Lösenordet måste innehålla både bokstav och siffra.';
++  if (password !== confirmation) return 'Lösenorden matchar inte.';
++  return '';
++}
++
++export function initAccount() {
++  const form = $('#register-form');
++  const submit = $('#register-submit');
++
++  form.addEventListener('submit', async event => {
++    event.preventDefault();
++    const email = $('#register-email').value.trim();
++    const password = $('#register-password').value;
++    const passwordConfirmation = $('#register-password-confirmation').value;
++    const problem = validate(email, password, passwordConfirmation);
++    if (problem) {
++      showStatus(problem, 'error');
++      return;
++    }
++
++    submit.disabled = true;
++    submit.textContent = 'Skapar konto…';
++    showStatus('Registreringen pågår…');
++
++    try {
++      const response = await fetch('/api/accounts/register', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ email, password, passwordConfirmation }),
++      });
++      const body = await response.json().catch(() => ({}));
++      if (!response.ok) throw new Error(body.message || 'Kontot kunde inte skapas.');
++      form.reset();
++      showStatus(`Kontot för ${body.user.email} är skapat.`, 'success');
++    } catch (error) {
++      showStatus(error.message || 'Kontot kunde inte skapas.', 'error');
++    } finally {
++      submit.disabled = false;
++      submit.textContent = 'Skapa konto';
++    }
++  });
++}
