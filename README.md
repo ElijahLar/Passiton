@@ -1,53 +1,62 @@
 # Passiton MVP
 
-En klickbar frontend-MVP för projektledningskursen.
+Passiton är ett skolprojekt och en marknadsplats för att köpa och sälja presentkort.
 
-## Starta
-Öppna `frontend/index.html` direkt i webbläsaren, eller kör en enkel lokal webbserver från repots rot:
+## Förutsättningar
 
-```bash
-python -m http.server 8000
-```
+- Node.js 22.5 eller senare (backend använder inbyggda `node:sqlite`)
+- npm
+- Python 3 endast om du vill använda patch-scriptet
 
-Öppna sedan `http://localhost:8000/frontend/`.
-Rotens `index.html` skickar också vidare till frontend och behåller query-parametrar och hash.
-Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
-
-## Ingår
-- Marknadsplats med sök, kategorier, rabattfilter och sortering
-- Produktdetaljsida inspirerad av ren skandinavisk e-handel
-- Simulerat köp
-- Säljflöde med 5 % transaktionsavgift och live-förhandsvisning
-- Dashboard för köp och annonser
-- Responsiv mobilvy
-- Demo-data lagras i `localStorage`
-
-## Obs
-Det här är en skol-MVP. Inga riktiga betalningar, presentkort eller verifieringar hanteras.
-
-## Filstruktur
-
-| Sökväg | Ansvar |
-| --- | --- |
-| `frontend/index.html` | Sidans HTML och vyer. |
-| `frontend/css/styles.css` | Befintlig styling och mobilanpassning. |
-| `frontend/js/app.js` | Navigation, rendering, filter, säljflöde och demoköp. |
-| `frontend/js/data/cards.js` | Befintliga demopresentkort. Laddas före app.js. |
-| `backend/README.md` | Backendens ansvar och nuvarande status. |
-| `index.html` | Vidarebefordran från repots rot till frontend. |
-| `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
-| `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
-
-## Applicera strukturpatchen
-
-Kräver Python 3 och Git. Från repots rot:
+## Starta backend
 
 ```bash
-python3 scripts/apply_structure_patch.py --check
-python3 scripts/apply_structure_patch.py
+cd backend
+npm install
+npm start
 ```
 
-Scriptet kontrollerar först att hela patchen går att applicera. Vid konflikt
-avbryter det utan att applicera patchen. Det skapar ingen commit och gör ingen push.
-Efter applicering kan du granska ändringarna med `git diff` och göra en egen commit.
-Patchen är skapad mot commit `a7fb446344c2a9048331c46a30f78b8b34720ccc`.
+Backend kör på `http://127.0.0.1:3000` och skapar SQLite-databasen
+`backend/database/passiton.sqlite` automatiskt.
+
+## Starta frontend
+
+I en separat terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Öppna `http://127.0.0.1:5173`. Frontendens devserver proxar `/api` till backend
+på port 3000. Ingen frontendramverk har införts; befintlig HTML/CSS/JavaScript används.
+
+## US01
+
+Registreringsvyn skickar ett riktigt API-anrop till `POST /api/accounts/register`.
+E-post och lösenord valideras i både frontend och backend. Konton sparas beständigt
+i SQLite och lösenord hashas med scrypt. Inloggning och identitetsverifiering ingår
+inte i US01.
+
+Övriga köp- och säljfunktioner är fortfarande skol-MVP/demo där tidigare beteende
+med `localStorage` används.
+
+## Struktur
+
+- `frontend/`: HTML, CSS, JavaScript och lokal devserver.
+- `backend/`: Node-server, API-routes och SQLite-lagring.
+- `docs/structure.md`: koppling mellan struktur och user stories.
+- `patches/`: numrerade ändringspatchar.
+- `scripts/patch-00.py`: återanvändbart script för valfri patch i `patches/`.
+
+## Applicera patch 01
+
+Patch 00a ska vara applicerad först.
+
+```bash
+python3 scripts/patch-00.py 01 --check
+python3 scripts/patch-00.py 01
+```
+
+Scriptet skapar ingen commit och gör ingen push.

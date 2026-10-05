@@ -1,16 +1,22 @@
-# Backend
+# Passiton backend
 
-Här ska projektets serverkod ligga. Backend är ännu inte implementerad.
-Språk, ramverk och databas är ännu inte dokumenterade i repot.
-Därför finns inga teknikspecifika startfiler eller tomma funktionsfiler här.
+Node.js med ES-moduler, inbyggt HTTP-stöd och Nodes inbyggda SQLite-stöd.
+Kräver Node.js 22.5 eller senare. Kör `npm install` och sedan `npm start`.
+`npm run dev` startar med Nodes watch-läge. Servern lyssnar på
+`127.0.0.1:3000`; `HOST`, `PORT` och `DATABASE_PATH` kan anges i miljön.
 
-## Ansvar
+## US01 – registrering
 
-- Användarkonton, inloggning och behörighet.
-- Lagring och hantering av presentkortsannonser.
-- Köp och koppling mellan köpare, säljare och annons.
-- Verifiering av säljare, köpare och presentkort enligt projektets krav.
+`POST /api/accounts/register` tar emot `email`, `password` och
+`passwordConfirmation`. E-post normaliseras till små bokstäver och valideras på
+servern. Lösenord måste vara 8–128 tecken och innehålla bokstav och siffra.
 
-Frontend använder tills vidare demodata och `localStorage`, precis som tidigare.
-Backendkod och databasfiler läggs till här när tekniken är vald och respektive
-funktion börjar utvecklas.
+Konton sparas i `database/passiton.sqlite`. Lösenord hashas med `crypto.scrypt`
+och endast hash + salt lagras. Varken lösenord eller hash returneras i API-svar.
+Databasens unika constraint och `INSERT OR IGNORE` skyddar mot dubbla konton även
+om registreringsanrop når servern samtidigt.
+
+`GET /api/health` svarar 200. Övriga funktionsområden är fortfarande stommar
+och svarar 501.
+
+Använd inte riktiga personuppgifter, presentkortskoder eller betalningar i skol-MVP:n.

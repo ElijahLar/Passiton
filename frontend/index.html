@@ -28,7 +28,7 @@
         <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
           <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
         </button>
-        <button class="icon-btn" data-nav="dashboard" title="Mitt konto" aria-label="Mitt konto">
+        <button class="icon-btn" data-nav="register" title="Skapa konto" aria-label="Mitt konto">
           <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
         </button>
         <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
@@ -274,6 +274,31 @@
       </div>
     </section>
 
+
+    <section id="register" class="view">
+      <div class="page-width account-page">
+        <div class="account-card">
+          <span class="kicker">Skapa konto</span>
+          <h1>Börja köpa och sälja.</h1>
+          <p>Skapa ett konto med din e-postadress. Inloggning och identitetsverifiering byggs i senare user stories.</p>
+          <form id="register-form" class="account-form" novalidate>
+            <label>E-postadress
+              <input id="register-email" type="email" autocomplete="email" maxlength="254" required placeholder="namn@exempel.se">
+            </label>
+            <label>Lösenord
+              <input id="register-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+              <small>8–128 tecken, minst en bokstav och en siffra.</small>
+            </label>
+            <label>Bekräfta lösenord
+              <input id="register-password-confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+            </label>
+            <button id="register-submit" class="primary-cta" type="submit">Skapa konto</button>
+            <p id="register-status" class="form-status" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <section id="dashboard" class="view">
       <div class="page-width dashboard-page">
         <div class="section-intro">
@@ -332,7 +357,6 @@
     <button data-nav="dashboard"><span>♡</span>Mina</button>
   </nav>
 
-  <script src="js/data/cards.js"></script>
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

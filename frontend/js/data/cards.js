@@ -1,4 +1,4 @@
-const cards = [
+export const cards = [
   { id: 1, brand: 'IKEA', category: 'Hem', categoryLabel: 'Hem & inredning', value: 1000, price: 880, expiry: '2027-12-31', use: 'Alla IKEA varuhus och ikea.se', cls: 'ikea', popular: 100 },
   { id: 2, brand: 'Zalando', category: 'Mode', categoryLabel: 'Mode', value: 1000, price: 850, expiry: '2027-09-30', use: 'Zalando.se', cls: 'zalando', popular: 95 },
   { id: 3, brand: 'H&M', category: 'Mode', categoryLabel: 'Mode', value: 500, price: 425, expiry: '2027-08-15', use: 'H&M butik och online', cls: 'hm', popular: 90 },
