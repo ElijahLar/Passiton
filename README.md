@@ -3,6 +3,7 @@
 En klickbar frontend-MVP för projektledningskursen.
 
 ## Starta
+
 Öppna `frontend/index.html` direkt i webbläsaren, eller kör en enkel lokal webbserver från repots rot:
 
 ```bash
@@ -10,44 +11,61 @@ python -m http.server 8000
 ```
 
 Öppna sedan `http://localhost:8000/frontend/`.
-Rotens `index.html` skickar också vidare till frontend och behåller query-parametrar och hash.
-Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
+Rotens `index.html` skickar vidare till frontend och behåller query-parametrar och hash.
 
-## Ingår
+## Utvecklingsprincip
+
+Passiton byggs stegvis utifrån projektets user stories. Vi undviker att skapa stora generiska frontend- och backendstrukturer för funktioner som ännu inte ska implementeras.
+
+Varje user story dokumenteras i `docs/user-stories/` och får sedan de frontend-, backend- och testdelar som faktiskt behövs.
+
+Aktuellt fokus:
+
+- **US01 — Skapa konto**
+- Krav-ID: **K01, K02, K03**
+- Prioritet: **Must**
+
+När US01 är klar går utvecklingen vidare till nästa user story.
+
+## Struktur
+
+```text
+Passiton/
+├── docs/
+│   └── user-stories/        # User stories och spårbarhet till krav
+├── frontend/
+│   ├── index.html
+│   ├── css/
+│   └── js/
+│       ├── app.js
+│       ├── data/
+│       └── features/        # Funktioner läggs till när deras user story påbörjas
+├── backend/
+│   └── src/
+│       └── features/        # Backendfunktioner läggs till story för story
+└── index.html               # Vidarebefordran till frontend
+```
+
+### US01
+
+För US01 ligger arbetet under:
+
+- `docs/user-stories/US01-create-account.md`
+- `frontend/js/features/account/`
+- `backend/src/features/accounts/`
+
+Kodmapparna använder domännamn som `account` och `accounts` i stället för user-story-ID:n. Det gör koden lättare att förstå samtidigt som dokumentationen behåller spårbarheten till US01 och K01–K03.
+
+## Befintlig demo
+
+Den nuvarande frontend-MVP:n innehåller bland annat:
+
 - Marknadsplats med sök, kategorier, rabattfilter och sortering
-- Produktdetaljsida inspirerad av ren skandinavisk e-handel
+- Produktdetaljsida
 - Simulerat köp
 - Säljflöde med 5 % transaktionsavgift och live-förhandsvisning
 - Dashboard för köp och annonser
 - Responsiv mobilvy
-- Demo-data lagras i `localStorage`
+- Demo-data i `localStorage`
 
-## Obs
-Det här är en skol-MVP. Inga riktiga betalningar, presentkort eller verifieringar hanteras.
-
-## Filstruktur
-
-| Sökväg | Ansvar |
-| --- | --- |
-| `frontend/index.html` | Sidans HTML och vyer. |
-| `frontend/css/styles.css` | Befintlig styling och mobilanpassning. |
-| `frontend/js/app.js` | Navigation, rendering, filter, säljflöde och demoköp. |
-| `frontend/js/data/cards.js` | Befintliga demopresentkort. Laddas före app.js. |
-| `backend/README.md` | Backendens ansvar och nuvarande status. |
-| `index.html` | Vidarebefordran från repots rot till frontend. |
-| `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
-| `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
-
-## Applicera strukturpatchen
-
-Kräver Python 3 och Git. Från repots rot:
-
-```bash
-python3 scripts/apply_structure_patch.py --check
-python3 scripts/apply_structure_patch.py
-```
-
-Scriptet kontrollerar först att hela patchen går att applicera. Vid konflikt
-avbryter det utan att applicera patchen. Det skapar ingen commit och gör ingen push.
-Efter applicering kan du granska ändringarna med `git diff` och göra en egen commit.
-Patchen är skapad mot commit `a7fb446344c2a9048331c46a30f78b8b34720ccc`.
+Detta är fortfarande demo-funktionalitet. Inga riktiga betalningar, presentkort, konton eller verifieringar hanteras ännu.
