@@ -3,7 +3,7 @@
 En klickbar frontend-MVP för projektledningskursen.
 
 ## Starta
-Öppna `frontend/index.html` direkt i webbläsaren, eller kör en enkel lokal webbserver från repots rot:
+För enbart demo-visning kan du öppna `frontend/index.html` direkt. För att använda kontoflödet med Supabase behöver sidan köras via en lokal webbserver från repots rot:
 
 ```bash
 python -m http.server 8000
@@ -16,14 +16,18 @@ Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 ## Ingår
 - Marknadsplats med sök, kategorier, rabattfilter och sortering
 - Produktdetaljsida inspirerad av ren skandinavisk e-handel
-- Simulerat köp
-- Säljflöde med 5 % transaktionsavgift och live-förhandsvisning
+- Demo-kassa med varukorg, testuppgifter, orderbekräftelse och lokal köphistorik
+- Publicera presentkortsannonser med live-förhandsvisning och exempel på 5 % avgift
 - Dashboard för köp och annonser
 - Responsiv mobilvy
+- Skapa konto och logga in med Supabase Auth (se [backend/README.md](backend/README.md) för konfiguration)
+- Publicera annonser som inloggad användare (kräver Supabase-migreringen; betalning är inte aktiverad)
 - Demo-data lagras i `localStorage`
 
 ## Obs
-Det här är en skol-MVP. Inga riktiga betalningar, presentkort eller verifieringar hanteras.
+Det här är en skol-MVP. Annonser och presentkortskoder sparas i Supabase, men koderna
+verifieras inte och ingen riktig betalning eller överföring genomförs. Demoorder
+sparas bara i webbläsarens `localStorage`; testkortuppgifter sparas inte.
 
 ## Filstruktur
 

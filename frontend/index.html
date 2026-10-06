@@ -28,13 +28,13 @@
         <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
           <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
         </button>
-        <button class="icon-btn" data-nav="dashboard" title="Mitt konto" aria-label="Mitt konto">
+        <button id="account-nav" class="icon-btn" data-nav="dashboard" title="Logga in eller skapa konto" aria-label="Logga in eller skapa konto">
           <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
         </button>
         <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
           <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
         </button>
-        <button class="icon-btn bag-btn" data-nav="dashboard" title="Mina köp" aria-label="Mina köp">
+        <button id="bag-btn" class="icon-btn bag-btn" data-nav="cart" title="Varukorg" aria-label="Varukorg">
           <svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
           <span id="bag-count" class="bag-count hidden">0</span>
         </button>
@@ -97,7 +97,7 @@
 
         <div class="catalog">
           <div class="catalog-toolbar">
-            <div><strong id="result-count">0 presentkort</strong><span>Verifierade annonser</span></div>
+            <div><strong id="result-count">0 presentkort</strong><span>Presentkort som visas på Passiton</span></div>
             <label>Sortera
               <select id="sort-filter">
                 <option value="popular">Mest populära</option>
@@ -146,7 +146,7 @@
 
           <aside class="detail-panel">
             <div class="detail-topline">
-              <span class="verified-pill"><span>✓</span> Verifierad annons</span>
+              <span id="detail-status" class="verified-pill"><span id="detail-status-icon" class="status-icon">✓</span><span id="detail-status-label">Verifierad annons</span></span>
               <div class="detail-mini-actions"><button>♡ Spara</button><button>⇧ Dela</button></div>
             </div>
             <h1 id="detail-title">IKEA presentkort</h1>
@@ -166,20 +166,21 @@
               </div>
               <div class="info-row">
                 <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
-                <strong>Leverans</strong><span>Direkt till e-post<small>Vanligtvis inom några minuter.</small></span>
+                <strong>Leverans</strong><span>Digital leverans (demo)<small>Ingen presentkortskod skickas i den här versionen.</small></span>
               </div>
               <div class="info-row seller-row">
                 <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
-                <strong>Säljare</strong><span><b>M. A.</b> <em>✓ Verifierad säljare</em></span><span class="chev">›</span>
+                <strong>Säljare</strong><span><b id="detail-seller-name">M. A.</b> <em id="detail-seller-status">✓ Verifierad säljare</em></span><span class="chev">›</span>
               </div>
             </div>
 
             <button id="buy-now" class="primary-cta">Köp nu</button>
-            <button class="secondary-cta">♡ Lägg i favoriter</button>
+            <p id="live-listing-notice" class="live-listing-notice hidden" role="status">Du kan prova demo-kassan. Ingen betalning dras och ingen presentkortskod skickas.</p>
+            <button id="add-to-cart" class="secondary-cta" type="button">Lägg i varukorgen</button>
 
             <div class="protection-box">
               <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-              <div><strong>Köparskydd ingår</strong><p>Din betalning hålls säker tills du har mottagit och verifierat presentkortet.</p></div>
+              <div><strong>Demo-kassa</strong><p>Ingen riktig betalning genomförs. Presentkortskoden skickas inte.</p></div>
               <button> Läs mer </button>
             </div>
 
@@ -202,8 +203,11 @@
         <div class="section-intro">
           <span class="kicker">Sälj på Passiton</span>
           <h1>Gör oanvänt värde till pengar.</h1>
-          <p>Skapa en demoannons på under en minut. I en riktig tjänst verifieras presentkortet innan publicering.</p>
+          <p>Publicera en annons som sparas i Passiton. Presentkortskoden lagras separat från den offentliga annonsen. Betalning och överföring är inte aktiverade än.</p>
         </div>
+
+        <p id="sell-auth-notice" class="sell-access-note hidden" role="status">Logga in eller skapa ett konto innan du publicerar en annons. <button type="button" data-nav="dashboard">Gå till mitt konto</button></p>
+        <p id="sell-service-notice" class="sell-access-note hidden" role="status"></p>
 
         <div class="sell-layout">
           <form id="sell-form" class="sell-form">
@@ -227,11 +231,11 @@
               <span class="form-step">02</span>
               <h2>Pris och giltighet</h2>
               <div class="form-row">
-                <label>Presentkortets värde
-                  <div class="money-input"><input id="sell-value" type="number" min="100" step="50" value="1000" required><span>kr</span></div>
+                <label>Presentkortets värde <span class="field-note">(hela kronor)</span>
+                  <div class="money-input"><input id="sell-value" type="number" min="1" step="1" value="1000" required><span>kr</span></div>
                 </label>
-                <label>Ditt pris
-                  <div class="money-input"><input id="sell-price" type="number" min="50" step="10" value="900" required><span>kr</span></div>
+                <label>Ditt pris <span class="field-note">(hela kronor)</span>
+                  <div class="money-input"><input id="sell-price" type="number" min="1" step="1" value="900" required><span>kr</span></div>
                 </label>
               </div>
               <label>Giltigt till
@@ -242,13 +246,14 @@
             <div class="form-section">
               <span class="form-step">03</span>
               <h2>Verifiering</h2>
-              <label>Presentkortskod <span class="field-note">(endast demo)</span>
-                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" required>
+              <label>Presentkortskod <span class="field-note">(lagras privat)</span>
+                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" autocomplete="off" maxlength="200" required>
               </label>
               <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig och inte är använt.</span></label>
             </div>
 
-            <button class="primary-cta" type="submit">Publicera demoannons</button>
+            <button id="sell-submit" class="primary-cta" type="submit">Publicera annons</button>
+            <p id="sell-form-message" class="sell-form-message hidden" role="status" aria-live="polite"></p>
           </form>
 
           <aside class="seller-preview">
@@ -262,7 +267,7 @@
               <div class="preview-prices"><span>Värde <s id="preview-value">1 000 kr</s></span><strong id="preview-price">900 kr</strong></div>
 
               <div class="payout-summary">
-                <h3>Din utbetalning</h3>
+                <h3>Exempel på utbetalning</h3>
                 <div><span>Köparen betalar</span><b id="calc-price">900 kr</b></div>
                 <div><span>Passitons avgift (5%)</span><b id="calc-fee">45 kr</b></div>
                 <div class="payout-total"><span>Du får</span><b id="calc-net">855 kr</b></div>
@@ -279,8 +284,52 @@
         <div class="section-intro">
           <span class="kicker">Mitt Passiton</span>
           <h1>Dina köp och annonser.</h1>
-          <p>All aktivitet i den här MVP:n sparas lokalt i din webbläsare.</p>
+          <p>Ditt konto och publicerade annonser hanteras av Supabase. Demoorder sparas lokalt i den här webbläsaren; ingen riktig betalning genomförs.</p>
         </div>
+        <section class="account-panel" aria-label="Passiton-konto">
+          <div class="account-story">
+            <div>
+              <span class="kicker">Ditt Passiton</span>
+              <h2>Oanvänt värde kan gå vidare.</h2>
+              <p>Skapa ett konto för att komma igång som köpare eller säljare.</p>
+            </div>
+            <div class="account-route" aria-hidden="true">
+              <span class="route-person"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></span>
+              <span class="route-line"><span>VÄRDE VIDARE</span></span>
+              <span class="route-person"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></span>
+            </div>
+          </div>
+          <div class="account-access">
+            <div id="auth-heading">
+              <h2 id="auth-title">Skapa konto</h2>
+              <p id="auth-copy">Använd din e-postadress och välj ett lösenord.</p>
+            </div>
+            <p id="auth-unavailable" class="auth-unavailable hidden" role="status"></p>
+            <form id="auth-form" class="account-form">
+              <label id="auth-name-field" class="account-field" for="auth-name">Namn
+                <input id="auth-name" name="name" type="text" autocomplete="name" maxlength="80" required>
+              </label>
+              <label class="account-field" for="auth-email">E-postadress
+                <input id="auth-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+              </label>
+              <label class="account-field" for="auth-password">Lösenord
+                <input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+              </label>
+              <button id="auth-submit" class="primary-cta auth-submit" type="submit">Skapa konto</button>
+              <button id="auth-mode-toggle" class="auth-mode-toggle" type="button">Har du redan ett konto? Logga in</button>
+              <p id="auth-message" class="auth-message hidden" role="status" aria-live="polite"></p>
+            </form>
+            <div id="account-signed-in" class="account-signed-in hidden" aria-live="polite">
+              <div id="account-initials" class="account-initials" aria-hidden="true">P</div>
+              <div>
+                <span class="signed-in-label">Inloggad</span>
+                <h2 id="account-name">Välkommen</h2>
+                <p id="account-email"></p>
+              </div>
+              <button id="sign-out" class="secondary-cta sign-out" type="button">Logga ut</button>
+            </div>
+          </div>
+        </section>
         <div class="stats-row">
           <div><span>Köpt värde</span><strong id="stat-bought">0 kr</strong></div>
           <div><span>Totalt sparat</span><strong id="stat-saved">0 kr</strong></div>
@@ -289,6 +338,107 @@
         <div class="dashboard-columns">
           <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
           <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
+        </div>
+      </div>
+    </section>
+
+    <section id="cart" class="view">
+      <div class="page-width checkout-page">
+        <div class="section-intro">
+          <h1>Din varukorg.</h1>
+          <p>Granska din korg innan du fortsätter till demo-kassan.</p>
+        </div>
+        <div class="checkout-layout cart-layout">
+          <div id="cart-items" class="cart-items" aria-live="polite"></div>
+          <aside id="cart-summary" class="checkout-summary hidden">
+            <h2>Din beställning</h2>
+            <div class="summary-line"><span>Antal presentkort</span><strong id="cart-item-count">0</strong></div>
+            <div class="summary-line summary-total"><span>Summa</span><strong id="cart-total">0 kr</strong></div>
+            <p class="demo-note">Demo: inget belopp dras och ingen kod skickas.</p>
+            <button id="checkout-from-cart" class="primary-cta" type="button">Till demo-kassan</button>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="checkout" class="view">
+      <div class="page-width checkout-page">
+        <div class="section-intro">
+          <h1>Slutför din beställning.</h1>
+          <p>Fyll i testuppgifter för att prova köpresan. Inga riktiga betalningar görs.</p>
+        </div>
+        <div class="checkout-layout">
+          <form id="checkout-form" class="checkout-form">
+            <section class="checkout-section">
+              <h2>Kontakt och adress</h2>
+              <div class="checkout-fields">
+                <label>Fullständigt namn
+                  <input name="buyer-name" type="text" autocomplete="off" required>
+                </label>
+                <label>E-postadress
+                  <input name="buyer-email" type="email" inputmode="email" autocomplete="off" required>
+                </label>
+                <label>Telefonnummer
+                  <input name="buyer-phone" type="tel" inputmode="tel" autocomplete="off" required>
+                </label>
+                <label>Adress
+                  <input name="buyer-address" type="text" autocomplete="off" required>
+                </label>
+                <label>Postnummer
+                  <input name="buyer-postcode" type="text" autocomplete="off" required>
+                </label>
+                <label>Ort
+                  <input name="buyer-city" type="text" autocomplete="off" required>
+                </label>
+              </div>
+            </section>
+            <section class="checkout-section">
+              <h2>Betalningsuppgifter (test)</h2>
+              <p class="demo-note">Använd endast påhittade uppgifter. Kortnummer och säkerhetskod används inte och sparas inte.</p>
+              <div class="checkout-fields">
+                <label>Kortinnehavarens namn
+                  <input name="demo-card-name" type="text" autocomplete="off" required>
+                </label>
+                <label>Demokortnummer
+                  <input name="demo-card-number" type="text" inputmode="numeric" autocomplete="off" placeholder="0000 0000 0000 0000" required>
+                </label>
+                <label>Giltigt till
+                  <input name="demo-card-expiry" type="text" inputmode="numeric" autocomplete="off" placeholder="MM/ÅÅ" required>
+                </label>
+                <label>Säkerhetskod
+                  <input name="demo-card-cvc" type="text" inputmode="numeric" autocomplete="off" placeholder="CVC" required>
+                </label>
+              </div>
+            </section>
+            <p class="checkout-disclaimer" role="note">Det här är en simulerad kassa. Ingen betalning dras, inga kortuppgifter sparas och inget presentkort levereras.</p>
+            <div class="checkout-actions">
+              <button class="secondary-cta" type="button" data-nav="cart">Tillbaka till varukorgen</button>
+              <button class="primary-cta" type="submit">Slutför demoorder</button>
+            </div>
+          </form>
+          <aside class="checkout-summary">
+            <h2>Din beställning</h2>
+            <div id="checkout-order-items" class="checkout-order-items"></div>
+            <div class="summary-line summary-total"><span>Summa</span><strong id="checkout-total">0 kr</strong></div>
+            <p class="demo-note">Ingen betalning genomförs i den här demon.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="order-complete" class="view">
+      <div class="page-width order-page">
+        <div class="order-confirmation">
+          <span class="order-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+          <h1>Det är på väg!</h1>
+          <p class="order-status">Demoorder registrerad</p>
+          <p id="confirmation-copy">Tack. Din demoorder är klar.</p>
+          <p class="checkout-disclaimer">Ingen riktig betalning har genomförts och inget presentkort har skickats. Dina demoinköp finns nu under Mina köp.</p>
+          <div class="order-reference"><span>Ordernummer</span><strong id="confirmation-order-number">—</strong></div>
+          <div class="checkout-actions">
+            <button class="primary-cta" type="button" data-nav="dashboard">Visa mina köp</button>
+            <button class="secondary-cta" type="button" data-nav="market">Fortsätt handla</button>
+          </div>
         </div>
       </div>
     </section>
@@ -332,6 +482,8 @@
     <button data-nav="dashboard"><span>♡</span>Mina</button>
   </nav>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
   <script src="js/data/cards.js"></script>
   <script src="js/app.js"></script>
 </body>
