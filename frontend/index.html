@@ -208,6 +208,7 @@
 
         <p id="sell-auth-notice" class="sell-access-note hidden" role="status">Logga in eller skapa ett konto innan du publicerar en annons. <button type="button" data-nav="dashboard">Gå till mitt konto</button></p>
         <p id="sell-service-notice" class="sell-access-note hidden" role="status"></p>
+        <p id="sell-identity-notice" class="sell-access-note hidden" role="status">Du behöver verifiera din identitet innan du kan publicera annonser. <button type="button" data-nav="dashboard">Verifiera på mitt konto</button></p>
 
         <div class="sell-layout">
           <form id="sell-form" class="sell-form">
@@ -327,6 +328,15 @@
                 <p id="account-email"></p>
               </div>
               <button id="sign-out" class="secondary-cta sign-out" type="button">Logga ut</button>
+              <div id="identity-panel" class="identity-panel">
+                <div class="identity-copy">
+                  <span class="identity-label">Identitetsverifiering</span>
+                  <strong id="identity-status-title">Ej verifierad</strong>
+                  <p id="identity-status-copy">Verifiera din identitet med Stripe Identity för att kunna publicera annonser.</p>
+                </div>
+                <button id="identity-verify-button" class="secondary-cta identity-verify-button" type="button">Verifiera identitet</button>
+                <p id="identity-message" class="auth-message hidden" role="status" aria-live="polite"></p>
+              </div>
             </div>
           </div>
         </section>
