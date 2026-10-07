@@ -87,9 +87,10 @@ Secret keys får aldrig läggas i frontend, `supabase-config.js` eller Git.
 
 ### 3. Deploya Edge Functions
 
-Från repots rot med Supabase CLI kopplad till projektet:
+Med Supabase CLI kopplad till projektet:
 
 ```bash
+cd backend
 supabase functions deploy create-identity-session
 supabase functions deploy stripe-identity-webhook
 ```
