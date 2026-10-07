@@ -42,12 +42,16 @@ export default {
       return Response.json({ received: true })
     }
 
+    const status = event.type === 'identity.verification_session.redacted'
+      ? 'redacted'
+      : session.status
+
     const { error } = await ctx.supabaseAdmin
       .from('identity_verifications')
       .update({
-        status: session.status,
+        status,
         last_error_code: session.last_error?.code ?? null,
-        verified_at: session.status === 'verified' ? new Date().toISOString() : null,
+        verified_at: status === 'verified' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId)
