@@ -23,7 +23,7 @@ export default {
     if (existingError) throw existingError
 
     if (existing?.status === 'verified') {
-      return Response.json({ status: 'verified' })
+      return Response.json({ status: 'verified', url: null })
     }
 
     if (
@@ -34,21 +34,27 @@ export default {
         existing.stripe_verification_session_id,
       )
 
-      await ctx.supabaseAdmin
+      const { error: refreshError } = await ctx.supabaseAdmin
         .from('identity_verifications')
         .update({
           status: current.status,
           last_error_code: current.last_error?.code ?? null,
+          verified_at: current.status === 'verified' ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', userId)
         .eq('stripe_verification_session_id', current.id)
+
+      if (refreshError) throw refreshError
 
       return Response.json({
         status: current.status,
         url: current.status === 'requires_input' ? current.url : null,
       })
     }
+
+    const idempotencyKey =
+      `passiton-identity-${userId}-${existing?.stripe_verification_session_id || 'initial'}`
 
     const session = await stripe.identity.verificationSessions.create({
       type: 'document',
@@ -60,6 +66,8 @@ export default {
         },
       },
       return_url: returnUrl,
+    }, {
+      idempotencyKey,
     })
 
     const { error: upsertError } = await ctx.supabaseAdmin
@@ -69,7 +77,7 @@ export default {
         stripe_verification_session_id: session.id,
         status: session.status,
         last_error_code: session.last_error?.code ?? null,
-        verified_at: null,
+        verified_at: session.status === 'verified' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' })
 
