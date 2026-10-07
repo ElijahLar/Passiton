@@ -12,6 +12,9 @@ create table if not exists public.identity_verifications (
 );
 
 alter table public.identity_verifications enable row level security;
+
+alter table public.gift_card_listings
+  add column if not exists seller_identity_verified boolean not null default false;
 revoke all on table public.identity_verifications from anon, authenticated;
 grant select on table public.identity_verifications to authenticated;
 
@@ -79,7 +82,8 @@ begin
     category,
     value,
     price,
-    expires_on
+    expires_on,
+    seller_identity_verified
   )
   values (
     v_seller_id,
@@ -88,7 +92,8 @@ begin
     p_category,
     p_value,
     p_price,
-    p_expires_on
+    p_expires_on,
+    true
   )
   returning id into v_listing_id;
 
@@ -106,6 +111,8 @@ grant execute on function public.create_gift_card_listing(text, text, numeric, n
 
 comment on table public.identity_verifications is
   'Stripe Identity status for each Supabase user. No identity document data is stored in Passiton.';
+comment on column public.gift_card_listings.seller_identity_verified is
+  'Snapshot showing whether the seller had passed Passiton identity verification when this listing was created.';
 comment on function public.create_gift_card_listing(text, text, numeric, numeric, date, text) is
   'Creates a listing only for authenticated users whose Stripe Identity status is verified.';
 
