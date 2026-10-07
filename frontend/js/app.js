@@ -146,11 +146,20 @@ function openProduct(id){
   $('#detail-status-label').textContent=card.isLive?(isOwnListing?'Din annons · ej verifierad':'Säljarannons · ej verifierad'):card.isDemoListing?'Demoannons · ej publicerad':'Verifierad annons';
   $('#detail-status').classList.toggle('not-verified',isInspectionListing);
   $('#detail-seller-name').textContent=isOwnListing?'Du':card.isDemoListing?'Du':card.sellerName||'M. A.';
-  $('#detail-seller-status').textContent=card.isLive?(isOwnListing?'Din annons · ej verifierad':'Ej verifierad säljare'):card.isDemoListing?'Demopost':'✓ Verifierad säljare';
-  $('#detail-seller-status').classList.toggle('not-verified',isInspectionListing);
+  const sellerVerified=Boolean(card.sellerIdentityVerified);
+  $('#detail-seller-status').textContent=card.isLive
+    ?(isOwnListing
+      ?(sellerVerified?'✓ Din identitet är verifierad':'Din identitet är ej verifierad')
+      :(sellerVerified?'✓ Identitetsverifierad säljare':'Ej identitetsverifierad säljare'))
+    :card.isDemoListing?'Demopost':'✓ Verifierad säljare';
+  $('#detail-seller-status').classList.toggle('not-verified',card.isLive&&!sellerVerified||card.isDemoListing);
   $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
   $('#fact-use').textContent = card.isLive?'Presentkortskoden lagras privat. Koden skickas inte i den här demon.':card.isDemoListing?'Demoposten finns bara i den här webbläsaren.':card.use;
-  $('#about-copy').textContent = card.isLive?(isOwnListing?'Din annons är aktiv på Passiton. Presentkortet har inte verifierats av Passiton ännu.':`Annons publicerad av ${card.sellerName}. Presentkortet har inte verifierats av Passiton ännu.`):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
+  $('#about-copy').textContent = card.isLive
+    ?(isOwnListing
+      ?`Din annons är aktiv på Passiton. Din identitet ${sellerVerified?'var verifierad':'var inte verifierad'} när annonsen publicerades. Presentkortet har ännu inte verifierats av Passiton.`
+      :`Annons publicerad av ${card.sellerName}. Säljarens identitet ${sellerVerified?'är verifierad':'är inte verifierad'}; själva presentkortet har ännu inte verifierats av Passiton.`)
+    :card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
   const suggested = Math.round(card.value * .90 / 10) * 10;
   const fee = Math.round(suggested * .05);
   $('#similar-sale').textContent = money(suggested);
@@ -421,7 +430,7 @@ async function refreshMarketplaceListings(){
   if(!authClient)return;
   const today=new Date().toISOString().slice(0,10);
   const {data,error}=await authClient.from('gift_card_listings')
-    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status')
+    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status,seller_identity_verified')
     .eq('status','active')
     .gte('expires_on',today)
     .order('created_at',{ascending:false});
@@ -448,6 +457,7 @@ async function refreshMarketplaceListings(){
     cls:brandClass(row.brand),
     popular:101,
     createdAt:row.created_at,
+    sellerIdentityVerified:Boolean(row.seller_identity_verified),
     isLive:true
   }));
   renderAccountState();
