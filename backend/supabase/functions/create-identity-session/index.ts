@@ -5,7 +5,7 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!)
 
 export default {
   fetch: withSupabase({ auth: 'user' }, async (_req, ctx) => {
-    const userId = String(ctx.userClaims?.sub || '')
+    const userId = String(ctx.userClaims?.id || '')
     if (!userId) return Response.json({ error: 'UNAUTHORIZED' }, { status: 401 })
 
     const returnUrl = Deno.env.get('PASSITON_IDENTITY_RETURN_URL')
