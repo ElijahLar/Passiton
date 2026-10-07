@@ -1,5 +1,5 @@
 [functions.create-identity-session]
-verify_jwt = true
+verify_jwt = false
 
 [functions.stripe-identity-webhook]
 verify_jwt = false
