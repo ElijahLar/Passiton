@@ -40,8 +40,11 @@ Den publishable Stripe-nyckeln behövs inte för det hostade Identity-flödet.
 ## Fas 2 – Payments och utbetalningar
 
 Passiton är en marketplace där pengar ska gå från köpare till tredjepartssäljare.
-Det innebär att en framtida betalningsintegration bör utvärderas med **Stripe
-Connect**, connected accounts och en lämplig charge/transfer-modell.
+Stripes integrationsplanerare har bekräftat att Passiton passar som en **Stripe
+Connect Marketplace**. För den planerade köpmodellen rekommenderas **Separate
+Charges and Transfers**, eftersom Passiton behöver kunna ta emot köparens betalning
+och vänta med överföringen till säljaren tills leverans/verifieringsvillkoren är
+uppfyllda.
 
 Stripe klassificerar samtidigt presentkort/stored value som en begränsad
 verksamhetskategori. Ingen riktig betalning eller payout ska därför aktiveras innan
@@ -49,11 +52,16 @@ Stripe uttryckligen har godkänt Passitons affärsmodell.
 
 När Stripe har godkänt användningsfallet bör nästa implementation omfatta:
 
-- Connect-onboarding för säljare.
+- Connected accounts för säljare med transfer/recipient-funktion.
+- Embedded Connect-onboarding och Stripe-hanterad onboarding-UI.
+- Connect-statuskontroll innan en säljare kan ta emot transfers.
 - Server-side skapade Checkout Sessions eller PaymentIntents.
 - Webhooks som enda källa för betald orderstatus.
 - Atomisk reservation/markering av annons för att undvika dubbel försäljning.
 - Leverans av presentkortskod först efter rätt betalningsstatus.
 - Refund/chargeback-flöde.
 - Payout till connected account efter Passitons regler.
-- Passitons transaktionsavgift som application/platform fee där modellen tillåter.
+- Passitons transaktionsavgift genom att överföra ett lägre belopp till säljaren
+  än den ursprungliga charge-summan; `application_fee_amount` ska inte användas
+  med Separate Charges and Transfers.
+- Radar for Platforms/riskhantering eftersom plattformen bär marketplace-risken.
