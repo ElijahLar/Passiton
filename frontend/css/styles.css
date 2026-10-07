@@ -150,3 +150,16 @@ svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-l
 }
 @media (max-width:760px){.account-panel{grid-template-columns:1fr;margin-bottom:42px}.account-story{min-height:0;padding:27px 23px 24px}.account-story h2{font-size:32px}.account-route{margin-top:28px}.account-access{margin:12px;padding:25px 20px;min-height:0}.account-access h2{font-size:24px}}
 @media (max-width:430px){.product-grid{grid-template-columns:1fr}.gallery{grid-template-rows:330px}.price-block{gap:10px}.save-badge{padding:8px;font-size:11px}.detail-panel h1{font-size:27px}.market-hero h1,.section-intro h1,.info-page h1{font-size:36px}}
+
+.identity-panel{grid-column:1/-1;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.identity-copy{display:grid;gap:3px}
+.identity-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.identity-copy strong{font-size:14px}
+.identity-copy p{margin:2px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.identity-verify-button{width:auto;justify-self:start;margin-top:12px;padding:11px 17px}
+.identity-panel[data-status="verified"] .identity-copy strong{color:var(--green)}
+.identity-panel[data-status="processing"] .identity-copy strong{color:#76531b}
+.identity-panel[data-status="requires_input"] .identity-copy strong{color:#8b3024}
+.identity-panel[data-status="canceled"] .identity-copy strong,
+.identity-panel[data-status="redacted"] .identity-copy strong{color:#8b3024}
+@media(max-width:760px){.identity-verify-button{width:100%}}

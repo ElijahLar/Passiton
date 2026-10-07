@@ -18,7 +18,10 @@ const state = {
   authBusy: false,
   sellingBusy: false,
   authUnavailable: '',
-  listingError: ''
+  listingError: '',
+  identityStatus: 'unverified',
+  identityError: '',
+  identityBusy: false
 };
 
 const $ = sel => document.querySelector(sel);
@@ -29,6 +32,9 @@ const escapeHTML = str => String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<'
 
 function navTo(id){
   if(id==='sell'&&!state.user){
+    state.pendingNavigation='sell';
+    id='dashboard';
+  }else if(id==='sell'&&state.user&&state.identityStatus!=='verified'){
     state.pendingNavigation='sell';
     id='dashboard';
   }
@@ -42,6 +48,7 @@ function navTo(id){
   if(id === 'dashboard'){
     renderDashboard();
     if(state.pendingNavigation&&!state.user)setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
+    else if(state.pendingNavigation&&state.user&&state.identityStatus!=='verified')setIdentityMessage('Verifiera din identitet innan du publicerar en annons.','info');
   }
 }
 
@@ -139,11 +146,20 @@ function openProduct(id){
   $('#detail-status-label').textContent=card.isLive?(isOwnListing?'Din annons · ej verifierad':'Säljarannons · ej verifierad'):card.isDemoListing?'Demoannons · ej publicerad':'Verifierad annons';
   $('#detail-status').classList.toggle('not-verified',isInspectionListing);
   $('#detail-seller-name').textContent=isOwnListing?'Du':card.isDemoListing?'Du':card.sellerName||'M. A.';
-  $('#detail-seller-status').textContent=card.isLive?(isOwnListing?'Din annons · ej verifierad':'Ej verifierad säljare'):card.isDemoListing?'Demopost':'✓ Verifierad säljare';
-  $('#detail-seller-status').classList.toggle('not-verified',isInspectionListing);
+  const sellerVerified=Boolean(card.sellerIdentityVerified);
+  $('#detail-seller-status').textContent=card.isLive
+    ?(isOwnListing
+      ?(sellerVerified?'✓ Din identitet är verifierad':'Din identitet är ej verifierad')
+      :(sellerVerified?'✓ Identitetsverifierad säljare':'Ej identitetsverifierad säljare'))
+    :card.isDemoListing?'Demopost':'✓ Verifierad säljare';
+  $('#detail-seller-status').classList.toggle('not-verified',card.isLive&&!sellerVerified||card.isDemoListing);
   $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
   $('#fact-use').textContent = card.isLive?'Presentkortskoden lagras privat. Koden skickas inte i den här demon.':card.isDemoListing?'Demoposten finns bara i den här webbläsaren.':card.use;
-  $('#about-copy').textContent = card.isLive?(isOwnListing?'Din annons är aktiv på Passiton. Presentkortet har inte verifierats av Passiton ännu.':`Annons publicerad av ${card.sellerName}. Presentkortet har inte verifierats av Passiton ännu.`):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
+  $('#about-copy').textContent = card.isLive
+    ?(isOwnListing
+      ?`Din annons är aktiv på Passiton. Din identitet ${sellerVerified?'var verifierad':'var inte verifierad'} när annonsen publicerades. Presentkortet har ännu inte verifierats av Passiton.`
+      :`Annons publicerad av ${card.sellerName}. Säljarens identitet ${sellerVerified?'är verifierad':'är inte verifierad'}; själva presentkortet har ännu inte verifierats av Passiton.`)
+    :card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
   const suggested = Math.round(card.value * .90 / 10) * 10;
   const fee = Math.round(suggested * .05);
   $('#similar-sale').textContent = money(suggested);
@@ -230,6 +246,12 @@ $('#sell-form').addEventListener('submit', async e => {
     setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
     return;
   }
+  if(state.identityStatus!=='verified'){
+    state.pendingNavigation='sell';
+    navTo('dashboard');
+    setIdentityMessage('Verifiera din identitet med Stripe Identity innan du publicerar en annons.','info');
+    return;
+  }
   const brand=$('#sell-brand').value, category=$('#sell-category').value, value=Number($('#sell-value').value), price=Number($('#sell-price').value);
   if(price >= value){toast('Priset måste vara lägre än presentkortets värde.');return;}
   const expiry=$('#sell-expiry').value;
@@ -258,9 +280,12 @@ $('#sell-form').addEventListener('submit', async e => {
   }catch(error){
     const detail=String(error?.message||'').toLowerCase();
     const needsMigration=error?.code==='PGRST202'||error?.code==='PGRST205'||error?.code==='42P01'||detail.includes('create_gift_card_listing');
+    const needsIdentity=detail.includes('identity verification required');
     setSellMessage(needsMigration
       ?'Annonser är inte aktiverade i Supabase än. Kör SQL-migreringen som beskrivs i backend/README.md.'
-      :'Annonsen kunde inte publiceras. Kontrollera uppgifterna och försök igen.','error');
+      :needsIdentity
+        ?'Du behöver verifiera din identitet innan du kan publicera en annons.'
+        :'Annonsen kunde inte publiceras. Kontrollera uppgifterna och försök igen.','error');
   }finally{
     state.sellingBusy=false;
     renderAccountState();
@@ -405,7 +430,7 @@ async function refreshMarketplaceListings(){
   if(!authClient)return;
   const today=new Date().toISOString().slice(0,10);
   const {data,error}=await authClient.from('gift_card_listings')
-    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status')
+    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status,seller_identity_verified')
     .eq('status','active')
     .gte('expires_on',today)
     .order('created_at',{ascending:false});
@@ -432,6 +457,7 @@ async function refreshMarketplaceListings(){
     cls:brandClass(row.brand),
     popular:101,
     createdAt:row.created_at,
+    sellerIdentityVerified:Boolean(row.seller_identity_verified),
     isLive:true
   }));
   renderAccountState();
@@ -458,6 +484,89 @@ function setSellMessage(message,tone='info'){
   el.textContent=message;
   el.dataset.tone=tone;
   el.classList.toggle('hidden',!message);
+}
+
+function setIdentityMessage(message,tone='info'){
+  const el=$('#identity-message');
+  el.textContent=message;
+  el.dataset.tone=tone;
+  el.classList.toggle('hidden',!message);
+}
+
+function identityCopy(){
+  const map={
+    unverified:['Ej verifierad','Verifiera din identitet med Stripe Identity för att kunna publicera annonser.'],
+    requires_input:['Behöver verifieras','Slutför eller försök verifieringen igen för att kunna sälja.'],
+    processing:['Verifiering behandlas','Stripe behandlar din verifiering. Status uppdateras när resultatet är klart.'],
+    verified:['Verifierad','Din identitet är verifierad. Du kan publicera annonser.'],
+    canceled:['Verifiering avbruten','Starta en ny verifiering för att kunna sälja.'],
+    redacted:['Verifieringsdata raderad','Du behöver verifiera din identitet igen innan du kan sälja.']
+  };
+  return map[state.identityStatus]||map.unverified;
+}
+
+async function refreshIdentityStatus(){
+  if(!authClient||!state.user){
+    state.identityStatus='unverified';
+    state.identityError='';
+    renderAccountState();
+    return;
+  }
+
+  const {data,error}=await authClient
+    .from('identity_verifications')
+    .select('status,last_error_code,verified_at')
+    .eq('user_id',state.user.id)
+    .maybeSingle();
+
+  if(error){
+    const missing=error.code==='42P01'||error.code==='PGRST205';
+    state.identityError=missing
+      ?'Stripe Identity är inte aktiverat i Supabase än. Kör Identity-migreringen.'
+      :'Kunde inte läsa verifieringsstatus just nu.';
+    state.identityStatus='unverified';
+  }else{
+    state.identityError='';
+    state.identityStatus=data?.status||'unverified';
+  }
+  renderAccountState();
+  continuePendingNavigation();
+}
+
+async function startIdentityVerification(){
+  if(!authClient||!state.user||state.identityBusy)return;
+  state.identityBusy=true;
+  setIdentityMessage('');
+  renderAccountState();
+
+  try{
+    const {data,error}=await authClient.functions.invoke('create-identity-session',{body:{}});
+    if(error)throw error;
+
+    if(data?.status==='verified'){
+      state.identityStatus='verified';
+      setIdentityMessage('Din identitet är redan verifierad.','success');
+      renderAccountState();
+      continuePendingNavigation();
+      return;
+    }
+
+    if(data?.status==='processing'&&!data?.url){
+      state.identityStatus='processing';
+      setIdentityMessage('Verifieringen behandlas av Stripe. Ladda om sidan om en stund för att se resultatet.','info');
+      renderAccountState();
+      return;
+    }
+
+    if(!data?.url)throw new Error('NO_VERIFICATION_URL');
+    window.location.assign(data.url);
+  }catch(error){
+    console.error('Identity verification could not start:',error);
+    setIdentityMessage('Verifieringen kunde inte startas. Kontrollera Supabase/Stripe-konfigurationen och försök igen.','error');
+  }finally{
+    state.identityBusy=false;
+    renderAccountState();
+  }
 }
 
 function setAuthMode(mode){
@@ -496,10 +605,27 @@ function renderAccountState(){
   $('#sell-service-notice').textContent=state.listingError;
   $('#sell-service-notice').classList.toggle('hidden',!state.listingError||!signedIn);
 
+  const identityVerified=state.identityStatus==='verified';
+  $('#sell-identity-notice').classList.toggle('hidden',!signedIn||identityVerified);
+
+  const identityPanel=$('#identity-panel');
+  const [identityTitle,identityDescription]=identityCopy();
+  identityPanel.dataset.status=state.identityStatus;
+  $('#identity-status-title').textContent=identityTitle;
+  $('#identity-status-copy').textContent=state.identityError||identityDescription;
+  const identityButton=$('#identity-verify-button');
+  identityButton.classList.toggle('hidden',!signedIn||identityVerified);
+  identityButton.disabled=state.identityBusy||Boolean(state.authUnavailable);
+  identityButton.textContent=state.identityBusy
+    ?'Startar verifiering…'
+    :state.identityStatus==='requires_input'
+      ?'Försök igen'
+      :'Verifiera identitet';
+
   const locked=!authClient||state.authBusy||state.sellingBusy||Boolean(state.authUnavailable);
   $('#auth-form').querySelectorAll('input,button').forEach(control=>{control.disabled=locked;});
   $('#sign-out').disabled=state.authBusy;
-  $('#sell-form').querySelectorAll('input,select,button').forEach(control=>{control.disabled=locked||!signedIn||Boolean(state.listingError);});
+  $('#sell-form').querySelectorAll('input,select,button').forEach(control=>{control.disabled=locked||!signedIn||!identityVerified||Boolean(state.listingError);});
 }
 
 function initializeSupabaseAuth(){
@@ -520,9 +646,14 @@ function initializeSupabaseAuth(){
         state.authUnavailable='';
         state.authReady=true;
         state.user=session?.user||null;
+        if(!state.user){
+          state.identityStatus='unverified';
+          state.identityError='';
+        }
         renderAccountState();
         if($('#dashboard').classList.contains('active'))renderDashboard();
-        continuePendingNavigation();
+        if(state.user)refreshIdentityStatus().catch(()=>{});
+        else continuePendingNavigation();
       });
       authClient.auth.getSession().then(async({data,error})=>{
         if(error)state.authUnavailable='Kunde inte ansluta till kontotjänsten. Kontrollera Supabase-konfigurationen och försök igen.';
@@ -532,6 +663,7 @@ function initializeSupabaseAuth(){
         renderAccountState();
         if(!error){
           try{await refreshMarketplaceListings();}catch{}
+          if(state.user)try{await refreshIdentityStatus();}catch{}
         }
         continuePendingNavigation();
       }).catch(()=>{
@@ -598,6 +730,8 @@ $('#auth-form').addEventListener('submit',async e=>{
     renderAccountState();
   }
 });
+
+$('#identity-verify-button').addEventListener('click',startIdentityVerification);
 
 $('#sign-out').addEventListener('click',async()=>{
   if(!authClient)return;

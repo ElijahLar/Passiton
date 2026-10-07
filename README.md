@@ -21,12 +21,14 @@ Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 - Dashboard för köp och annonser
 - Responsiv mobilvy
 - Skapa konto och logga in med Supabase Auth (se [backend/README.md](backend/README.md) för konfiguration)
-- Publicera annonser som inloggad användare (kräver Supabase-migreringen; betalning är inte aktiverad)
+- Stripe Identity-verifiering för säljare i testläge
+- Publicera annonser först efter godkänd identitetsverifiering (kräver Supabase-migrationer och Edge Functions; betalning är inte aktiverad)
 - Demo-data lagras i `localStorage`
 
 ## Obs
 Det här är en skol-MVP. Annonser och presentkortskoder sparas i Supabase, men koderna
-verifieras inte och ingen riktig betalning eller överföring genomförs. Demoorder
+verifieras inte och ingen riktig betalning eller överföring genomförs. Säljarens
+identitet kan däremot verifieras med Stripe Identity i testläge. Demoorder
 sparas bara i webbläsarens `localStorage`; testkortuppgifter sparas inte.
 
 ## Filstruktur
@@ -37,7 +39,8 @@ sparas bara i webbläsarens `localStorage`; testkortuppgifter sparas inte.
 | `frontend/css/styles.css` | Befintlig styling och mobilanpassning. |
 | `frontend/js/app.js` | Navigation, rendering, filter, säljflöde och demoköp. |
 | `frontend/js/data/cards.js` | Befintliga demopresentkort. Laddas före app.js. |
-| `backend/README.md` | Backendens ansvar och nuvarande status. |
+| `backend/README.md` | Supabase/Stripe-setup, migrationer och Edge Functions. |
+| `backend/stripe-integration-plan.md` | Plan för Stripe Identity och framtida Connect/Payments. |
 | `index.html` | Vidarebefordran från repots rot till frontend. |
 | `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
 | `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
