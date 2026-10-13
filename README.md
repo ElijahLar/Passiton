@@ -17,6 +17,8 @@ Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 - Marknadsplats med sök, kategorier, rabattfilter och sortering
 - Produktdetaljsida inspirerad av ren skandinavisk e-handel
 - Demo-kassa med varukorg, testuppgifter, orderbekräftelse och lokal köphistorik
+- Supabase-demoorder för granskade säljarannonser (inloggad köpare), med 48-timmars kontrolltid
+- Privat köpar-/säljarchatt, bildbevis, eskalering till admin och simulerade beslut i dispyter
 - Publicera presentkortsannonser med live-förhandsvisning och exempel på 5 % avgift
 - Dashboard för köp och annonser
 - Responsiv mobilvy
@@ -32,10 +34,13 @@ ingen automatisk kort- eller saldovalidering görs. Presentkortskoden sparas
 separat i Supabase. Ingen riktig betalning eller överföring genomförs. Demoorder
 sparas bara i webbläsarens `localStorage`; testkortuppgifter sparas inte.
 
-**Aktivering:** Implementationen finns på `feature/30min-photo-proof` och måste
-kompletteras med SQL-migreringen
-`backend/supabase/migrations/202610130001_add_listing_photo_proof.sql` innan
-frontend kan användas. Se [backend/README.md](backend/README.md).
+**Aktivering:** Kör SQL-migreringarna i ordning:
+`202610060001_create_gift_card_listings.sql`,
+`202610130001_add_listing_photo_proof.sql` och
+`202610130002_add_demo_disputes.sql`.
+Se [backend/README.md](backend/README.md) för att lägga till administratör,
+testa med två konton och granska privata dispyter.
+**Inga riktiga pengar hålls, skickas eller återbetalas; det här är en simulering.**
 
 ## Filstruktur
 
