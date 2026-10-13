@@ -133,6 +133,83 @@ med nytt fotobevis, eftersom redigering/nygranskning inte byggts än.
 - Kör migrationsfilen **bara en gång** och verifiera policys i Supabase;
   ingen integration är live bara för att koden finns på GitHub.
 
+
+## PassItOn Trygg Affär – demoorder och dispyter (Kinguin-inspirerat)
+
+**VIKTIGT: ALLT ÄR DEMO.** Inga pengar tas emot, hålls, överförs eller återbetalas,
+och inga presentkortskoder levereras. 'Frigjord' och 'Återbetald' i denna funktion
+är *endast databasstatusar för demonstration*. Dispyter omfattar inte verkliga
+kortreklamationer, betalningsförmedling eller polisanmälningar.
+
+### Installation
+
+Efter de två befintliga migrationerna, kör **hela**:
+
+\`backend/supabase/migrations/202610130002_add_demo_disputes.sql\`
+
+i Supabase Dashboard → SQL Editor. Kör den först **innan** du testar den
+nya frontend-versionen. Den skapar:
+
+- \`demo_orders\`: inloggad köpare + säljare kopplade till en granskad annons;
+  ordern är bara simulerad, med kontrolltid på 48 timmar.
+- \`demo_disputes\`: max en reklamation per order, öppnas av köparen före deadline.
+- \`demo_dispute_messages\`: append-only privat chatt och statuslogg.
+- Privat Storage-bucket \`passiton-dispute-evidence\`, JPG/PNG/WebP max 3 MB,
+  med uppladdning från köpare/säljare och läsning från berörda parter/admin.
+- Säkerhet med RLS + serverstyrda RPC-anrop. Ingen klient får direkt skriva
+  orderstatus, dispytstatus eller meddelandelogg.
+- Intern administratörstabell och separat intern kö för misstänkta bedrägerier.
+
+### Ge ditt eget konto adminrättigheter
+
+Använd Supabase SQL Editor som projektägare och byt ut e-postadressen:
+
+\`\`\`sql
+insert into private.passiton_admins(user_id)
+select id from auth.users where lower(email)=lower('DIN-ADMIN@EXEMPEL.SE')
+on conflict (user_id) do nothing;
+\`\`\`
+
+Detta är den **enda** auktoriserade metoden i MVP:n: det finns ingen publik
+registreringsknapp som gör någon till admin. Admin kan se alla
+demoorder, öppnade dispyter och bevis; behandla detta som personuppgifter.
+
+### Testa med två konton och admin
+
+1. Skapa en säljarannons och godkänn fotobeviset manuellt enligt ovan.
+2. Logga in med ett **annat konto** (köpare).
+3. Kör demo-kassan för säljarens **riktiga, godkända** annons.
+   Inga kortuppgifter används och ingen presentkortskod lämnas ut.
+   Flera annonser i samma kassa skapar demoorder atomiskt.
+4. Öppna **Mitt PassItOn → Order och dispyter**, välj ordern,
+   och öppna en dispyt (minst 15 tecken).
+5. Logga in på säljarens konto. Svara i den privata chatten.
+6. Nu kan antingen köparen eller säljaren eskalera till PassItOn. Utan
+   säljarens svar går det efter 24 timmar.
+7. Med administratörskontot kan du läsa den eskalerade chatten,
+   välja **simulerad återbetalning** eller **simulerad frigöring**,
+   och vid misstanke flagga för separat intern bedrägerigranskning.
+8. Inom 48 timmar kan köparen också godkänna en order som saknar dispyt.
+   Efter deadline markeras odisputerade demoorder som frigjorda nästa gång
+   köparen eller säljaren laddar sina order.
+
+**Begränsning:** Utan Supabase Cron eller en server-worker sker 48-timmarsregeln
+när en inloggad part laddar sina order, inte exakt vid en bakgrundstidpunkt.
+Det spelar ingen roll för verkliga utbetalningar, eftersom inga sådana görs.
+
+### Misstänkt bedrägeri och polisanmälningar
+
+Admin kan flagga ett eskalerat ärende med intern notering. Noteringen
+sparas i \`private.demo_fraud_reviews\` och syns **inte** för parterna.
+Om en riktig polisanmälan senare görs *manuellt*, kan admin registrera
+referensnumret i systemet. **PassItOn skickar ingen polisanmälan automatiskt.**
+Att en tvist inte går att lösa är inte i sig bevis på brott.
+
+Äkta utbetalningsfrysning, faktiska återbetalningar och automatisk
+överföring får inte kopplas in utan godkänd betalpartner och juridisk granskning.
+En intern 48-timmarsfrist begränsar inte nödvändigtvis bankens
+kortreklamations- eller lagstadgade konsumenträttigheter.
+
 ## Kvarvarande demo-funktioner
 
 Varukorg, demo-kassa och köphistorik sparas i webbläsarens `localStorage`, inte i
