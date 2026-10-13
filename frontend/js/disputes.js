@@ -298,6 +298,11 @@
     });
   });
   el('dispute-refresh').addEventListener('click',()=>load());
+  // Simple low-cost refresh while the case view is open, no paid realtime service.
+  setInterval(()=>{
+    if(el('disputes').classList.contains('active') && state.user &&
+      !s.busy && !s.loading && document.visibilityState==='visible')load({refresh:false});
+  },30000);
 
   // Exposed only for navigation hooks in the existing non-module frontend.
   window.passitonLoadDisputes=()=>load();
