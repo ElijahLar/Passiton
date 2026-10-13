@@ -61,8 +61,15 @@ as $$
         and c.id::text = pg_catalog.split_part(p_path, '/', 2)
         and c.consumed_at is null
         and c.expires_at > now()
-    );
-$$;
+    )
+    -- Keep a single seller from exhausting the free Storage tier.
+    and (
+      select count(*) from storage.objects o
+      where o.bucket_id = 'passiton-photo-proofs'
+        and pg_catalog.split_part(o.name, '/', 1) = (select auth.uid())::text
+        and pg_catalog.split_part(o.name, '/', 2) = pg_catalog.split_part(p_path, '/', 2)
+    ) < 3;
+$;
 revoke all on function public.can_upload_listing_photo_proof(text) from public, anon;
 grant execute on function public.can_upload_listing_photo_proof(text) to authenticated;
 
@@ -97,6 +104,14 @@ begin
 
   -- Serialize concurrent requests from the same seller.
   perform 1 from auth.users where id = v_seller_id for update;
+  if (
+    select count(*)
+    from private.listing_photo_challenges c
+    where c.seller_id = v_seller_id
+      and c.created_at > now() - interval '1 hour'
+  ) >= 10 then
+    raise exception 'Too many proof codes. Try again later';
+  end if;
   update private.listing_photo_challenges
     set consumed_at = now()
     where seller_id = v_seller_id and consumed_at is null;
