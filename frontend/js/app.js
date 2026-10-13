@@ -18,7 +18,8 @@ const state = {
   authBusy: false,
   sellingBusy: false,
   authUnavailable: '',
-  listingError: ''
+  listingError: '',
+  photoProof: null
 };
 
 const $ = sel => document.querySelector(sel);
@@ -58,16 +59,16 @@ function cardHTML(card){
   return `<article class="product-card" data-card-id="${card.id}" tabindex="0" role="button" aria-label="Öppna ${escapeHTML(card.brand)} presentkort">
     ${artHTML(card)}
     <div class="product-meta">
-      <div><h3>${escapeHTML(card.brand)} presentkort</h3><p>Värde ${money(card.value)} · ${card.isLive?'Säljarannons':'Verifierad'}</p></div>
+      <div><h3>${escapeHTML(card.brand)} presentkort</h3><p>Värde ${money(card.value)} · ${card.isLive?'Foto granskat':'Demokort'}</p></div>
       <div class="product-meta-price"><strong>${money(card.price)}</strong><span>Spara ${pct(card)}%</span></div>
     </div>
   </article>`;
 }
 
 const categoryLabels={Hem:'Hem & inredning',Mode:'Mode',Elektronik:'Elektronik',Mat:'Mat & dagligvaror',Sport:'Sport & fritid',Resor:'Resor & transport'};
-function availableCards(){return [...state.liveListings,...cards]}
+function availableCards(){return [...state.liveListings.filter(card=>card.photoReviewStatus==='approved'),...cards]}
 function findProductCard(id){
-  const existing=availableCards().find(card=>String(card.id)===String(id));
+  const existing=[...state.liveListings,...cards].find(card=>String(card.id)===String(id));
   if(existing)return existing;
   const localListing=state.listings.find(listing=>String(listing.id)===String(id));
   if(!localListing)return null;
@@ -126,7 +127,8 @@ function galleryHTML(card){
 function openProduct(id){
   const card = findProductCard(id) || cards[0];
   const isOwnListing=card.isLive&&card.sellerId===state.user?.id;
-  const isInspectionListing=Boolean(card.isLive||card.isDemoListing);
+  const awaitingReview=Boolean(card.isLive&&card.photoReviewStatus!=='approved');
+  const isInspectionListing=Boolean(awaitingReview||card.isDemoListing);
   state.selectedId = card.id;
   $('#gallery').innerHTML = galleryHTML(card);
   $('#breadcrumbs').innerHTML = `Köp <span>›</span> ${escapeHTML(card.categoryLabel)} <span>›</span> ${escapeHTML(card.brand)} <span>›</span> ${escapeHTML(card.brand)} presentkort`;
@@ -136,38 +138,38 @@ function openProduct(id){
   $('#detail-price').textContent = money(card.price);
   $('#detail-save').textContent = `Spara ${pct(card)}%`;
   $('#detail-status-icon').textContent=isInspectionListing?'!':'✓';
-  $('#detail-status-label').textContent=card.isLive?(isOwnListing?'Din annons · ej verifierad':'Säljarannons · ej verifierad'):card.isDemoListing?'Demoannons · ej publicerad':'Verifierad annons';
+  $('#detail-status-label').textContent=card.isLive?(awaitingReview?(card.photoReviewStatus==='rejected'?'Fotobevis underkänt':'Inväntar fotogranskning'):'Fotobevis granskat'):card.isDemoListing?'Demoannons · ej publicerad':'Demokort';
   $('#detail-status').classList.toggle('not-verified',isInspectionListing);
   $('#detail-seller-name').textContent=isOwnListing?'Du':card.isDemoListing?'Du':card.sellerName||'M. A.';
-  $('#detail-seller-status').textContent=card.isLive?(isOwnListing?'Din annons · ej verifierad':'Ej verifierad säljare'):card.isDemoListing?'Demopost':'✓ Verifierad säljare';
+  $('#detail-seller-status').textContent=card.isLive?(isOwnListing?'Du är säljaren':'Identitet inte verifierad'):card.isDemoListing?'Demopost':'Exempelsäljare';
   $('#detail-seller-status').classList.toggle('not-verified',isInspectionListing);
   $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
   $('#fact-use').textContent = card.isLive?'Presentkortskoden lagras privat. Koden skickas inte i den här demon.':card.isDemoListing?'Demoposten finns bara i den här webbläsaren.':card.use;
-  $('#about-copy').textContent = card.isLive?(isOwnListing?'Din annons är aktiv på Passiton. Presentkortet har inte verifierats av Passiton ännu.':`Annons publicerad av ${card.sellerName}. Presentkortet har inte verifierats av Passiton ännu.`):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet levereras digitalt och kan användas hos ${card.use}. Ett enkelt sätt att få mer för pengarna.`;
+  $('#about-copy').textContent = card.isLive?(awaitingReview?'Annonsen väntar på manuell fotogranskning och är ännu inte synlig för köpare.':'Ett färskt fotobevis har granskats manuellt. Detta garanterar inte kortets saldo eller giltighet.'):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet är ett demokort.`;
   const suggested = Math.round(card.value * .90 / 10) * 10;
   const fee = Math.round(suggested * .05);
   $('#similar-sale').textContent = money(suggested);
   $('#similar-fee').textContent = money(fee);
   $('#similar-net').textContent = money(suggested - fee);
-  $('#live-listing-notice').textContent=card.isLive?'Du kan prova demo-kassan för den här annonsen. Ingen betalning dras och ingen presentkortskod skickas.':'Den här demoannonsen är inte publicerad och går inte att köpa.';
+  $('#live-listing-notice').textContent=card.isLive?(awaitingReview?'Annonsen är inte publicerad. En granskare behöver kontrollera bilden och engångskoden.':'Bilden har granskats; kortets saldo är inte garanterat. Kassa är fortfarande endast en demo.'):'Den här demoannonsen är inte publicerad och går inte att köpa.';
   $('#live-listing-notice').classList.toggle('hidden',!isInspectionListing);
-  $('#buy-now').disabled=Boolean(card.isDemoListing);
-  $('#buy-now').textContent = card.isDemoListing?'Demoannons kan inte köpas':`Köp nu · ${money(card.price)}`;
-  $('#add-to-cart').disabled=Boolean(card.isDemoListing);
-  $('#add-to-cart').textContent=card.isDemoListing?'Demoannons kan inte läggas i korgen':'Lägg i varukorgen';
+  $('#buy-now').disabled=Boolean(card.isDemoListing||awaitingReview);
+  $('#buy-now').textContent = awaitingReview?'Inväntar granskning':card.isDemoListing?'Demoannons kan inte köpas':`Köp nu · ${money(card.price)}`;
+  $('#add-to-cart').disabled=Boolean(card.isDemoListing||awaitingReview);
+  $('#add-to-cart').textContent=awaitingReview?'Ej tillgänglig än':card.isDemoListing?'Demoannons kan inte läggas i korgen':'Lägg i varukorgen';
   navTo('product');
 }
 
 $('#back-to-market').addEventListener('click', () => navTo('market'));
 $('#buy-now').addEventListener('click', () => {
   const card = findProductCard(state.selectedId);
-  if(!card||card.isDemoListing)return;
+  if(!card||card.isDemoListing||(card.isLive&&card.photoReviewStatus!=='approved'))return;
   beginCheckout([card]);
 });
 
 $('#add-to-cart').addEventListener('click',()=>{
   const card=findProductCard(state.selectedId);
-  if(!card||card.isDemoListing)return;
+  if(!card||card.isDemoListing||(card.isLive&&card.photoReviewStatus!=='approved'))return;
   if(state.cart.some(item=>String(item.id)===String(card.id))){
     toast('Presentkortet finns redan i varukorgen.');
     return;
@@ -222,6 +224,49 @@ function updateSellerPreview(){
 ['sell-brand','sell-value','sell-price'].forEach(id => $('#'+id).addEventListener('input',updateSellerPreview));
 updateSellerPreview();
 
+
+function refreshPhotoProofUI(){
+  const proof=state.photoProof;
+  const valid=Boolean(proof&&state.user&&proof.sellerId===state.user.id);
+  const remaining=valid?Math.max(0,Math.ceil((Date.parse(proof.expires_at)-Date.now())/1000)):0;
+  $('#sell-proof-details').classList.toggle('hidden',!valid);
+  $('#sell-proof-code').textContent=valid?proof.proof_code:'';
+  $('#sell-proof-countdown').textContent=!valid?'':remaining>0
+    ?`Giltig i ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')} – ladda upp fotot innan tiden går ut.`
+    :'Koden har gått ut. Generera en ny och ta ett nytt foto.';
+  $('#sell-proof-photo').disabled=!valid||remaining===0||state.sellingBusy||Boolean(state.listingError);
+}
+setInterval(refreshPhotoProofUI,1000);
+
+$('#sell-proof-generate').addEventListener('click',async()=>{
+  if(!state.user||!authClient||state.sellingBusy)return;
+  state.sellingBusy=true;
+  setSellMessage('');
+  renderAccountState();
+  try{
+    const sellerId=state.user.id;
+    const {data,error}=await authClient.rpc('begin_listing_photo_proof');
+    if(error)throw error;
+    if(!data?.[0]?.challenge_id||!data[0].proof_code||!data[0].expires_at)throw Error('NO_PROOF_CODE');
+    if(state.user?.id!==sellerId)throw Error('ACCOUNT_CHANGED');
+    state.photoProof={...data[0],sellerId};
+    $('#sell-proof-photo').value='';
+    $('#sell-proof-photo-name').textContent='';
+    setSellMessage('Skriv koden på papper och ta ett nytt foto med saldo och datum/klockslag.','info');
+  }catch(error){
+    console.error('Could not generate photo proof code',error);
+    setSellMessage('Koden kunde inte genereras. Kontrollera att fotobevis-migreringen har körts i Supabase.','error');
+  }finally{
+    state.sellingBusy=false;
+    renderAccountState();
+  }
+});
+
+$('#sell-proof-photo').addEventListener('change',e=>{
+  const file=e.target.files?.[0];
+  $('#sell-proof-photo-name').textContent=file?`${file.name} · ${(file.size/1048576).toFixed(1)} MB`:'';
+});
+
 $('#sell-form').addEventListener('submit', async e => {
   e.preventDefault();
   if(!state.user||!authClient){
@@ -230,37 +275,64 @@ $('#sell-form').addEventListener('submit', async e => {
     setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
     return;
   }
+  if(state.sellingBusy)return;
+  const proof=state.photoProof;
+  const photo=$('#sell-proof-photo').files?.[0];
+  if(!proof||proof.sellerId!==state.user.id||Date.parse(proof.expires_at)<=Date.now()){
+    setSellMessage('Generera en ny engångskod. Den måste vara giltig när du skickar in fotot.','error');
+    return;
+  }
+  if(!photo){
+    setSellMessage('Välj ett nytaget foto som visar koden, saldot och datum/klockslag.','error');
+    return;
+  }
+  const extension={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[photo.type];
+  if(!extension||photo.size>5*1024*1024||photo.size===0){
+    setSellMessage('Fotot måste vara JPG, PNG eller WebP och högst 5 MB.','error');
+    return;
+  }
   const brand=$('#sell-brand').value, category=$('#sell-category').value, value=Number($('#sell-value').value), price=Number($('#sell-price').value);
   if(price >= value){toast('Priset måste vara lägre än presentkortets värde.');return;}
   const expiry=$('#sell-expiry').value;
   if(expiry<new Date().toISOString().slice(0,10)){setSellMessage('Välj ett giltighetsdatum som inte har passerat.','error');return;}
   state.sellingBusy=true;setSellMessage('');renderAccountState();
   try{
+    const photoPath=`${state.user.id}/${proof.challenge_id}/${crypto.randomUUID()}.${extension}`;
+    const {error:uploadError}=await authClient.storage.from('passiton-photo-proofs')
+      .upload(photoPath,photo,{upsert:false,contentType:photo.type,cacheControl:'0'});
+    if(uploadError)throw uploadError;
     const {error}=await authClient.rpc('create_gift_card_listing',{
       p_brand:brand,
       p_category:category,
       p_value:value,
       p_price:price,
       p_expires_on:expiry,
-      p_gift_card_code:$('#sell-code').value.trim()
+      p_gift_card_code:$('#sell-code').value.trim(),
+      p_proof_challenge_id:proof.challenge_id,
+      p_proof_photo_path:photoPath
     });
     if(error)throw error;
 
     e.target.reset();
+    state.photoProof=null;
+    $('#sell-proof-photo-name').textContent='';
+    refreshPhotoProofUI();
     expiryInput.value=future.toISOString().slice(0,10);
     $('#sell-value').value=1000;
     $('#sell-price').value=900;
     updateSellerPreview();
-    setSellMessage('Annonsen är publicerad på Passiton. Presentkortskoden visas inte i annonsen.','success');
+    setSellMessage('Annonsen har skickats för manuell fotogranskning. Den syns inte för köpare ännu.','success');
     try{await refreshMarketplaceListings();}catch{}
-    toast('Annonsen är publicerad.');
+    toast('Annons inskickad för granskning.');
     navTo('dashboard');
   }catch(error){
     const detail=String(error?.message||'').toLowerCase();
     const needsMigration=error?.code==='PGRST202'||error?.code==='PGRST205'||error?.code==='42P01'||detail.includes('create_gift_card_listing');
+    const expired=detail.includes('photo proof code has expired')||detail.includes('photo proof code')||detail.includes('freshly uploaded proof photo');
     setSellMessage(needsMigration
-      ?'Annonser är inte aktiverade i Supabase än. Kör SQL-migreringen som beskrivs i backend/README.md.'
-      :'Annonsen kunde inte publiceras. Kontrollera uppgifterna och försök igen.','error');
+      ?'Fotobevis kräver den nya Supabase-migreringen. Följ backend/README.md.'
+      :expired?'Koden eller fotot är inte längre giltigt. Generera en ny kod och ta ett nytt foto.'
+      :'Fotot eller annonsen kunde inte skickas. Kontrollera uppladdningen och försök igen.','error');
   }finally{
     state.sellingBusy=false;
     renderAccountState();
@@ -269,7 +341,8 @@ $('#sell-form').addEventListener('submit', async e => {
 
 function activityHTML(item,type){
   const savings=item.value-item.price;
-  const activityLabel=type==='purchase'?(item.orderId?`Demoorder · ${escapeHTML(item.orderId)}`:'Köpt i demon'):`${item.isLive?'Publicerad':'Demoannons'} · giltig till ${escapeHTML(item.expiry)}`;
+  const listingStatus=item.isLive?(item.photoReviewStatus==='approved'?'Foto granskat':item.photoReviewStatus==='rejected'?'Foto underkänt':'Väntar på granskning'):'Demoannons';
+  const activityLabel=type==='purchase'?(item.orderId?`Demoorder · ${escapeHTML(item.orderId)}`:'Köpt i demon'):`${listingStatus} · giltig till ${escapeHTML(item.expiry)}`;
   const amountLabel=type==='purchase'?'Sparat '+money(savings):item.isLive?'Visa annons →':'Visa demo →';
   const rowContent=`<div class="activity-brand brand-${item.cls}">${escapeHTML(item.brand)}</div><div class="activity-copy"><strong>${escapeHTML(item.brand)} presentkort</strong><span>Värde ${money(item.value)} · ${activityLabel}</span></div><div class="activity-amount"><strong>${money(item.price)}</strong><span>${amountLabel}</span></div>`;
   if(type==='listing'){
@@ -405,7 +478,7 @@ async function refreshMarketplaceListings(){
   if(!authClient)return;
   const today=new Date().toISOString().slice(0,10);
   const {data,error}=await authClient.from('gift_card_listings')
-    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status')
+    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status,photo_review_status')
     .eq('status','active')
     .gte('expires_on',today)
     .order('created_at',{ascending:false});
@@ -422,6 +495,7 @@ async function refreshMarketplaceListings(){
     listingId:row.id,
     sellerId:row.seller_id,
     sellerName:row.seller_name,
+    photoReviewStatus:row.photo_review_status,
     brand:row.brand,
     category:row.category,
     categoryLabel:categoryLabels[row.category]||row.category,
@@ -500,6 +574,8 @@ function renderAccountState(){
   $('#auth-form').querySelectorAll('input,button').forEach(control=>{control.disabled=locked;});
   $('#sign-out').disabled=state.authBusy;
   $('#sell-form').querySelectorAll('input,select,button').forEach(control=>{control.disabled=locked||!signedIn||Boolean(state.listingError);});
+  if(state.photoProof&&state.photoProof.sellerId!==state.user?.id)state.photoProof=null;
+  refreshPhotoProofUI();
 }
 
 function initializeSupabaseAuth(){
