@@ -69,7 +69,7 @@ as $$
         and pg_catalog.split_part(o.name, '/', 1) = (select auth.uid())::text
         and pg_catalog.split_part(o.name, '/', 2) = pg_catalog.split_part(p_path, '/', 2)
     ) < 3;
-$;
+$$;
 revoke all on function public.can_upload_listing_photo_proof(text) from public, anon;
 grant execute on function public.can_upload_listing_photo_proof(text) to authenticated;
 
