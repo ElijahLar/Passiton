@@ -128,7 +128,7 @@ function openProduct(id){
   const card = findProductCard(id) || cards[0];
   const isOwnListing=card.isLive&&card.sellerId===state.user?.id;
   const awaitingReview=Boolean(card.isLive&&card.photoReviewStatus!=='approved');
-  const isInspectionListing=Boolean(awaitingReview||card.isDemoListing);
+  const isInspectionListing=Boolean(awaitingReview||!card.isLive);
   state.selectedId = card.id;
   $('#gallery').innerHTML = galleryHTML(card);
   $('#breadcrumbs').innerHTML = `Köp <span>›</span> ${escapeHTML(card.categoryLabel)} <span>›</span> ${escapeHTML(card.brand)} <span>›</span> ${escapeHTML(card.brand)} presentkort`;
@@ -142,7 +142,7 @@ function openProduct(id){
   $('#detail-status').classList.toggle('not-verified',isInspectionListing);
   $('#detail-seller-name').textContent=isOwnListing?'Du':card.isDemoListing?'Du':card.sellerName||'M. A.';
   $('#detail-seller-status').textContent=card.isLive?(isOwnListing?'Du är säljaren':'Identitet inte verifierad'):card.isDemoListing?'Demopost':'Exempelsäljare';
-  $('#detail-seller-status').classList.toggle('not-verified',isInspectionListing);
+  $('#detail-seller-status').classList.toggle('not-verified',true);
   $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
   $('#fact-use').textContent = card.isLive?'Presentkortskoden lagras privat. Koden skickas inte i den här demon.':card.isDemoListing?'Demoposten finns bara i den här webbläsaren.':card.use;
   $('#about-copy').textContent = card.isLive?(awaitingReview?'Annonsen väntar på manuell fotogranskning och är ännu inte synlig för köpare.':'Ett färskt fotobevis har granskats manuellt. Detta garanterar inte kortets saldo eller giltighet.'):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet är ett demokort.`;
@@ -346,7 +346,7 @@ function activityHTML(item,type){
   const amountLabel=type==='purchase'?'Sparat '+money(savings):item.isLive?'Visa annons →':'Visa demo →';
   const rowContent=`<div class="activity-brand brand-${item.cls}">${escapeHTML(item.brand)}</div><div class="activity-copy"><strong>${escapeHTML(item.brand)} presentkort</strong><span>Värde ${money(item.value)} · ${activityLabel}</span></div><div class="activity-amount"><strong>${money(item.price)}</strong><span>${amountLabel}</span></div>`;
   if(type==='listing'){
-    const description=item.isLive?'Visa aktiv annons':'Visa demoannons';
+    const description=item.isLive?'Visa din annons och granskningsstatus':'Visa demoannons';
     return `<button class="activity-item activity-open-listing" type="button" data-open-listing="${escapeHTML(item.id)}" aria-label="${description} för ${escapeHTML(item.brand)} presentkort">${rowContent}</button>`;
   }
   return `<div class="activity-item">${rowContent}</div>`;
@@ -372,7 +372,7 @@ function updateBag(){
 const cartTotal=items=>items.reduce((total,item)=>total+Number(item.price||0),0);
 
 function cartItemHTML(item){
-  const itemType=item.isLive?'Aktiv säljarannons':'Demokort';
+  const itemType=item.isLive?(item.photoReviewStatus==='approved'?'Fotobevis granskat':'Ej granskad'):'Demokort';
   return `<article class="cart-item">
     <div class="cart-item-brand brand-${escapeHTML(item.cls)}">${escapeHTML(item.brand)}</div>
     <div class="cart-item-info"><strong>${escapeHTML(item.brand)} presentkort</strong><span>Värde ${money(item.value)} · ${itemType}</span></div>
