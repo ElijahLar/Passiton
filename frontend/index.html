@@ -299,7 +299,8 @@
         <div class="section-intro">
           <span class="kicker">Mitt Passiton</span>
           <h1>Dina köp och annonser.</h1>
-          <p>Ditt konto och publicerade annonser hanteras av Supabase. Demoorder sparas lokalt i den här webbläsaren; ingen riktig betalning genomförs.</p>
+          <p>Konton och annonser hanteras av Supabase. Demoorder för riktiga annonser och deras dispyter sparas i Supabase, men inga pengar dras eller presentkortskoder levereras.</p>
+          <button type="button" class="secondary-cta inline-cta" data-nav="disputes">Öppna order och dispyter →</button>
         </div>
         <section class="account-panel" aria-label="Passiton-konto">
           <div class="account-story">
@@ -353,6 +354,92 @@
         <div class="dashboard-columns">
           <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
           <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="disputes" class="view">
+      <div class="page-width dispute-page">
+        <div class="section-intro">
+          <span class="kicker">PassItOn Trygg Affär · demo</span>
+          <h1>Order &amp; dispyter.</h1>
+          <p>En privat konversation mellan köpare och säljare. Om ni inte kommer överens kan ärendet eskaleras till PassItOn.</p>
+          <p class="dispute-demo-warning">Detta är en simulering. Inga pengar hålls, återbetalas eller betalas ut, och inga riktiga presentkortskoder levereras.</p>
+        </div>
+        <p id="dispute-notice" role="status" aria-live="polite" class="sell-form-message hidden"></p>
+        <div id="dispute-guest-note" class="dispute-guest hidden">
+          <h2>Logga in för att hantera dina ärenden</h2>
+          <button type="button" class="secondary-cta inline-cta" data-nav="dashboard">Gå till Mitt PassItOn</button>
+        </div>
+        <div id="dispute-content" class="hidden">
+          <div class="dispute-layout">
+            <aside class="dispute-sidebar">
+              <div class="dispute-sidebar-head">
+                <h2>Orderhistorik</h2>
+                <button type="button" class="dispute-link" id="dispute-refresh">Uppdatera</button>
+              </div>
+              <div id="dispute-orders-list" class="dispute-orders-list"></div>
+              <div id="dispute-admin-panel" class="dispute-admin-panel hidden">
+                <h2>Admin · Eskalerade</h2>
+                <p>Ärenden där PassItOn ska fatta ett beslut.</p>
+                <div id="dispute-admin-list"></div>
+              </div>
+            </aside>
+            <div class="dispute-main">
+              <div id="dispute-empty" class="dispute-empty">
+                <span class="dispute-empty-icon">✉</span>
+                <h2>Välj en order</h2>
+                <p>Välj en demoorder till vänster för att godkänna den eller öppna en dispyt.</p>
+              </div>
+              <div id="dispute-detail" class="hidden">
+                <div class="dispute-detail-header">
+                  <div>
+                    <span class="kicker" id="dispute-order-ref">DEMOORDER</span>
+                    <h2 id="dispute-order-title"></h2>
+                    <p id="dispute-order-meta"></p>
+                  </div>
+                  <span id="dispute-order-status" class="dispute-tag"></span>
+                </div>
+                <div id="dispute-order-instructions" class="dispute-info"></div>
+                <div id="dispute-actions" class="dispute-actions"></div>
+                <form id="dispute-start-form" class="dispute-start-form hidden">
+                  <h3>Öppna en dispyt</h3>
+                  <label for="dispute-reason">Vad är problemet?
+                    <select id="dispute-reason" required>
+                      <option value="invalid_code">Koden fungerar inte</option>
+                      <option value="wrong_balance">Fel saldo</option>
+                      <option value="expired">Presentkortet har gått ut</option>
+                      <option value="not_received">Presentkort saknas</option>
+                      <option value="other">Annat problem</option>
+                    </select>
+                  </label>
+                  <label for="dispute-details">Beskriv vad som hänt
+                    <textarea id="dispute-details" minlength="15" maxlength="2000" rows="4" required placeholder="Vad förväntade du dig och vad hände istället?"></textarea>
+                  </label>
+                  <p class="field-note">Inledningsvis får säljaren chans att svara. Inga koder eller PIN-nummer får skrivas i chatten.</p>
+                  <button type="submit" class="primary-cta">Starta dispyt</button>
+                </form>
+                <div id="dispute-thread-panel" class="hidden">
+                  <div class="dispute-thread-heading">
+                    <div><h3>Konversation</h3><p id="dispute-thread-state"></p></div>
+                    <button id="dispute-escalate" type="button" class="secondary-cta inline-cta hidden">Eskalera till PassItOn</button>
+                  </div>
+                  <div id="dispute-messages" class="dispute-messages" role="log" aria-live="polite" aria-label="Meddelanden i dispyt"></div>
+                  <form id="dispute-message-form" class="dispute-message-form">
+                    <label for="dispute-message-input">Nytt meddelande
+                      <textarea id="dispute-message-input" rows="3" maxlength="2000" placeholder="Skriv ett meddelande till motparten"></textarea>
+                    </label>
+                    <label class="dispute-file-input" for="dispute-evidence-file">Bifoga privat bildbevis (max 3 MB)
+                      <input id="dispute-evidence-file" type="file" accept="image/jpeg,image/png,image/webp">
+                    </label>
+                    <button type="submit" class="primary-cta inline-cta">Skicka</button>
+                  </form>
+                  <div id="dispute-resolution-actions" class="dispute-actions"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -501,5 +588,6 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/data/cards.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/disputes.js"></script>
 </body>
 </html>
