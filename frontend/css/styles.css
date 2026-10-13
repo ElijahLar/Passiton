@@ -150,3 +150,16 @@ svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-l
 }
 @media (max-width:760px){.account-panel{grid-template-columns:1fr;margin-bottom:42px}.account-story{min-height:0;padding:27px 23px 24px}.account-story h2{font-size:32px}.account-route{margin-top:28px}.account-access{margin:12px;padding:25px 20px;min-height:0}.account-access h2{font-size:24px}}
 @media (max-width:430px){.product-grid{grid-template-columns:1fr}.gallery{grid-template-rows:330px}.price-block{gap:10px}.save-badge{padding:8px;font-size:11px}.detail-panel h1{font-size:27px}.market-hero h1,.section-intro h1,.info-page h1{font-size:36px}}
+
+/* Seller's private 30-minute proof-of-possession photo flow */
+.photo-proof-panel{border:1px solid var(--line-dark);background:var(--soft);padding:20px;margin:16px 0 22px}
+.photo-proof-panel h3{font-size:15px;margin:0 0 10px}
+.photo-proof-panel p{font-size:12px;line-height:1.65;color:var(--muted);margin:0 0 15px}
+.photo-proof-panel .secondary-cta{margin:0 0 13px;max-width:360px}
+.photo-proof-details{border-top:1px solid var(--line-dark);padding-top:15px}
+.photo-proof-label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.photo-proof-code{display:block;font-size:clamp(24px,5vw,32px);letter-spacing:.09em;word-break:break-word;margin:9px 0;font-variant-numeric:tabular-nums}
+.photo-proof-panel .photo-proof-countdown{font-weight:700;color:var(--green);margin:0 0 16px}
+.photo-proof-panel label{margin:0 0 12px}
+.photo-proof-panel input[type=file]{height:auto;min-height:48px;padding:10px;background:#fff;max-width:100%;font-weight:400}
+.photo-proof-panel .field-note{font-size:11px}
