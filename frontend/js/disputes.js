@@ -3,7 +3,7 @@
  */
 (() => {
   const el = (id) => document.getElementById(id);
-  const s = { orders: [], cases: [], messages: [], admin: false, orderId: null, loading: false, busy: false, userId: null };
+  const s = { orders: [], cases: [], messages: [], fraudReviews: [], admin: false, orderId: null, loading: false, busy: false, userId: null };
   const safe = (value) => escapeHTML(String(value ?? ''));
   const date = (value) => value ? new Date(value).toLocaleString('sv-SE',{dateStyle:'short',timeStyle:'short'}) : '—';
   const activeOrder = () => s.orders.find(o => o.id === s.orderId);
@@ -72,6 +72,7 @@
       s.orders=o.data||[];
       s.cases=d.data||[];
       s.admin=Boolean(a);
+      s.fraudReviews=s.admin?(await request('demo_get_fraud_reviews'))||[]:[];
       // A seller or buyer cannot open a case that has no matching authorized order.
       if(s.orderId&&!s.orders.some(x=>x.id===s.orderId))s.orderId=null;
       if(!s.orderId&&s.orders.length)s.orderId=s.orders[0].id;
@@ -103,6 +104,11 @@
           '<strong>#'+safe(d.id.slice(0,8).toUpperCase())+' · '+safe(order?.brand||'Order')+'</strong>'+
           '<small>Eskalering · '+safe(date(d.escalated_at))+'</small></button>';
       }).join(''):'<p class="dispute-empty-list">Inga eskalerade ärenden.</p>';
+      const flagged=s.fraudReviews.filter(f=>!f.police_reported_at);
+      if(flagged.length)el('dispute-admin-list').innerHTML+='<h3 class="dispute-subheading">Intern bedrägerigranskning</h3>'+flagged.map(f=>{
+        const d=s.cases.find(x=>x.id===f.dispute_id);
+        return d?'<button class="dispute-order-row" data-dispute-order="'+safe(d.order_id)+'" type="button"><strong>Intern granskning #'+safe(d.id.slice(0,8))+'</strong><small>'+safe(date(f.flagged_at))+'</small></button>':'';
+      }).join('');
     }
   }
 
@@ -148,6 +154,7 @@
         Date.parse(d.opened_at)+24*3600000>Date.now();
       escalate.title=escalate.disabled?'Vänta 24 timmar eller tills säljaren svarar':'Skicka till admin';
       const c=el('dispute-resolution-actions');
+      const fraud=s.fraudReviews.find(f=>f.dispute_id===d.id);
       c.innerHTML=d.status==='resolved'?
         '<p class="dispute-done">Beslut: '+safe(d.outcome==='refund_simulated'?'Simulerad återbetalning':
           d.outcome==='release_simulated'?'Simulerad utbetalning':'Köparen drog tillbaka ärendet')+'</p>' :
@@ -155,7 +162,11 @@
         (s.admin && d.status==='escalated'?
           '<button type="button" data-dispute-action="release" class="secondary-cta inline-cta">Admin: Frigör (demo)</button>'+
           '<button type="button" data-dispute-action="refund" class="primary-cta inline-cta">Admin: Återbetala (demo)</button>'+
-          '<p class="field-note">Misstänkt bedrägeri? Spara bevis och bedöm separat om polisanmälan behövs. Ingen anmälan skickas automatiskt.</p>':'');
+          '<p class="field-note">Misstänkt bedrägeri? Använd intern granskning. Ingen polisanmälan skickas automatiskt.</p>':'')+
+        (s.admin&&d.escalated_at?
+          '<button type="button" data-dispute-action="flag" class="secondary-cta inline-cta">Flagga misstänkt bedrägeri</button>'+ 
+          (fraud&&!fraud.police_reported_at?'<button type="button" data-dispute-action="report" class="secondary-cta inline-cta">Registrera gjord polisanmälan</button>':'')+
+          (fraud?'<p class="field-note">Intern granskning: '+safe(fraud.suspicion_note)+' · '+safe(fraud.police_reported_at?'Polisanmälan registrerad i systemet':'Inte markerad som polisanmäld')+'</p>':''):'');
     }
   }
 
@@ -207,6 +218,22 @@
     const action=e.target.closest('[data-dispute-action]');
     if(action){
       const kind=action.dataset.disputeAction;
+      if(kind==='flag'){
+        const reason=prompt('Varför misstänker du bedrägeri? (minst 15 tecken)\nAnge inga känsliga presentkortskoder.');
+        if(reason===null)return;
+        return withBusy(async()=>{
+          await request('demo_flag_suspected_fraud',{p_dispute_id:activeCase().id,p_note:reason.trim()});
+          await load();
+        });
+      }
+      if(kind==='report'){
+        const reference=prompt('Ange referens från en REDAN genomförd polisanmälan. Detta skickar ingen ny anmälan.');
+        if(reference===null)return;
+        return withBusy(async()=>{
+          await request('demo_record_manual_police_report',{p_dispute_id:activeCase().id,p_reference:reference.trim()});
+          await load();
+        });
+      }
       if(!confirm(kind==='refund'?'Markera SIMULERAD återbetalning?':
         kind==='release'?'Markera SIMULERAD utbetalning?':'Dra tillbaka din reklamation?'))return;
       return withBusy(async()=>{
@@ -267,7 +294,7 @@
   // Exposed only for navigation hooks in the existing non-module frontend.
   window.passitonLoadDisputes=()=>load();
   window.passitonResetDisputes=()=>{
-    s.userId=null;s.orderId=null;s.orders=[];s.cases=[];s.messages=[];s.admin=false;
+    s.userId=null;s.orderId=null;s.orders=[];s.cases=[];s.messages=[];s.fraudReviews=[];s.admin=false;
     render();
   };
 })();
