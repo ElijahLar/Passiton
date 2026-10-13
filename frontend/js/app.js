@@ -19,7 +19,8 @@ const state = {
   sellingBusy: false,
   authUnavailable: '',
   listingError: '',
-  photoProof: null
+  photoProof: null,
+  checkoutBusy: false
 };
 
 const $ = sel => document.querySelector(sel);
@@ -40,6 +41,7 @@ function navTo(id){
   if(id === 'cart') renderCart();
   if(id === 'checkout') renderCheckout();
   if(id === 'order-complete') renderOrderConfirmation();
+  if(id === 'disputes') window.passitonLoadDisputes?.();
   if(id === 'dashboard'){
     renderDashboard();
     if(state.pendingNavigation&&!state.user)setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
@@ -433,7 +435,7 @@ $('#cart-items').addEventListener('click',e=>{
 
 $('#checkout-from-cart').addEventListener('click',()=>beginCheckout(state.cart,true));
 
-$('#checkout-form').addEventListener('submit',e=>{
+$('#checkout-form').addEventListener('submit',async e=>{
   e.preventDefault();
   const items=state.checkoutItems;
   if(!items.length){
@@ -441,10 +443,39 @@ $('#checkout-form').addEventListener('submit',e=>{
     return;
   }
 
+  if(state.checkoutBusy)return;
+  const liveItems=items.filter(item=>item.isLive);
+  if(liveItems.length&&(!state.user||!authClient)){
+    toast('Logga in för att skapa en demoorder som kan reklameras.');
+    state.pendingNavigation='checkout';
+    navTo('dashboard');
+    return;
+  }
   const buyerName=e.currentTarget.elements['buyer-name'].value.trim();
   const orderNumber=`DEMO-${Date.now().toString(36).toUpperCase()}`;
   const boughtAt=new Date().toISOString();
-  const profileItems=items.map(item=>({...item,boughtAt,orderId:orderNumber,demoOrder:true}));
+  const profileItems=[];
+  state.checkoutBusy=true;
+  const submit=$('#checkout-form button[type="submit"]');
+  submit.disabled=true;
+  try {
+    for(const item of items) {
+      let demoOrderId=null;
+      if(item.isLive) {
+        const {data,error}=await authClient.rpc('demo_create_order',{p_listing_id:item.listingId});
+        if(error)throw error;
+        demoOrderId=data;
+      }
+      profileItems.push({...item,boughtAt,orderId:orderNumber,demoOrder:true,demoOrderId});
+    }
+  } catch(error) {
+    console.error('Could not create demo order',error);
+    toast('Demoorder kunde inte skapas. Kontrollera Supabase-migreringen. Inget har debiterats.');
+    return;
+  } finally {
+    state.checkoutBusy=false;
+    submit.disabled=false;
+  }
   state.purchases.unshift(...profileItems);
   localStorage.setItem('passiton-purchases',JSON.stringify(state.purchases));
   state.lastOrder={
@@ -596,6 +627,7 @@ function initializeSupabaseAuth(){
         state.authUnavailable='';
         state.authReady=true;
         state.user=session?.user||null;
+        if(!state.user)window.passitonResetDisputes?.();
         renderAccountState();
         if($('#dashboard').classList.contains('active'))renderDashboard();
         continuePendingNavigation();
@@ -658,6 +690,7 @@ $('#auth-form').addEventListener('submit',async e=>{
     }
     if(state.user){
       try{await refreshMarketplaceListings();}catch{}
+      window.passitonLoadDisputes?.();
       continuePendingNavigation();
     }
   }catch(error){
@@ -682,6 +715,7 @@ $('#sign-out').addEventListener('click',async()=>{
     const {error}=await authClient.auth.signOut();
     if(error)throw error;
     state.user=null;
+    window.passitonResetDisputes?.();
     setAuthMode('login');
     setAuthMessage('Du är utloggad.','success');
   }catch{
