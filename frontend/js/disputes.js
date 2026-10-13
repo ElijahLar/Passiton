@@ -41,6 +41,7 @@
     finally{s.busy=false;}
   };
   const setSelected = (id) => {
+    el('dispute-checklist').querySelectorAll('input[type="checkbox"]').forEach(input=>{input.checked=false;});
     s.orderId=id;
     el('dispute-start-form').classList.add('hidden');
     render();
@@ -133,9 +134,12 @@
       order.status==='held'?'Simulerad kontrolltid till '+date(order.review_deadline)+
         '. Köparen kan godkänna eller reklamera före tidsfristen. Inga riktiga presentkort levereras i demon.' :
       'Demoordern är avslutad. Inga pengar eller presentkortskoder har överförts.';
+    const checklist=el('dispute-checklist');
+    checklist.classList.toggle('hidden',!(!d&&allowed&&isBuyer));
+    const checklistComplete=[...checklist.querySelectorAll('input')].every(input=>input.checked);
     const actions=el('dispute-actions');
     actions.innerHTML=!d&&allowed&&isBuyer
-      ? '<button id="dispute-approve" type="button" class="secondary-cta inline-cta">Godkänn demoorder</button>'+
+      ? '<button id="dispute-approve" type="button" class="secondary-cta inline-cta" '+(checklistComplete?'':'disabled title="Markera samtliga kontrollpunkter först"')+'>Godkänn demoorder</button>'+
         '<button id="dispute-open" type="button" class="primary-cta inline-cta">Jag har ett problem</button>'
       : '';
     el('dispute-start-form').classList.toggle('hidden',!el('dispute-start-form').dataset.open || !!d || !allowed);
@@ -197,6 +201,11 @@
   }
 
   const ordersContainer=el('disputes');
+  ordersContainer.addEventListener('change',e=>{
+    if(!e.target.matches('[data-dispute-check]'))return;
+    const approve=el('dispute-approve');
+    if(approve)approve.disabled=![...el('dispute-checklist').querySelectorAll('input')].every(input=>input.checked);
+  });
   ordersContainer.addEventListener('click',async(e)=>{
     const orderButton=e.target.closest('[data-dispute-order]');
     if(orderButton){setSelected(orderButton.dataset.disputeOrder);return;}
