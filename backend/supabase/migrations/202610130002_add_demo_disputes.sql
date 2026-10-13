@@ -171,6 +171,31 @@ $$;
 revoke all on function public.demo_create_order(uuid) from public,anon;
 grant execute on function public.demo_create_order(uuid) to authenticated;
 
+-- Checkout can contain several gift cards; either all simulated orders are
+-- created together or none of them are (one database transaction).
+create or replace function public.demo_create_orders(p_listing_ids uuid[])
+returns uuid[] language plpgsql security definer set search_path = ''
+as $
+declare
+  v_listing_id uuid;
+  v_order_ids uuid[] := array[]::uuid[];
+  v_seen uuid[] := array[]::uuid[];
+begin
+  if auth.uid() is null then raise exception 'Logga in'; end if;
+  if p_listing_ids is null or array_length(p_listing_ids,1) not between 1 and 10
+  then raise exception 'Välj 1–10 annonser'; end if;
+  foreach v_listing_id in array p_listing_ids loop
+    if v_listing_id is null or v_listing_id = any(v_seen)
+    then raise exception 'Samma annons kan inte köpas två gånger'; end if;
+    v_seen := array_append(v_seen,v_listing_id);
+    v_order_ids := array_append(v_order_ids, public.demo_create_order(v_listing_id));
+  end loop;
+  return v_order_ids;
+end;
+$;
+revoke all on function public.demo_create_orders(uuid[]) from public,anon;
+grant execute on function public.demo_create_orders(uuid[]) to authenticated;
+
 -- Idempotent lazy settlement. Called by the signed-in UI when loading cases.
 -- This updates demo state ONLY; no money ever moves.
 create or replace function public.demo_settle_expired_orders()
