@@ -155,16 +155,15 @@
       escalate.title=escalate.disabled?'Vänta 24 timmar eller tills säljaren svarar':'Skicka till admin';
       const c=el('dispute-resolution-actions');
       const fraud=s.fraudReviews.find(f=>f.dispute_id===d.id);
-      c.innerHTML=d.status==='resolved'?
+      c.innerHTML=(d.status==='resolved'?
         '<p class="dispute-done">Beslut: '+safe(d.outcome==='refund_simulated'?'Simulerad återbetalning':
           d.outcome==='release_simulated'?'Simulerad utbetalning':'Köparen drog tillbaka ärendet')+'</p>' :
         (isBuyer?'<button type="button" data-dispute-action="withdraw" class="secondary-cta inline-cta">Dra tillbaka dispyt</button>':'')+
         (s.admin && d.status==='escalated'?
           '<button type="button" data-dispute-action="release" class="secondary-cta inline-cta">Admin: Frigör (demo)</button>'+
-          '<button type="button" data-dispute-action="refund" class="primary-cta inline-cta">Admin: Återbetala (demo)</button>'+
-          '<p class="field-note">Misstänkt bedrägeri? Använd intern granskning. Ingen polisanmälan skickas automatiskt.</p>':'')+
-        (s.admin&&d.escalated_at?
-          '<button type="button" data-dispute-action="flag" class="secondary-cta inline-cta">Flagga misstänkt bedrägeri</button>'+ 
+          '<button type="button" data-dispute-action="refund" class="primary-cta inline-cta">Admin: Återbetala (demo)</button>':''))
+        +(s.admin&&d.escalated_at?
+          '<button type="button" data-dispute-action="flag" class="secondary-cta inline-cta">Flagga misstänkt bedrägeri</button>'+
           (fraud&&!fraud.police_reported_at?'<button type="button" data-dispute-action="report" class="secondary-cta inline-cta">Registrera gjord polisanmälan</button>':'')+
           (fraud?'<p class="field-note">Intern granskning: '+safe(fraud.suspicion_note)+' · '+safe(fraud.police_reported_at?'Polisanmälan registrerad i systemet':'Inte markerad som polisanmäld')+'</p>':''):'');
     }
