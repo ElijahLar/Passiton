@@ -203,7 +203,7 @@
         <div class="section-intro">
           <span class="kicker">Sälj på Passiton</span>
           <h1>Gör oanvänt värde till pengar.</h1>
-          <p>Publicera en annons som sparas i Passiton. Presentkortskoden lagras separat från den offentliga annonsen. Betalning och överföring är inte aktiverade än.</p>
+          <p>Bevisa med ett nytt foto att du har presentkortet. Bilden granskas innan annonsen syns för köpare. Presentkortskoden lagras privat. Betalning är inte aktiverad än.</p>
         </div>
 
         <p id="sell-auth-notice" class="sell-access-note hidden" role="status">Logga in eller skapa ett konto innan du publicerar en annons. <button type="button" data-nav="dashboard">Gå till mitt konto</button></p>
@@ -249,10 +249,25 @@
               <label>Presentkortskod <span class="field-note">(lagras privat)</span>
                 <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" autocomplete="off" maxlength="200" required>
               </label>
-              <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig och inte är använt.</span></label>
+              <div class="photo-proof-panel" aria-label="Fotobevis för annons">
+                <h3>Fotobevis med engångskod</h3>
+                <p>Generera din unika kod (giltig i 30 minuter). Skriv koden på en papperslapp och ta <strong>ett nytt foto</strong> där papperslappen, presentkortets saldo och aktuellt datum/klockslag syns tillsammans. Dölj kortnummer, PIN och inlösningskod.</p>
+                <button type="button" class="secondary-cta" id="sell-proof-generate">Generera kod – 30 minuter</button>
+                <div id="sell-proof-details" class="photo-proof-details hidden" aria-live="polite">
+                  <span class="photo-proof-label">Din engångskod</span>
+                  <strong id="sell-proof-code" class="photo-proof-code"></strong>
+                  <p id="sell-proof-countdown" class="photo-proof-countdown"></p>
+                  <label for="sell-proof-photo">Ladda upp fotot (JPG, PNG eller WebP, max 5 MB)
+                    <input id="sell-proof-photo" type="file" accept="image/jpeg,image/png,image/webp" />
+                  </label>
+                  <p id="sell-proof-photo-name" class="field-note"></p>
+                </div>
+                <p class="field-note">En människa granskar bilden. Fotot är privat och koden verifierar inte automatiskt presentkortets saldo eller giltighet.</p>
+              </div>
+              <label class="confirm-line"><input id="sell-confirm" type="checkbox" required><span>Jag bekräftar att presentkortet tillhör mig, är giltigt och inte är använt.</span></label>
             </div>
 
-            <button id="sell-submit" class="primary-cta" type="submit">Publicera annons</button>
+            <button id="sell-submit" class="primary-cta" type="submit">Skicka annons för granskning</button>
             <p id="sell-form-message" class="sell-form-message hidden" role="status" aria-live="polite"></p>
           </form>
 
