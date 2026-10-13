@@ -338,6 +338,72 @@ $$;
 revoke all on function public.demo_close_dispute(uuid,text) from public,anon;
 grant execute on function public.demo_close_dispute(uuid,text) to authenticated;
 
+-- Private fraud-review queue. Flagging does NOT imply guilt or contact police.
+create table if not exists private.demo_fraud_reviews (
+  dispute_id uuid primary key references public.demo_disputes(id) on delete cascade,
+  flagged_by uuid not null references auth.users(id) on delete restrict,
+  suspicion_note text not null check (char_length(suspicion_note) between 15 and 2000),
+  flagged_at timestamptz not null default now(),
+  police_reported_at timestamptz,
+  police_case_reference text
+);
+revoke all on private.demo_fraud_reviews from public,anon,authenticated;
+
+create or replace function public.demo_flag_suspected_fraud(
+  p_dispute_id uuid,p_note text
+)
+returns void language plpgsql security definer set search_path = ''
+as $
+declare v_case public.demo_disputes%rowtype;
+begin
+  if not public.is_passiton_admin() then raise exception 'Adminbehörighet krävs'; end if;
+  select * into v_case from public.demo_disputes where id=p_dispute_id;
+  if not found or v_case.escalated_at is null then
+    raise exception 'Endast eskalerade ärenden kan flaggas'; end if;
+  if char_length(trim(coalesce(p_note,''))) not between 15 and 2000 then
+    raise exception 'Beskriv misstanken med 15–2000 tecken'; end if;
+  insert into private.demo_fraud_reviews(dispute_id,flagged_by,suspicion_note)
+  values(p_dispute_id,auth.uid(),trim(p_note))
+  on conflict (dispute_id) do update set
+    suspicion_note=excluded.suspicion_note,flagged_at=now(),flagged_by=excluded.flagged_by;
+end;
+$;
+revoke all on function public.demo_flag_suspected_fraud(uuid,text) from public,anon;
+grant execute on function public.demo_flag_suspected_fraud(uuid,text) to authenticated;
+
+create or replace function public.demo_get_fraud_reviews()
+returns table(dispute_id uuid,suspicion_note text,flagged_at timestamptz,police_reported_at timestamptz)
+language plpgsql stable security definer set search_path = ''
+as $
+begin
+  if not public.is_passiton_admin() then raise exception 'Adminbehörighet krävs'; end if;
+  return query
+    select f.dispute_id,f.suspicion_note,f.flagged_at,f.police_reported_at
+    from private.demo_fraud_reviews f order by f.flagged_at desc;
+end;
+$;
+revoke all on function public.demo_get_fraud_reviews() from public,anon;
+grant execute on function public.demo_get_fraud_reviews() to authenticated;
+
+-- Only mark as reported AFTER making an actual report yourself.
+create or replace function public.demo_record_manual_police_report(
+  p_dispute_id uuid,p_reference text
+)
+returns void language plpgsql security definer set search_path = ''
+as $
+begin
+  if not public.is_passiton_admin() then raise exception 'Adminbehörighet krävs'; end if;
+  if char_length(trim(coalesce(p_reference,''))) not between 3 and 100 then
+    raise exception 'Ange ett verkligt diarienummer eller en referens'; end if;
+  update private.demo_fraud_reviews
+    set police_reported_at=now(),police_case_reference=trim(p_reference)
+    where dispute_id=p_dispute_id;
+  if not found then raise exception 'Ärendet måste först flaggas för granskning'; end if;
+end;
+$;
+revoke all on function public.demo_record_manual_police_report(uuid,text) from public,anon;
+grant execute on function public.demo_record_manual_police_report(uuid,text) to authenticated;
+
 comment on table public.demo_orders is 'Only simulated orders. Never represents actual funds or gift card delivery.';
 comment on table public.demo_disputes is 'Demo dispute workflow, no real payment hold or chargeback handling.';
 commit;
