@@ -459,13 +459,18 @@ $('#checkout-form').addEventListener('submit',async e=>{
   const submit=$('#checkout-form button[type="submit"]');
   submit.disabled=true;
   try {
+    let demoIds=[];
+    if(liveItems.length) {
+      const {data,error}=await authClient.rpc('demo_create_orders',{
+        p_listing_ids:liveItems.map(item=>item.listingId)
+      });
+      if(error)throw error;
+      if(!Array.isArray(data)||data.length!==liveItems.length)throw Error('Unexpected demo order response');
+      demoIds=data;
+    }
+    let liveIndex=0;
     for(const item of items) {
-      let demoOrderId=null;
-      if(item.isLive) {
-        const {data,error}=await authClient.rpc('demo_create_order',{p_listing_id:item.listingId});
-        if(error)throw error;
-        demoOrderId=data;
-      }
+      const demoOrderId=item.isLive?demoIds[liveIndex++]:null;
       profileItems.push({...item,boughtAt,orderId:orderNumber,demoOrder:true,demoOrderId});
     }
   } catch(error) {
