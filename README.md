@@ -21,13 +21,21 @@ Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 - Dashboard för köp och annonser
 - Responsiv mobilvy
 - Skapa konto och logga in med Supabase Auth (se [backend/README.md](backend/README.md) för konfiguration)
-- Publicera annonser som inloggad användare (kräver Supabase-migreringen; betalning är inte aktiverad)
+- Skicka annonser för manuell granskning med en servergenererad 30-minuters kod och privat fotobevis (kräver båda Supabase-migreringarna; betalning är inte aktiverad)
 - Demo-data lagras i `localStorage`
 
 ## Obs
-Det här är en skol-MVP. Annonser och presentkortskoder sparas i Supabase, men koderna
-verifieras inte och ingen riktig betalning eller överföring genomförs. Demoorder
+Det här är en skol-MVP. Säljaren kan skapa en **30-minuters engångskod**, skriva den
+på papper, fotografera koden med saldo och datum/klockslag och ladda upp bilden
+privat. Listan är **väntande** tills projektägaren manuellt har granskat bilden;
+ingen automatisk kort- eller saldovalidering görs. Presentkortskoden sparas
+separat i Supabase. Ingen riktig betalning eller överföring genomförs. Demoorder
 sparas bara i webbläsarens `localStorage`; testkortuppgifter sparas inte.
+
+**Aktivering:** Implementationen finns på `feature/30min-photo-proof` och måste
+kompletteras med SQL-migreringen
+`backend/supabase/migrations/202610130001_add_listing_photo_proof.sql` innan
+frontend kan användas. Se [backend/README.md](backend/README.md).
 
 ## Filstruktur
 
