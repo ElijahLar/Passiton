@@ -184,7 +184,7 @@ begin
     or pg_catalog.split_part(p_proof_photo_path, '/', 2) <> v_challenge.id::text
     or pg_catalog.split_part(p_proof_photo_path, '/', 4) <> ''
     or pg_catalog.split_part(p_proof_photo_path, '/', 3) !~
-      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$'
+      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$'
     or not exists (
       select 1 from storage.objects o
       where o.bucket_id = 'passiton-photo-proofs'
