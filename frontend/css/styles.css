@@ -163,3 +163,65 @@ svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-l
 .photo-proof-panel label{margin:0 0 12px}
 .photo-proof-panel input[type=file]{height:auto;min-height:48px;padding:10px;background:#fff;max-width:100%;font-weight:400}
 .photo-proof-panel .field-note{font-size:11px}
+
+
+/* PassItOn dispute centre – deliberately labelled DEMO until approved payments exist */
+.dispute-page{padding:58px 0 110px}
+.dispute-page .section-intro{margin-bottom:22px}
+.dispute-demo-warning{padding:13px 16px;border:1px solid #e6d7b6;background:#fff7e9;color:#664a19!important;font-size:13px!important;max-width:900px!important}
+.dispute-layout{display:grid;grid-template-columns:minmax(260px,.37fr) minmax(0,1fr);gap:30px;align-items:start}
+.dispute-sidebar,.dispute-main{border:1px solid var(--line);min-width:0;background:white}
+.dispute-sidebar{padding:22px}
+.dispute-sidebar-head,.dispute-detail-header,.dispute-thread-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dispute-sidebar-head h2,.dispute-admin-panel h2{margin:0 0 14px;font-size:17px}
+.dispute-link{border:0;background:transparent;color:var(--green);font-size:12px;text-decoration:underline;text-underline-offset:3px;padding:2px;cursor:pointer}
+.dispute-orders-list{display:flex;flex-direction:column;gap:8px}
+.dispute-order-row{width:100%;display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--soft);border:1px solid transparent;padding:14px;color:var(--text)}
+.dispute-order-row:hover,.dispute-order-row.active{border-color:var(--green);background:#eef6f1}
+.dispute-order-row small{color:var(--muted);font-size:11px;line-height:1.4}
+.dispute-order-label{font-size:12px;font-weight:600}
+.dispute-empty-list{font-size:12px;color:var(--muted)}
+.dispute-admin-panel{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.dispute-admin-panel p{color:var(--muted);font-size:12px;margin:0 0 10px}
+.dispute-main{min-height:360px;padding:26px}
+.dispute-empty{text-align:center;padding:80px 16px}
+.dispute-empty h2{font-size:20px;margin:16px 0 6px}
+.dispute-empty p{color:var(--muted);font-size:13px}
+.dispute-empty-icon{font-size:36px}
+.dispute-detail-header h2{font-size:25px;margin:5px 0}
+.dispute-detail-header p{font-size:12px;color:var(--muted);margin:0 0 20px}
+.dispute-tag{font-size:11px;font-weight:700;background:#fff2db;color:#805822;padding:7px 11px;border-radius:100px;white-space:normal;text-align:center}
+.dispute-info{background:var(--soft);border-left:3px solid var(--green);font-size:13px;line-height:1.7;padding:15px 18px;margin-bottom:18px}
+.dispute-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:16px 0}
+.dispute-actions .primary-cta,.dispute-actions .secondary-cta,.dispute-thread-heading .secondary-cta,
+.dispute-message-form .primary-cta,.dispute-start-form .primary-cta{width:auto;max-width:none;margin:0}
+.dispute-start-form{border:1px solid var(--line);background:#fafbfa;padding:22px;margin:24px 0}
+.dispute-start-form h3,.dispute-thread-heading h3{font-size:18px;margin:0 0 12px}
+.dispute-start-form label,.dispute-message-form label{font-size:12px;font-weight:600;display:block;margin-bottom:12px}
+.dispute-start-form select,.dispute-start-form textarea,.dispute-message-form textarea,
+.dispute-message-form input{display:block;width:100%;padding:12px;border:1px solid var(--line-dark);margin:7px 0;background:#fff;max-width:100%;border-radius:0}
+.dispute-thread-heading{align-items:center;border-bottom:1px solid var(--line);padding:16px 0 15px}
+.dispute-thread-heading p{font-size:12px;color:var(--muted);margin:0}
+.dispute-messages{min-height:190px;max-height:420px;overflow:auto;padding:20px 10px;display:flex;flex-direction:column;gap:13px}
+.dispute-bubble{border-radius:12px;padding:11px 15px;width:max-content;max-width:84%;min-width:150px}
+.dispute-bubble.other{background:var(--soft);align-self:flex-start}
+.dispute-bubble.own{background:#e5f2ea;align-self:flex-end}
+.dispute-bubble.system{align-self:center;background:#f3f0e7;text-align:center;font-style:italic;max-width:95%}
+.dispute-bubble small{display:block;color:var(--muted);font-size:10px;margin-bottom:7px}
+.dispute-bubble p{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 6px}
+.dispute-message-form{border-top:1px solid var(--line);padding-top:20px}
+.dispute-file-input{color:var(--muted)}
+.dispute-message-form input[type=file]{height:auto}
+.dispute-done{color:var(--green);font-weight:600;font-size:13px}
+.dispute-guest{padding:30px;background:var(--soft)}
+.dispute-guest h2{font-size:18px}
+@media(max-width:820px){
+  .dispute-page{padding:34px 0 90px}
+  .dispute-layout{grid-template-columns:1fr;gap:18px}
+  .dispute-sidebar{padding:14px}
+  .dispute-orders-list{max-height:250px;overflow:auto}
+  .dispute-main{padding:18px;min-height:240px}
+  .dispute-detail-header{flex-direction:column;gap:6px}
+  .dispute-bubble{max-width:93%}
+  .dispute-thread-heading{align-items:flex-start;flex-direction:column}
+}
