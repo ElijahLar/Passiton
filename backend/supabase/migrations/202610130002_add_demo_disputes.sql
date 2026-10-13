@@ -243,6 +243,9 @@ begin
       and expires_on >= current_date;
   if not found then raise exception 'Annonsen är inte tillgänglig'; end if;
   if v_listing.seller_id = v_user then raise exception 'Du kan inte köpa din egen annons'; end if;
+  if (select count(*) from public.demo_orders
+    where buyer_id=v_user and created_at > now()-interval '1 hour') >= 20
+  then raise exception 'För många demoorder på kort tid'; end if;
   if exists(select 1 from public.demo_orders
     where listing_id=p_listing_id and buyer_id=v_user and status='held')
   then raise exception 'Du har redan en pågående demoorder för annonsen'; end if;
@@ -266,7 +269,7 @@ declare
   v_seen uuid[] := array[]::uuid[];
 begin
   if auth.uid() is null then raise exception 'Logga in'; end if;
-  if p_listing_ids is null or array_length(p_listing_ids,1) not between 1 and 10
+  if p_listing_ids is null or coalesce(array_length(p_listing_ids,1),0) not between 1 and 10
   then raise exception 'Välj 1–10 annonser'; end if;
   foreach v_listing_id in array p_listing_ids loop
     if v_listing_id is null or v_listing_id = any(v_seen)
