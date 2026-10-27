@@ -107,3 +107,38 @@ test('signed-out user sees no listing manager',async()=>{
   await h.window.passitonListingManagement.refresh();
   assert.equal(h.elements.get('listing-management').classList.values.has('hidden'),true);
 });
+
+
+test('pending unreviewed listing may be resumed after pause', async () => {
+  const h=harness({own:[listing({status:'paused',photo_review_status:'pending'})]});
+  await h.window.passitonListingManagement.refresh();
+  const html=h.elements.get('lm-own-list').innerHTML;
+  assert.match(html,/Återaktivera/);
+  assert.match(html,/Fotogranskningen är pausad/);
+  assert.doesNotMatch(html,/data-lm-action="pause"/);
+  const article={dataset:{lmId:listing().id},querySelector(){return {value:'850'}}};
+  const control={dataset:{lmAction:'resume'},closest(selector){return selector==='button'?this:selector==='[data-lm-id]'?article:null}};
+  await h.root.clickHandler({target:control});
+  const action=h.calls.find(c=>c.name==='manage_own_listing');
+  assert.equal(action.args.p_action,'resume');
+});
+
+test('rejected paused listing cannot be resumed', async () => {
+  const h=harness({own:[listing({status:'paused',photo_review_status:'rejected'})]});
+  await h.window.passitonListingManagement.refresh();
+  assert.doesNotMatch(h.elements.get('lm-own-list').innerHTML,/Återaktivera/);
+});
+
+test('no unnecessary refresh button and admin area has no divider', () => {
+  const html=fs.readFileSync(path.join(__dirname,'../frontend/index.html'),'utf8');
+  assert.doesNotMatch(html,/id="lm-refresh"/);
+  assert.match(html,/id="lm-admin-panel" class="lm-admin-panel hidden"/);
+  assert.doesNotMatch(html,/<hr><div class="lm-header">/);
+});
+
+test('SQL refuses paused review and excludes paused pending listings from the queue', () => {
+  const sql=fs.readFileSync(path.join(__dirname,'../backend/supabase/migrations/202610270002_pause_pending_listing_reviews.sql'),'utf8');
+  assert.match(sql,/v_listing\.photo_review_status not in \('pending', 'approved'\)/);
+  assert.match(sql,/and l\.status = 'active'/);
+  assert.match(sql,/or v_listing\.status <> 'active'/);
+});

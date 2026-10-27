@@ -52,3 +52,28 @@ Utöka den befintliga marknadsplatsen med verklig serverstyrd annonseringshanter
 ## Ändringslogg
 
 2026-10-27: IP-01 skapad mot `main`, ny migrering samt separata frontend-resurser för säljare/admin. Inte körd mot skarp Supabase. Branch skapad; ingen commit eller push gjord.
+
+
+## IP-01B – Pausade ogranskade annonser (2026-10-27)
+
+**Utgångspunkt:** `feature/ip-01-listing-management` commit
+`c4e31db8d857a844a378a7634c4d0f1deee679e1`.
+**Ny branch:** `feature/ip-01b-listing-polish`. Patch levereras utan commit/push.
+
+1. På kontosidan tas den överflödiga Uppdatera-knappen bort.
+2. En ogranskad annons kan pausas och återaktiveras. Under pausen syns
+   den inte för administratören och kan inte godkännas eller avslås.
+   Vid återaktivering kommer den tillbaka till granskningskön med samma
+   tidigare uppladdade bevis (om annonsen inte är utgången).
+3. Administratörssektionen får en luftig, mjukt tonad bakgrund i stället
+   för en horisontell avdelare.
+4. Ny inkrementell SQL-migrering måste köras **efter** IP-01:
+   `backend/supabase/migrations/202610270002_pause_pending_listing_reviews.sql`.
+   Kopiera **filens SQL-innehåll** via macOS-terminalen och klistra in i
+   Supabase SQL Editor – klistra inte in terminalkommandot i SQL-editorn.
+
+**Verifiering:** `node --check frontend/js/listing-management.js` och
+`node --test tests/listing-management.test.cjs`; 9 lokala tester.
+För produktion krävs fortfarande riktiga integrationstester mot Supabase
+inklusive två säljarkonton och ett adminkonto. Ingen Mangopay, betalning
+eller presentkortsleverans har aktiverats.

@@ -32,3 +32,12 @@
   .lm-header > button, .lm-controls label, .lm-price { width: 100%; }
   .lm-buttons { width: 100%; }
 }
+
+/* Admin is a separate, softly tinted area rather than a dividing line. */
+.lm-admin-panel { margin-top: 3.25rem; padding: 1.75rem; border-radius: 14px; background: #f6f7f5; }
+.lm-admin-panel .lm-item { background: #fff; }
+.lm-admin-panel .lm-header { margin-bottom: 1.4rem; }
+.lm-review-pause-note { margin-top: 1rem !important; color: #536254 !important; }
+@media (max-width: 680px) {
+  .lm-admin-panel { margin-top: 2.5rem; padding: 1.15rem; }
+}

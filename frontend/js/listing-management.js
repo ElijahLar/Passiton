@@ -59,7 +59,7 @@
     const editable = ['active', 'paused'].includes(row.status)
       && row.photo_review_status !== 'rejected' && !expired;
     const removable = ['active', 'paused'].includes(row.status);
-    const resume = row.status === 'paused' && row.photo_review_status === 'approved' && !expired;
+    const resume = row.status === 'paused' && ['pending', 'approved'].includes(row.photo_review_status) && !expired;
     const action = row.status === 'active'
       ? '<button class="secondary-cta lm-small" data-lm-action="pause">Pausa</button>'
       : resume ? '<button class="secondary-cta lm-small" data-lm-action="resume">Återaktivera</button>' : '';
@@ -69,6 +69,9 @@
       <div class="lm-row"><div><strong>${safe(row.brand)} presentkort</strong>
       <p>Värde ${money(Number(row.value))} · Giltigt till ${safe(row.expires_on)}</p>
       ${reason}</div><span class="lm-tag">${labelStatus(row)}</span></div>
+      ${row.status === 'paused' && row.photo_review_status === 'pending'
+        ? '<p class="lm-review-pause-note">Fotogranskningen är pausad. Återaktivera för att fortsätta granskningen.</p>'
+        : ''}
       <div class="lm-row lm-controls"><label>Försäljningspris (kr)
         <input class="lm-price" aria-label="Pris för ${safe(row.brand)}" type="number" min="1" step="0.01"
           max="${Number(row.value)}" value="${Number(row.price)}" ${editable ? '' : 'disabled'}>
@@ -88,7 +91,7 @@
       <div class="lm-row"><div><strong>${safe(row.brand)} presentkort</strong>
         <p>Värde ${money(Number(row.face_value))} · Pris ${money(Number(row.asking_price))}</p>
         <p>Inskickad ${new Date(row.submitted_at).toLocaleString('sv-SE')} · Giltigt till ${safe(row.expires_on)}</p>
-      </div><span class="lm-tag">${row.listing_status === 'paused' ? 'Pausad' : 'Väntar'}</span></div>
+      </div><span class="lm-tag">Väntar</span></div>
       <p class="lm-proof-code">Förväntad kod i fotot: <strong>${safe(row.proof_code)}</strong></p>
       <p class="lm-warning">Jämför kod, datum/klockslag och saldo med bilden. Ett foto bevisar inte att saldot faktiskt finns eller att koden är oanvänd.</p>
       <div class="lm-buttons">
@@ -176,7 +179,6 @@
   root.addEventListener('click', async (event) => {
     const control = event.target.closest('button');
     if (!control || busy) return;
-    if (control.id === 'lm-refresh') { await refresh(); return; }
     if (control.id === 'lm-prev' || control.id === 'lm-next') {
       page = Math.max(0, page + (control.id === 'lm-next' ? 1 : -1));
       try { await refreshQueue(); } catch (e) { note(errorText(e), true, adminStatus); }
