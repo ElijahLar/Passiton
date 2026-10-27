@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/listing-management.css" />
 </head>
 <body>
   <header class="site-header">
@@ -355,6 +356,28 @@
           <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
           <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
         </div>
+        <section id="listing-management" class="listing-management hidden" aria-label="Hantera annonser">
+          <div class="lm-header">
+            <div><span class="kicker">Dina försäljningar</span><h2>Hantera annonser</h2>
+              <p>Ändra pris, pausa eller ta bort dina annonser. Verifieringsuppgifter kan inte ändras utan ett nytt fotobevis.</p>
+            </div>
+          </div>
+          <p id="lm-status" class="lm-message" role="status" aria-live="polite"></p>
+          <div id="lm-own-list" class="lm-list"></div>
+        </section>
+        <section id="lm-admin-panel" class="listing-management lm-admin-panel hidden" aria-label="Administratörens granskningskö">
+            <div class="lm-header"><div><span class="kicker">Endast administratörer</span>
+              <h2>Granska inkomna annonser</h2>
+              <p>Granska bild och engångskod manuellt. Bilden verifierar inte kortets faktiska saldo.</p>
+            </div></div>
+            <p id="lm-admin-status" class="lm-message" role="status" aria-live="polite"></p>
+            <div id="lm-admin-list" class="lm-list"></div>
+            <div class="lm-pagination">
+              <button type="button" id="lm-prev" class="secondary-cta lm-small">Föregående</button>
+              <span id="lm-page">Sida 1</span>
+              <button type="button" id="lm-next" class="secondary-cta lm-small">Nästa</button>
+            </div>
+        </section>
       </div>
     </section>
 
@@ -597,5 +620,6 @@
   <script src="js/data/cards.js"></script>
   <script src="js/app.js"></script>
   <script src="js/disputes.js"></script>
+  <script src="js/listing-management.js"></script>
 </body>
 </html>

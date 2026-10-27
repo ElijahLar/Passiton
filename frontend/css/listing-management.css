@@ -1,0 +1,48 @@
+/* IP-01: listing management; scoped to the existing dashboard. */
+.listing-management { margin: 2rem 0 0; padding: 1.5rem; border: 1px solid #e4e4e4; border-radius: 16px; background: #fff; }
+.listing-management.hidden, .lm-proof-image[hidden] { display: none !important; }
+.lm-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+.lm-header h2 { margin: .25rem 0; font-size: 1.3rem; }
+.lm-header p, .lm-item p { margin: .3rem 0; line-height: 1.5; color: #686868; font-size: .88rem; }
+.lm-list { display: grid; gap: .8rem; }
+.lm-item { padding: 1rem; background: #fafaf8; border: 1px solid #e9e8e3; border-radius: 12px; min-width: 0; }
+.lm-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.lm-row > div { min-width: 0; }
+.lm-item strong { overflow-wrap: anywhere; }
+.lm-tag { white-space: nowrap; padding: .4rem .65rem; border-radius: 99px; background: #ecece7; font-size: .75rem; font-weight: 600; }
+.lm-controls { flex-wrap: wrap; margin-top: 1rem; border-top: 1px solid #e7e5df; padding-top: 1rem; }
+.lm-controls label { display: grid; gap: .35rem; color: #555; font-size: .8rem; }
+.lm-price { width: 125px; min-height: 36px; padding: .5rem; border: 1px solid #cacaca; border-radius: 7px; background: white; font: inherit; }
+.lm-buttons { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; }
+.lm-small { min-height: 36px; padding: .55rem .85rem; font: inherit; font-size: .84rem; cursor: pointer; }
+.lm-small:disabled { opacity: .6; cursor: not-allowed; }
+.lm-danger { border-color: #c7a7a7; color: #902d2d; }
+.lm-empty { margin: 0; color: #666; }
+.lm-message { min-height: 1.3rem; margin: 0 0 .65rem; font-size: .9rem; }
+.lm-message[data-tone='error'] { color: #a42a2a; }
+.lm-message[data-tone='success'] { color: #265c3e; }
+.lm-proof-code { color: #202020 !important; }
+.lm-warning { border-left: 3px solid #b2a27a; padding: .5rem .75rem; background: #f5f1e7; }
+.lm-reason { color: #8b3333 !important; }
+.lm-proof-image { display: block; max-width: min(100%, 560px); max-height: 520px; margin-top: .9rem; border: 1px solid #dadada; border-radius: 8px; object-fit: contain; }
+.lm-pagination { display: flex; align-items: center; gap: .8rem; justify-content: center; margin-top: 1.2rem; }
+@media(max-width: 680px) {
+  .listing-management { padding: 1rem; }
+  .lm-header, .lm-row { align-items: flex-start; flex-direction: column; }
+  .lm-header > button, .lm-controls label, .lm-price { width: 100%; }
+  .lm-buttons { width: 100%; }
+}
+
+/* Separate card, matching the seller panel. Only review content uses the tinted item background. */
+.lm-admin-panel { margin-top: 1.5rem; }
+.lm-admin-panel .lm-header { margin-bottom: 1.1rem; }
+.lm-admin-panel .lm-empty {
+  padding: 1rem;
+  border: 1px solid #e9e8e3;
+  border-radius: 12px;
+  background: #fafaf8;
+}
+.lm-review-pause-note { margin-top: 1rem !important; color: #536254 !important; }
+@media (max-width: 680px) {
+  .lm-admin-panel { margin-top: 1.25rem; }
+}

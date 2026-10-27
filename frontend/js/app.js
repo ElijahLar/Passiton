@@ -362,6 +362,7 @@ function renderDashboard(){
   $('#listing-list').innerHTML=myListings.length?myListings.map(i=>activityHTML(i,'listing')).join(''):'<div class="empty-mini">Du har inga publicerade annonser ännu.</div>';
   updateBag();
   renderAccountState();
+  window.passitonListingManagement?.refresh();
 }
 function updateBag(){
   const count=state.cart.length;
