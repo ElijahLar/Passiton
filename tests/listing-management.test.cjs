@@ -95,7 +95,8 @@ test('admin can review only with server RPC and a reason for rejection', async (
   assert.equal(h.elements.get('lm-admin-panel').classList.values.has('hidden'),false);
   const article={dataset:{lmReviewId:queueItem.listing_id}};
   const control={dataset:{lmDecision:'rejected'},closest(selector){return selector==='button'?this:selector==='[data-lm-review-id]'?article:null}};
-  await h.root.clickHandler({target:control});
+  const adminPanel=h.elements.get('lm-admin-panel');
+  await adminPanel.clickHandler({target:control});
   const action=h.calls.find(c=>c.name==='admin_review_listing');
   assert.equal(action.args.p_decision,'rejected');
   assert.match(action.args.p_reason,/Fotot visar inte/);
@@ -132,7 +133,7 @@ test('rejected paused listing cannot be resumed', async () => {
 test('no unnecessary refresh button and admin area has no divider', () => {
   const html=fs.readFileSync(path.join(__dirname,'../frontend/index.html'),'utf8');
   assert.doesNotMatch(html,/id="lm-refresh"/);
-  assert.match(html,/id="lm-admin-panel" class="lm-admin-panel hidden"/);
+  assert.match(html,/<\/section>\s*<section id="lm-admin-panel" class="listing-management lm-admin-panel hidden"/);
   assert.doesNotMatch(html,/<hr><div class="lm-header">/);
 });
 
@@ -141,4 +142,12 @@ test('SQL refuses paused review and excludes paused pending listings from the qu
   assert.match(sql,/v_listing\.photo_review_status not in \('pending', 'approved'\)/);
   assert.match(sql,/and l\.status = 'active'/);
   assert.match(sql,/or v_listing\.status <> 'active'/);
+});
+
+test('both panels receive clicks independently after being separated', async () => {
+  const h=harness({admin:true,queue:[queueItem]});
+  await h.window.passitonListingManagement.refresh();
+  assert.equal(typeof h.root.clickHandler,'function');
+  assert.equal(typeof h.elements.get('lm-admin-panel').clickHandler,'function');
+  assert.equal(h.elements.get('lm-admin-panel').classList.values.has('hidden'),false);
 });

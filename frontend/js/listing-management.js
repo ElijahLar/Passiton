@@ -158,7 +158,7 @@
   async function mutate(work, target) {
     if (busy) return;
     busy = true;
-    root.querySelectorAll('button, input').forEach(b => { b.disabled = true; });
+    [root, adminPanel].forEach(panel => panel.querySelectorAll('button, input').forEach(b => { b.disabled = true; }));
     try {
       await work();
       note('Ändringen har sparats.', false, target);
@@ -176,7 +176,7 @@
     }
   }
 
-  root.addEventListener('click', async (event) => {
+  const handleClick = async (event) => {
     const control = event.target.closest('button');
     if (!control || busy) return;
     if (control.id === 'lm-prev' || control.id === 'lm-next') {
@@ -240,7 +240,10 @@
       });
       page = 0;
     }, adminStatus);
-  });
+  };
+  // The two panels are siblings, so both need to receive their own click events.
+  root.addEventListener('click', handleClick);
+  adminPanel.addEventListener('click', handleClick);
 
   // The page is a classic multi-view SPA; the existing dashboard calls this hook.
   window.passitonListingManagement = { refresh };

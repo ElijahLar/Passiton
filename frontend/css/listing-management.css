@@ -33,11 +33,16 @@
   .lm-buttons { width: 100%; }
 }
 
-/* Admin is a separate, softly tinted area rather than a dividing line. */
-.lm-admin-panel { margin-top: 3.25rem; padding: 1.75rem; border-radius: 14px; background: #f6f7f5; }
-.lm-admin-panel .lm-item { background: #fff; }
-.lm-admin-panel .lm-header { margin-bottom: 1.4rem; }
+/* Separate card, matching the seller panel. Only review content uses the tinted item background. */
+.lm-admin-panel { margin-top: 1.5rem; }
+.lm-admin-panel .lm-header { margin-bottom: 1.1rem; }
+.lm-admin-panel .lm-empty {
+  padding: 1rem;
+  border: 1px solid #e9e8e3;
+  border-radius: 12px;
+  background: #fafaf8;
+}
 .lm-review-pause-note { margin-top: 1rem !important; color: #536254 !important; }
 @media (max-width: 680px) {
-  .lm-admin-panel { margin-top: 2.5rem; padding: 1.15rem; }
+  .lm-admin-panel { margin-top: 1.25rem; }
 }
