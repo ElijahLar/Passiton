@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/listing-management.css" />
+  <link rel="stylesheet" href="css/price-offers.css" />
 </head>
 <body>
   <header class="site-header">
@@ -178,6 +179,7 @@
             <button id="buy-now" class="primary-cta">Köp nu</button>
             <p id="live-listing-notice" class="live-listing-notice hidden" role="status">Du kan prova demo-kassan. Ingen betalning dras och ingen presentkortskod skickas.</p>
             <button id="add-to-cart" class="secondary-cta" type="button">Lägg i varukorgen</button>
+            <button id="offer-open" class="secondary-cta hidden" type="button">Lämna prisförslag</button>
 
             <div class="protection-box">
               <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -356,6 +358,21 @@
           <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
           <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
         </div>
+        <section id="price-offers-panel" class="price-offers-panel hidden" aria-label="Mina prisförslag">
+          <div class="offer-panel-head">
+            <div><span class="kicker">Förhandla tryggt</span><h2>Mina prisförslag</h2>
+              <p>Alla bud är anonyma och gäller bara på Passiton. Inga fria meddelanden eller kontaktuppgifter.</p></div>
+            <div class="offer-panel-utility"><strong id="offer-active-count">0/5 aktiva</strong>
+              <button id="offer-refresh" class="offer-refresh" type="button">Uppdatera</button></div>
+          </div>
+          <div class="offer-usage"><strong>Aktiva bud: max 5 åt gången</strong><span id="offer-missed-count">0/5 missade betalningar (30 dagar)</span></div>
+          <p id="offer-warning" class="offer-warning hidden" role="status"></p>
+          <div class="offer-tabs" role="tablist" aria-label="Visa prisförslag">
+            <button id="offer-tab-sent" class="offer-tab is-active" role="tab" aria-selected="true" type="button">Skickade</button>
+            <button id="offer-tab-received" class="offer-tab" role="tab" aria-selected="false" type="button">Mottagna</button>
+          </div>
+          <div id="offer-list" class="offer-list" aria-live="polite"></div>
+        </section>
         <section id="listing-management" class="listing-management hidden" aria-label="Hantera annonser">
           <div class="lm-header">
             <div><span class="kicker">Dina försäljningar</span><h2>Hantera annonser</h2>
@@ -607,6 +624,24 @@
     <div class="page-width footer-inner"><strong>Passiton</strong><!--<span>Värde som får gå vidare.</span><span>Demo-MVP · Projektledningskurs 2026</span></div> -->
   </footer>
 
+  <dialog id="offer-dialog" class="offer-dialog" aria-labelledby="offer-dialog-heading">
+    <div class="offer-dialog-inner">
+      <div class="offer-dialog-title"><div><span class="kicker">Privat prisförhandling</span><h2 id="offer-dialog-heading">Lämna prisförslag</h2></div>
+        <button id="offer-close" class="offer-close" type="button" aria-label="Stäng">×</button></div>
+      <form id="offer-form">
+        <div class="offer-form-summary"><div><span>Annons</span><strong id="offer-listing-name"></strong></div>
+          <div><span>Annonspris</span><strong id="offer-original-price"></strong></div>
+          <div><span>Lägsta möjliga bud (50 %)</span><strong id="offer-min-price"></strong></div></div>
+        <label for="offer-price">Ditt prisförslag, hela kronor</label>
+        <div class="offer-number"><input id="offer-price" type="number" step="1" min="1" required inputmode="numeric" /><span>kr</span></div>
+        <div class="offer-preview"><span class="kicker">Ditt färdiga meddelande</span><p id="offer-preview"></p></div>
+        <span class="offer-disclaimer"><strong id="offer-count">0 av 5 aktiva prisförslag</strong><br />
+          Säljaren har 24 timmar på sig att svara. Accepteras ditt bud har du ytterligare 24 timmar för att genomföra köpet. Ingen betalning reserveras när du skickar bud.</span>
+        <p id="offer-message" class="offer-message hidden" role="status"></p>
+        <div class="offer-form-actions"><button id="offer-submit" class="primary-cta" type="submit">Skicka prisförslag</button></div>
+      </form>
+    </div>
+  </dialog>
   <div id="toast" class="toast hidden"></div>
 
   <nav class="mobile-nav" aria-label="Mobilnavigation">
@@ -621,5 +656,7 @@
   <script src="js/app.js"></script>
   <script src="js/disputes.js"></script>
   <script src="js/listing-management.js"></script>
+  <script src="js/offer-rules.js"></script>
+  <script src="js/price-offers.js"></script>
 </body>
 </html>

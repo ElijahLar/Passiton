@@ -1,0 +1,57 @@
+/* IP-02: Price offers, following PassItOn's existing Inter / white / forest-green design. */
+#offer-open{margin-top:10px}
+#offer-open:disabled{opacity:.55;cursor:not-allowed}
+.offer-dialog{border:1px solid var(--line);padding:0;background:var(--white);color:var(--text);width:min(480px,calc(100% - 32px));max-height:min(90vh,850px);box-shadow:0 30px 90px rgba(15,30,20,.22)}
+.offer-dialog::backdrop{background:rgba(17,25,20,.54);backdrop-filter:blur(2px)}
+.offer-dialog-inner{padding:30px;max-height:85vh;overflow-y:auto}
+.offer-dialog-title{display:flex;align-items:start;justify-content:space-between;gap:20px;margin-bottom:26px}
+.offer-dialog-title .kicker{margin:0 0 7px}.offer-dialog-title h2{margin:0;font-size:28px;font-weight:600;letter-spacing:-.04em;line-height:1.1}
+.offer-close{border:1px solid var(--line);background:#fff;width:34px;height:34px;font-size:23px;color:var(--muted);flex:none;line-height:1}
+.offer-form-summary{border-top:1px solid var(--text);border-bottom:1px solid var(--line);padding:17px 0 15px;display:grid;gap:8px}
+.offer-form-summary div{display:flex;justify-content:space-between;gap:20px;font-size:13px}
+.offer-form-summary span{color:var(--muted)}.offer-form-summary strong{font-size:13px}
+.offer-dialog label{display:block;font-size:12px;font-weight:600;margin:25px 0 8px}
+.offer-number{position:relative}.offer-number input{width:100%;height:58px;border:1px solid var(--line-dark);padding:0 60px 0 17px;background:#fff;font-size:24px;font-weight:600;letter-spacing:-.025em;outline:0;border-radius:0}
+.offer-number input:focus{border-color:var(--green);outline:2px solid rgba(12,90,67,.13);outline-offset:1px}
+.offer-number>span{position:absolute;right:17px;top:18px;color:var(--muted);font-size:13px}
+.offer-preview{background:var(--soft);padding:15px 16px;margin:20px 0 0}.offer-preview .kicker{font-size:10px;margin:0 0 9px}.offer-preview p{margin:0;font-size:13px;color:#323b34}
+.offer-disclaimer{display:block;margin:14px 0 0;font-size:11px;line-height:1.6;color:var(--muted)}
+.offer-disclaimer strong{color:var(--text)}
+.offer-form-actions .primary-cta{margin-top:19px}
+.offer-form-actions .primary-cta:disabled{opacity:.5;cursor:not-allowed}
+.offer-message{margin:14px 0 0;padding:11px 12px;font-size:12px;background:#fff1ee;color:#8b3024}
+.offer-message[data-kind="info"]{background:var(--soft);color:var(--muted)}
+.price-offers-panel{border-top:1px solid var(--text);margin-top:54px;padding-top:28px}
+.offer-panel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.offer-panel-head .kicker{margin:0 0 8px}.offer-panel-head h2{font-size:25px;font-weight:600;letter-spacing:-.04em;margin:0}
+.offer-panel-head p{font-size:13px;color:var(--muted);margin:8px 0 0;max-width:580px}
+.offer-panel-utility{display:flex;align-items:center;gap:12px;font-size:12px;white-space:nowrap;color:var(--muted)}
+.offer-panel-utility strong{color:var(--green);font-size:13px}.offer-refresh{border:0;background:none;text-decoration:underline;text-underline-offset:3px;color:var(--green);font-weight:600;font-size:12px;padding:8px 0}
+.offer-usage{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:22px;padding:13px 16px;background:var(--soft);font-size:12px}
+.offer-usage strong{color:var(--text)}.offer-usage span{color:var(--muted)}
+.offer-warning{margin:12px 0 0;padding:13px 16px;font-size:12px;color:#7a501b;background:#fff4df;border-left:3px solid #c38b31}
+.offer-warning-blocked{background:#fff0ed;color:#862e24;border-left-color:#ad3927}
+.offer-tabs{display:flex;gap:28px;border-bottom:1px solid var(--line);margin:25px 0 0}
+.offer-tab{padding:13px 0;border:0;border-bottom:2px solid transparent;background:transparent;font-weight:600;font-size:13px;color:var(--muted)}
+.offer-tab.is-active{color:var(--green);border-bottom-color:var(--green)}
+.offer-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px 0 0}
+.offer-item{border:1px solid var(--line);padding:22px 23px;min-width:0;transition:border-color .16s}
+.offer-item:hover{border-color:var(--line-dark)}
+.offer-item-top{display:flex;justify-content:space-between;gap:14px;align-items:start}
+.offer-item-kicker{color:var(--muted);font-size:11px}.offer-item h3{margin:4px 0 0;font-size:16px;letter-spacing:-.025em}
+.offer-tag{display:inline-block;padding:6px 9px;font-size:10px;font-weight:600;white-space:normal;text-align:right;line-height:1.3}
+.offer-tag-active{background:var(--green-soft);color:var(--green)}.offer-tag-closed{background:var(--soft);color:var(--muted)}
+.offer-values{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid var(--line);padding-top:18px;margin-top:18px}
+.offer-values div{display:flex;flex-direction:column;gap:4px}.offer-values span{font-size:11px;color:var(--muted)}.offer-values strong{font-size:21px;letter-spacing:-.035em}
+.offer-values div:last-child strong{color:var(--green)}.offer-deadline{color:#706234;font-size:11px;margin:15px 0 0;font-weight:600}
+.offer-original{font-size:11px;color:var(--muted);margin:9px 0 0}
+.offer-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px;align-items:center}
+.offer-small,.offer-actions .offer-small{width:auto;min-width:118px;min-height:37px;margin:0;padding:9px 12px;font-size:12px}
+.offer-item>.offer-small{margin-top:17px}
+.offer-text-action{border:0;background:none;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:3px;padding:9px 0}
+.offer-counter-form{background:var(--soft);padding:14px;margin-top:14px}
+.offer-counter-form label{font-size:12px;font-weight:600;display:block;margin-bottom:8px}
+.offer-counter-row{display:flex;gap:8px;align-items:stretch}.offer-counter-row input{width:105px;min-width:0;border:1px solid var(--line-dark);background:#fff;padding:8px;font-size:13px}
+.offer-empty{grid-column:1/-1;background:var(--soft);padding:36px 28px}.offer-empty strong{font-size:15px}.offer-empty p{margin:7px 0 0;font-size:13px;color:var(--muted)}
+@media(max-width:900px){.offer-list{grid-template-columns:1fr}.offer-panel-head{align-items:start}}
+@media(max-width:550px){.offer-dialog-inner{padding:24px 20px}.offer-dialog-title h2{font-size:25px}.offer-item{padding:19px 17px}.offer-panel-utility{width:100%;justify-content:space-between}.offer-usage{flex-direction:column;align-items:start}.offer-item-top{flex-direction:column;gap:8px}.offer-counter-row{flex-direction:column}.offer-counter-row input{width:100%;min-height:41px}.offer-actions .offer-small{flex:1}}

@@ -20,7 +20,8 @@ const state = {
   authUnavailable: '',
   listingError: '',
   photoProof: null,
-  checkoutBusy: false
+  checkoutBusy: false,
+  offerCheckoutId: null
 };
 
 const $ = sel => document.querySelector(sel);
@@ -160,6 +161,7 @@ function openProduct(id){
   $('#add-to-cart').disabled=Boolean(card.isDemoListing||awaitingReview);
   $('#add-to-cart').textContent=awaitingReview?'Ej tillgänglig än':card.isDemoListing?'Demoannons kan inte läggas i korgen':'Lägg i varukorgen';
   navTo('product');
+  window.passitonPriceOffers?.onProductOpen(card);
 }
 
 $('#back-to-market').addEventListener('click', () => navTo('market'));
@@ -363,6 +365,7 @@ function renderDashboard(){
   updateBag();
   renderAccountState();
   window.passitonListingManagement?.refresh();
+  window.passitonPriceOffers?.refresh();
 }
 function updateBag(){
   const count=state.cart.length;
@@ -417,6 +420,7 @@ function beginCheckout(items,fromCart=false){
     navTo('cart');
     return;
   }
+  if(!items.some(item=>item.offerCheckout))state.offerCheckoutId=null;
   state.checkoutItems=items.map(item=>({...item}));
   state.checkoutFromCart=fromCart;
   navTo('checkout');
@@ -462,12 +466,24 @@ $('#checkout-form').addEventListener('submit',async e=>{
   try {
     let demoIds=[];
     if(liveItems.length) {
-      const {data,error}=await authClient.rpc('demo_create_orders',{
-        p_listing_ids:liveItems.map(item=>item.listingId)
-      });
-      if(error)throw error;
-      if(!Array.isArray(data)||data.length!==liveItems.length)throw Error('Unexpected demo order response');
-      demoIds=data;
+      if(state.offerCheckoutId){
+        if(items.length!==1||liveItems.length!==1)throw Error('Prisförslag måste köpas separat');
+        const {data,error}=await authClient.rpc('demo_buy_accepted_offer',{
+          p_offer_id:state.offerCheckoutId
+        });
+        if(error)throw error;
+        if(data?.already_purchased)throw Error('Erbjudandet har redan köpts');
+        if(!data?.order_id||!Number.isFinite(Number(data.price)))throw Error('Ogiltigt svar för budköp');
+        items[0].price=Number(data.price);
+        demoIds=[data.order_id];
+      }else{
+        const {data,error}=await authClient.rpc('demo_create_orders',{
+          p_listing_ids:liveItems.map(item=>item.listingId)
+        });
+        if(error)throw error;
+        if(!Array.isArray(data)||data.length!==liveItems.length)throw Error('Unexpected demo order response');
+        demoIds=data;
+      }
     }
     let liveIndex=0;
     for(const item of items) {
@@ -500,8 +516,11 @@ $('#checkout-form').addEventListener('submit',async e=>{
   e.currentTarget.reset();
   state.checkoutItems=[];
   state.checkoutFromCart=false;
+  state.offerCheckoutId=null;
   updateBag();
   navTo('order-complete');
+  refreshMarketplaceListings().catch(()=>{});
+  window.passitonPriceOffers?.refresh();
 });
 
 $('#listing-list').addEventListener('click',e=>{
@@ -613,6 +632,7 @@ function renderAccountState(){
   $('#sell-form').querySelectorAll('input,select,button').forEach(control=>{control.disabled=locked||!signedIn||Boolean(state.listingError);});
   if(state.photoProof&&state.photoProof.sellerId!==state.user?.id)state.photoProof=null;
   refreshPhotoProofUI();
+  window.passitonPriceOffers?.onAuthChange();
 }
 
 function initializeSupabaseAuth(){
