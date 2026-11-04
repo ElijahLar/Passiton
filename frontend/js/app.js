@@ -46,9 +46,10 @@ function navTo(id){
     renderDashboard();
     if(state.pendingNavigation&&!state.user)setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
   }
+  window.passitonAnalytics?.virtualPageView(id);
 }
 
-$$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.dataset.nav)));
+$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.dataset.nav)));
 
 function artHTML(card){
   return `<div class="product-art brand-${card.cls}">
@@ -159,6 +160,10 @@ function openProduct(id){
   $('#buy-now').textContent = awaitingReview?'Inväntar granskning':card.isDemoListing?'Demoannons kan inte köpas':`Köp nu · ${money(card.price)}`;
   $('#add-to-cart').disabled=Boolean(card.isDemoListing||awaitingReview);
   $('#add-to-cart').textContent=awaitingReview?'Ej tillgänglig än':card.isDemoListing?'Demoannons kan inte läggas i korgen':'Lägg i varukorgen';
+  window.passitonAnalytics?.track('passiton_view_listing', {
+    item_brand:card.brand, item_category:card.category,
+    listing_type:card.isLive?'live':'demo'
+  });
   navTo('product');
 }
 
@@ -179,10 +184,18 @@ $('#add-to-cart').addEventListener('click',()=>{
   state.cart.unshift({...card});
   localStorage.setItem('passiton-cart',JSON.stringify(state.cart));
   updateBag();
+  window.passitonAnalytics?.track('passiton_add_to_cart', {
+    item_brand:card.brand, item_category:card.category,
+    listing_type:card.isLive?'live':'demo'
+  });
   toast('Presentkortet har lagts i varukorgen.');
 });
 
 $('#search-input').addEventListener('input', e => {state.search = e.target.value.trim(); renderMarket();});
+$('#search-input').addEventListener('change', e => {
+  const search=e.target.value.trim();
+  if(search)window.passitonAnalytics?.track('passiton_search',{search_length:search.length});
+});
 $('#sort-filter').addEventListener('change', e => {state.sort = e.target.value; renderMarket();});
 $('#discount-filter').addEventListener('input', e => {state.minDiscount = Number(e.target.value); $('#discount-output').textContent = `${e.target.value}%`; renderMarket();});
 $$('input[name="cat"]').forEach(r => r.addEventListener('change', e => {state.category=e.target.value; renderMarket();}));
@@ -196,7 +209,9 @@ $('.search-toggle').addEventListener('click', () => {$('#header-search').classLi
 $('#close-search').addEventListener('click', () => $('#header-search').classList.add('hidden'));
 $('#global-search').addEventListener('keydown', e => {
   if(e.key === 'Enter'){
-    state.search=e.target.value.trim();$('#search-input').value=state.search;$('#header-search').classList.add('hidden');navTo('market');
+    state.search=e.target.value.trim();$('#search-input').value=state.search;$('#header-search').classList.add('hidden');
+    if(state.search)window.passitonAnalytics?.track('passiton_search',{search_length:state.search.length});
+    navTo('market');
   }
 });
 
@@ -314,6 +329,9 @@ $('#sell-form').addEventListener('submit', async e => {
       p_proof_photo_path:photoPath
     });
     if(error)throw error;
+    window.passitonAnalytics?.track('passiton_listing_submitted',{
+      item_brand:brand,item_category:category,listing_type:'pending_review'
+    });
 
     e.target.reset();
     state.photoProof=null;
@@ -419,6 +437,7 @@ function beginCheckout(items,fromCart=false){
   }
   state.checkoutItems=items.map(item=>({...item}));
   state.checkoutFromCart=fromCart;
+  window.passitonAnalytics?.track('passiton_begin_demo_checkout',{item_count:items.length});
   navTo('checkout');
 }
 
@@ -495,6 +514,8 @@ $('#checkout-form').addEventListener('submit',async e=>{
     state.cart=state.cart.filter(item=>!purchasedIds.has(String(item.id)));
     localStorage.setItem('passiton-cart',JSON.stringify(state.cart));
   }
+
+  window.passitonAnalytics?.track('passiton_demo_order_complete',{item_count:items.length});
 
   // Test payment values are never read or stored; clear every entered field after the demo order.
   e.currentTarget.reset();
@@ -683,6 +704,7 @@ $('#auth-form').addEventListener('submit',async e=>{
         }
       });
       if(result.error)throw result.error;
+      window.passitonAnalytics?.track('passiton_signup_requested');
       if(result.data.session){
         state.user=result.data.user;
         toast('Ditt konto är klart.');
@@ -693,6 +715,7 @@ $('#auth-form').addEventListener('submit',async e=>{
       result=await authClient.auth.signInWithPassword({email,password});
       if(result.error)throw result.error;
       state.user=result.data.user;
+      window.passitonAnalytics?.track('passiton_login');
     }
     if(state.user){
       try{await refreshMarketplaceListings();}catch{}
