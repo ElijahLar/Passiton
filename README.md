@@ -55,10 +55,6 @@ testa med två konton och granska privata dispyter.
 | `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
 | `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
 
-## Statistik och cookiehantering
-
-GTM-containern är integrerad i webbplatskoden och consent-standardvärden är satta till `denied` för frivillig statistik/annonsering. Cookiebanner och taggar måste fortfarande konfigureras **i GTM och en CMP** innan GA4 aktiveras. Se [guiden för GA4, GTM och Cookiebot](docs/analytics-gtm.md). Demoorder ska inte rapporteras som riktig omsättning.
-
 ## Applicera strukturpatchen
 
 Kräver Python 3 och Git. Från repots rot:
