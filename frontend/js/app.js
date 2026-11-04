@@ -49,7 +49,7 @@ function navTo(id){
   window.passitonAnalytics?.virtualPageView(id);
 }
 
-$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.dataset.nav)));
+$$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.dataset.nav)));
 
 function artHTML(card){
   return `<div class="product-art brand-${card.cls}">
