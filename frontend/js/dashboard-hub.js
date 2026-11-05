@@ -162,20 +162,26 @@
       adminUser = userId;
       isAdmin = false;
       adminChecked = false;
+      ++adminRequest; // Discard responses belonging to an earlier account.
       showAdminCard();
       if (activeKey === 'admin') close();
     }
     if (!userId || !authClient || adminChecked) return;
+    // Allow a later dashboard refresh to retry a failed permission lookup.
+    // Avoid duplicate concurrent checks (renderDashboard also calls refresh).
+    const request = ++adminRequest;
     adminChecked = true;
-    const current = ++adminRequest;
     try {
       const {data,error} = await authClient.rpc('is_passiton_admin');
       if (error) throw error;
-      if (current !== adminRequest || state.user?.id !== userId) return;
+      if (request !== adminRequest || state.user?.id !== userId) return;
       isAdmin = data === true;
       showAdminCard();
     } catch(error) {
-      if (current === adminRequest) { isAdmin = false; showAdminCard(); }
+      if (request !== adminRequest || state.user?.id !== userId) return;
+      adminChecked = false;
+      isAdmin = false;
+      showAdminCard();
       console.warn('Could not check administrator status', error);
     }
   }
