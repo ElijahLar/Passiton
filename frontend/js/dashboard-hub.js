@@ -30,29 +30,100 @@
   let adminChecked = false;
   let previousFocus = null;
 
+  // Live listings are stored privately in Supabase; sample cards remain local-only.
+  let savedIds = new Set();
+  let savedLoadedFor = null;
+  let savedRequest = 0;
+  let savedLoading = false;
+  let savingIds = new Set();
   function storageKey() {
     return 'passiton-saved:' + (state.user?.id || 'guest');
   }
-  function getSaved() {
+  function getLocalDemoSaved() {
     try {
       const data = JSON.parse(localStorage.getItem(storageKey()) || '[]');
-      return Array.isArray(data) ? data.filter(id => typeof id === 'string').slice(0, 250) : [];
+      return Array.isArray(data)
+        ? data.filter(id => typeof id === 'string' && !id.startsWith('listing-')).slice(0, 250)
+        : [];
     } catch { return []; }
   }
+  function isLiveId(id) {
+    return /^listing-[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(id));
+  }
+  function getSaved() {
+    return [...savedIds, ...getLocalDemoSaved()];
+  }
   function isSaved(id) { return getSaved().includes(String(id)); }
-  function toggleSaved(id) {
-    if (!state.user) {
+  async function loadSaved() {
+    const userId = state.user?.id;
+    const request = ++savedRequest;
+    savedLoading = true;
+    if (!userId || !authClient) {
+      savedLoading = false;
+      savedIds = new Set();
+      savedLoadedFor = null;
+      syncHeartButtons();
+      if (activeKey === 'saved') renderSaved();
+      return;
+    }
+    try {
+      const {data,error} = await authClient.from('saved_listings')
+        .select('listing_id').eq('user_id',userId).order('created_at',{ascending:false}).limit(250);
+      if (error) throw error;
+      if (request !== savedRequest || state.user?.id !== userId) return;
+      savedIds = new Set((data || []).map(row => 'listing-' + row.listing_id));
+      savedLoadedFor = userId;
+      syncHeartButtons();
+      if (activeKey === 'saved') renderSaved();
+    } catch(error) {
+      if (request !== savedRequest || state.user?.id !== userId) return;
+      savedLoadedFor = null;
+      console.warn('Saved listings unavailable; run the saved_listings SQL migration', error);
+      if (activeKey === 'saved') renderSaved('Sparade annonser kunde inte hämtas. Kontrollera att Supabase-migreringen är installerad.');
+    } finally { if (request === savedRequest) savedLoading = false; }
+  }
+  async function toggleSaved(id) {
+    if (!state.user || !authClient) {
       toast('Logga in på Mitt PassitOn för att spara annonser.');
       navTo('dashboard');
       return;
     }
     const key = String(id);
-    const current = getSaved();
-    const selected = current.includes(key) ? current.filter(x => x !== key) : [...current, key];
-    localStorage.setItem(storageKey(), JSON.stringify(selected.slice(-250)));
-    syncHeartButtons();
-    if (activeKey === 'saved') renderSaved();
-    toast(selected.includes(key) ? 'Annonsen sparades.' : 'Annonsen togs bort från sparade.');
+    if (savingIds.has(key)) return;
+    if (!isLiveId(key)) {
+      const current = getLocalDemoSaved();
+      const selected = current.includes(key) ? current.filter(x => x !== key) : [...current, key];
+      localStorage.setItem(storageKey(), JSON.stringify(selected.slice(-250)));
+      syncHeartButtons();
+      if (activeKey === 'saved') renderSaved();
+      toast(selected.includes(key) ? 'Demokortet sparades lokalt.' : 'Demokortet togs bort.');
+      return;
+    }
+    if (savedLoadedFor !== state.user.id) {
+      toast('Dina sparade annonser laddas. Försök igen strax.');
+      await loadSaved();
+      return;
+    }
+    const userId = state.user.id;
+    const uuid = key.slice('listing-'.length);
+    const wasSaved = savedIds.has(key);
+    savingIds.add(key);
+    try {
+      const result = wasSaved
+        ? await authClient.from('saved_listings').delete().eq('user_id',userId).eq('listing_id',uuid)
+        : await authClient.from('saved_listings').insert({user_id:userId,listing_id:uuid});
+      if (result.error) throw result.error;
+      if (state.user?.id !== userId) return;
+      if (wasSaved) savedIds.delete(key); else savedIds.add(key);
+      syncHeartButtons();
+      if (activeKey === 'saved') renderSaved();
+      toast(wasSaved ? 'Annonsen togs bort från sparade.' : 'Annonsen sparades.');
+    } catch(error) {
+      console.error('Could not save listing',error);
+      toast('Kunde inte spara. Kontrollera Supabase-anslutningen och försök igen.');
+    } finally {
+      savingIds.delete(key);
+    }
   }
   function syncHeartButtons() {
     document.querySelectorAll('[data-save-id]').forEach(button => {
@@ -63,11 +134,18 @@
       button.title = saved ? 'Ta bort från sparade' : 'Spara annons';
     });
   }
-  function renderSaved() {
+  function renderSaved(errorMessage = '') {
     const saved = getSaved();
     document.getElementById('hub-saved-total').textContent = saved.length + (saved.length === 1 ? ' sparad' : ' sparade');
     const container = document.getElementById('hub-saved-list');
     container.replaceChildren();
+    if (errorMessage) {
+      const note = document.createElement('p');
+      note.className = 'hub-empty';
+      note.textContent = errorMessage;
+      container.append(note);
+      return;
+    }
     if (!saved.length) {
       container.innerHTML = '<p class="hub-empty">Inga sparade annonser ännu. Klicka på hjärtat på ett presentkort för att lägga till det här.</p>';
       return;
@@ -77,7 +155,7 @@
       const item = document.createElement('article');
       item.className = 'hub-saved-item';
       if (!card) {
-        item.innerHTML = '<div class="hub-saved-brand">—</div><div><strong>Annons ej tillgänglig</strong><small>Den kan ha tagits bort.</small></div>';
+        item.innerHTML = '<div class="hub-saved-brand">—</div><div><strong>Annons ej tillgänglig</strong><small>Den kan ha tagits bort eller sålts.</small></div>';
       } else {
         const brand = document.createElement('div');
         brand.className = 'hub-saved-brand';
@@ -153,7 +231,7 @@
   function showAdminCard() {
     const card = grid.querySelector('[data-hub-open="admin"]');
     const orders = grid.querySelector('[data-hub-open="orders"]');
-    card?.classList.toggle('hidden', !isAdmin);
+    card?.classList.toggle('hidden', !(isAdmin && state.user?.id === adminUser));
     orders?.classList.toggle('hub-card-orders-reflow', !isAdmin);
   }
   async function refreshAdmin() {
@@ -172,6 +250,8 @@
     const request = ++adminRequest;
     adminChecked = true;
     try {
+      const {data:authData,error:authError} = await authClient.auth.getUser();
+      if (authError || authData?.user?.id !== userId) throw authError || new Error('Authenticated user changed');
       const {data,error} = await authClient.rpc('is_passiton_admin');
       if (error) throw error;
       if (request !== adminRequest || state.user?.id !== userId) return;
@@ -187,13 +267,20 @@
   }
   function onAuthChange() {
     if (!state.user && activeKey) close();
-    syncHeartButtons();
+    const userId = state.user?.id || null;
+    if (savedLoadedFor !== userId) {
+      savedLoadedFor = null;
+      savedIds = new Set();
+      if (userId && !savedLoading) loadSaved();
+      else { ++savedRequest; savedLoading = false; syncHeartButtons(); }
+    }
     refreshAdmin();
     if (activeKey === 'saved') renderSaved();
   }
   function refresh() {
     syncHeartButtons();
     refreshAdmin();
+    if (state.user && savedLoadedFor !== state.user.id && !savedLoading) loadSaved();
     if (activeKey === 'saved') renderSaved();
   }
   grid.addEventListener('click', e => {
