@@ -173,7 +173,12 @@ function openProduct(id){
   });
   navTo('product');
   window.passitonPriceOffers?.onProductOpen(card);
+  window.passitonHub?.syncHeartButtons();
 }
+
+$('#detail-save-button').addEventListener('click', () => {
+  window.passitonHub?.toggleSaved(state.selectedId);
+});
 
 $('#back-to-market').addEventListener('click', () => navTo('market'));
 $('#buy-now').addEventListener('click', () => {
