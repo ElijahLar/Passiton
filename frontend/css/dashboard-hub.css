@@ -55,3 +55,6 @@ body:has(.hub-dialog[open]) { overflow:hidden; }
 @media(max-width:850px) { #dashboard .stats-row { grid-template-columns:repeat(2,minmax(0,1fr)); } #dashboard .stats-row div:nth-child(2) {border-right:0;} #dashboard .stats-row div:nth-child(-n+2) {border-bottom:1px solid var(--line);} .hub-dialog-body .dashboard-columns { grid-template-columns:1fr; } .hub-saved-grid {grid-template-columns:1fr;} }
 @media(max-width:650px) { #dashboard .stats-row {grid-template-columns:repeat(2,minmax(0,1fr));} .hub-grid {grid-template-columns:1fr;gap:12px;} .hub-card {min-height:180px;padding:22px;} .hub-card-orders {grid-column:auto;max-width:none;justify-self:stretch;} .hub-dialog {width:calc(100% - 12px);max-height:calc(100dvh - 16px);} .hub-dialog-shell {max-height:calc(100dvh - 16px);} .hub-dialog-header {padding:23px 20px 18px;} .hub-dialog-body {padding:23px 18px 28px;} .hub-saved-item {grid-template-columns:42px 1fr;gap:10px;} .hub-saved-brand {height:42px;} .hub-saved-item-actions {grid-column:2;grid-row:2;display:flex;justify-items:start;} }
 @media(prefers-reduced-motion:reduce) { .hub-card,.hub-card-arrow span {transition:none;} .hub-card:hover {transform:none;} }
+
+/* Keep the shopping bag visible on mobile after removing the favorites icon. */
+@media(max-width:760px){.header-actions .icon-btn:nth-child(3){display:grid;}}
