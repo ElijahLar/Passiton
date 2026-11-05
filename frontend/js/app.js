@@ -31,6 +31,7 @@ const pct = c => Math.round((1 - c.price / c.value) * 100);
 const escapeHTML = str => String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 function navTo(id){
+  if(id==='disputes'&&window.passitonHub){window.passitonHub.open('orders');return;}
   if(id==='sell'&&!state.user){
     state.pendingNavigation='sell';
     id='dashboard';
@@ -45,6 +46,7 @@ function navTo(id){
   if(id === 'disputes') window.passitonLoadDisputes?.();
   if(id === 'dashboard'){
     renderDashboard();
+    window.passitonHub?.refresh();
     if(state.pendingNavigation&&!state.user)setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
   }
   window.passitonAnalytics?.virtualPageView(id);
@@ -54,7 +56,7 @@ $$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.da
 
 function artHTML(card){
   return `<div class="product-art brand-${card.cls}">
-    <button class="heart-float" aria-label="Spara annons">♡</button>
+    <button class="heart-float" type="button" data-save-id="${escapeHTML(card.id)}" aria-label="Spara annons" aria-pressed="false">♡</button>
     <div class="brand-card">${escapeHTML(card.brand)}</div>
   </div>`;
 }
@@ -113,7 +115,11 @@ function renderMarket(){
     card.addEventListener('click', open);
     card.addEventListener('keydown', e => {if(e.key === 'Enter') open(e)});
   });
-  $$('.heart-float').forEach(btn => btn.addEventListener('click', e => {e.stopPropagation(); btn.textContent = btn.textContent === '♡' ? '♥' : '♡';}));
+  $$('.heart-float').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    window.passitonHub?.toggleSaved(btn.dataset.saveId);
+  }));
+  window.passitonHub?.syncHeartButtons();
 }
 
 function brandCardMarkup(card, size='main'){
@@ -167,7 +173,12 @@ function openProduct(id){
   });
   navTo('product');
   window.passitonPriceOffers?.onProductOpen(card);
+  window.passitonHub?.syncHeartButtons();
 }
+
+$('#detail-save-button').addEventListener('click', () => {
+  window.passitonHub?.toggleSaved(state.selectedId);
+});
 
 $('#back-to-market').addEventListener('click', () => navTo('market'));
 $('#buy-now').addEventListener('click', () => {
@@ -384,6 +395,7 @@ function renderDashboard(){
   renderAccountState();
   window.passitonListingManagement?.refresh();
   window.passitonPriceOffers?.refresh();
+  window.passitonHub?.refresh();
 }
 function updateBag(){
   const count=state.cart.length;
@@ -654,6 +666,7 @@ function renderAccountState(){
   if(state.photoProof&&state.photoProof.sellerId!==state.user?.id)state.photoProof=null;
   refreshPhotoProofUI();
   window.passitonPriceOffers?.onAuthChange();
+  window.passitonHub?.onAuthChange();
 }
 
 function initializeSupabaseAuth(){

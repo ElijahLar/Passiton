@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/listing-management.css" />
   <link rel="stylesheet" href="css/price-offers.css" />
+  <link rel="stylesheet" href="css/dashboard-hub.css" />
 </head>
 <body>
   <header class="site-header">
@@ -55,9 +56,6 @@
         </button>
         <button id="account-nav" class="icon-btn" data-nav="dashboard" title="Logga in eller skapa konto" aria-label="Logga in eller skapa konto">
           <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
-        </button>
-        <button class="icon-btn" data-nav="dashboard" title="Sparade" aria-label="Sparade">
-          <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
         </button>
         <button id="bag-btn" class="icon-btn bag-btn" data-nav="cart" title="Varukorg" aria-label="Varukorg">
           <svg viewBox="0 0 24 24"><path d="M6 8h12l1 13H5L6 8Zm3 0V6a3 3 0 0 1 6 0v2"/></svg>
@@ -172,7 +170,7 @@
           <aside class="detail-panel">
             <div class="detail-topline">
               <span id="detail-status" class="verified-pill"><span id="detail-status-icon" class="status-icon">✓</span><span id="detail-status-label">Verifierad annons</span></span>
-              <div class="detail-mini-actions"><button>♡ Spara</button><button>⇧ Dela</button></div>
+              <div class="detail-mini-actions"><button id="detail-save-button" type="button" aria-pressed="false">♡ Spara</button><button type="button">⇧ Dela</button></div>
             </div>
             <h1 id="detail-title">IKEA presentkort</h1>
             <p id="detail-subtitle">Digitalt presentkort för hem och inredning</p>
@@ -325,8 +323,7 @@
         <div class="section-intro">
           <span class="kicker">Mitt Passiton</span>
           <h1>Dina köp och annonser.</h1>
-          <p>Konton och annonser hanteras av Supabase. Demoorder för riktiga annonser och deras dispyter sparas i Supabase, men inga pengar dras eller presentkortskoder levereras.</p>
-          <button type="button" class="secondary-cta inline-cta" data-nav="disputes">Öppna order och dispyter →</button>
+          <p>Allt på ett ställe. Få överblick över dina köp, annonser, sparade favoriter och prisförslag. Betalningar är fortfarande en demo.</p>
         </div>
         <section class="account-panel" aria-label="Passiton-konto">
           <div class="account-story">
@@ -376,12 +373,57 @@
           <div><span>Köpt värde</span><strong id="stat-bought">0 kr</strong></div>
           <div><span>Totalt sparat</span><strong id="stat-saved">0 kr</strong></div>
           <div><span>Aktiva annonser</span><strong id="stat-listed">0</strong></div>
+          <div><span>Antal prisförslag</span><strong id="stat-offers">0</strong></div>
         </div>
-        <div class="dashboard-columns">
+        <div class="hub-grid" aria-label="Hantera ditt PassitOn-konto">
+          <button type="button" class="hub-card " data-hub-open="commerce" aria-haspopup="dialog">
+            <span class="hub-card-top"><span class="kicker">Ditt konto</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3z"/><path d="M3 11h18M7 4h10v3"/></svg></span></span>
+            <span class="hub-card-title">Köp och försäljning</span>
+            <span class="hub-card-description">Se din köphistorik och hantera priser, status och annonser.</span>
+            <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
+          </button>
+          <button type="button" class="hub-card " data-hub-open="offers" aria-haspopup="dialog">
+            <span class="hub-card-top"><span class="kicker">Förhandla tryggt</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h13l5 5-9 9-9-9z"/><circle cx="8" cy="11" r="1"/></svg></span></span>
+            <span class="hub-card-title">Mina prisförslag</span>
+            <span class="hub-card-description">Håll koll på skickade och mottagna bud, motbud och betalningsfrister.</span>
+            <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
+          </button>
+          <button type="button" class="hub-card " data-hub-open="saved" aria-haspopup="dialog">
+            <span class="hub-card-top"><span class="kicker">Dina favoriter</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></span></span>
+            <span class="hub-card-title">Sparade annonser</span>
+            <span class="hub-card-description">Samla intressanta presentkort på ett ställe och hitta tillbaka till dem.</span>
+            <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
+          </button>
+          <button type="button" class="hub-card hub-card-admin hidden" data-hub-open="admin" aria-haspopup="dialog">
+            <span class="hub-card-top"><span class="kicker">Endast administratörer</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span></span>
+            <span class="hub-card-title">Granska inkomna annonser</span>
+            <span class="hub-card-description">Granska fotobevis och hantera annonser som väntar på beslut.</span>
+            <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
+          </button>
+          <button type="button" class="hub-card hub-card-orders" data-hub-open="orders" aria-haspopup="dialog">
+            <span class="hub-card-top"><span class="kicker">PassitOn Trygg Affär</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span></span>
+            <span class="hub-card-title">Order och dispyter</span>
+            <span class="hub-card-description">Se dina order, följ ärenden och hantera eventuella dispyter.</span>
+            <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
+          </button>
+        </div>
+        <div id="hub-content-store" class="hub-content-store hidden">
+          <section id="hub-commerce" class="hub-portal-section">
+            <div class="dashboard-columns">
           <section class="dash-section"><div class="dash-head"><h2>Mina köp</h2><span>Senaste först</span></div><div id="purchase-list" class="activity-list"></div></section>
           <section class="dash-section"><div class="dash-head"><h2>Mina annonser</h2><span>Aktiva</span></div><div id="listing-list" class="activity-list"></div></section>
         </div>
-        <section id="price-offers-panel" class="price-offers-panel hidden" aria-label="Mina prisförslag">
+            <section id="listing-management" class="listing-management hidden" aria-label="Hantera annonser">
+          <div class="lm-header">
+            <div><span class="kicker">Dina försäljningar</span><h2>Hantera annonser</h2>
+              <p>Ändra pris, pausa eller ta bort dina annonser. Verifieringsuppgifter kan inte ändras utan ett nytt fotobevis.</p>
+            </div>
+          </div>
+          <p id="lm-status" class="lm-message" role="status" aria-live="polite"></p>
+          <div id="lm-own-list" class="lm-list"></div>
+        </section>
+          </section>
+          <section id="price-offers-panel" class="price-offers-panel hidden" aria-label="Mina prisförslag">
           <div class="offer-panel-head">
             <div><span class="kicker">Förhandla tryggt</span><h2>Mina prisförslag</h2>
               <p>Alla bud är anonyma och gäller bara på Passiton. Inga fria meddelanden eller kontaktuppgifter.</p></div>
@@ -396,16 +438,15 @@
           </div>
           <div id="offer-list" class="offer-list" aria-live="polite"></div>
         </section>
-        <section id="listing-management" class="listing-management hidden" aria-label="Hantera annonser">
-          <div class="lm-header">
-            <div><span class="kicker">Dina försäljningar</span><h2>Hantera annonser</h2>
-              <p>Ändra pris, pausa eller ta bort dina annonser. Verifieringsuppgifter kan inte ändras utan ett nytt fotobevis.</p>
+          <section id="hub-saved" class="hub-portal-section" aria-label="Sparade annonser">
+            <div class="hub-saved-head">
+              <div><span class="kicker">Dina favoriter</span><h2>Sparade annonser</h2><p>Spara ett presentkort med hjärtat på marknadsplatsen för att hitta det här senare.</p></div>
+              <span id="hub-saved-total" class="hub-saved-count">0 sparade</span>
             </div>
-          </div>
-          <p id="lm-status" class="lm-message" role="status" aria-live="polite"></p>
-          <div id="lm-own-list" class="lm-list"></div>
-        </section>
-        <section id="lm-admin-panel" class="listing-management lm-admin-panel hidden" aria-label="Administratörens granskningskö">
+            <p id="hub-saved-notice" class="hub-saved-note">Riktiga annonser sparas säkert i Supabase och följer med när du loggar in på andra enheter. Demokort lagras endast i den här webbläsaren.</p>
+            <div id="hub-saved-list" class="hub-saved-grid" aria-live="polite"></div>
+          </section>
+          <section id="lm-admin-panel" class="listing-management lm-admin-panel hidden" aria-label="Administratörens granskningskö">
             <div class="lm-header"><div><span class="kicker">Endast administratörer</span>
               <h2>Granska inkomna annonser</h2>
               <p>Granska bild och engångskod manuellt. Bilden verifierar inte kortets faktiska saldo.</p>
@@ -418,6 +459,7 @@
               <button type="button" id="lm-next" class="secondary-cta lm-small">Nästa</button>
             </div>
         </section>
+        </div>
       </div>
     </section>
 
@@ -665,6 +707,15 @@
       </form>
     </div>
   </dialog>
+  <dialog id="hub-dialog" class="hub-dialog" aria-labelledby="hub-dialog-title">
+    <div class="hub-dialog-shell">
+      <div class="hub-dialog-header">
+        <div><span class="kicker" id="hub-dialog-kicker">Mitt PassitOn</span><h2 id="hub-dialog-title">Översikt</h2><p id="hub-dialog-description"></p></div>
+        <button type="button" id="hub-dialog-close" class="hub-dialog-close" aria-label="Stäng dialogfönster">×</button>
+      </div>
+      <div class="hub-dialog-body" id="hub-dialog-body"></div>
+    </div>
+  </dialog>
   <div id="toast" class="toast hidden"></div>
 
   <nav class="mobile-nav" aria-label="Mobilnavigation">
@@ -682,5 +733,6 @@
   <script src="js/listing-management.js"></script>
   <script src="js/offer-rules.js"></script>
   <script src="js/price-offers.js"></script>
+  <script src="js/dashboard-hub.js"></script>
 </body>
 </html>

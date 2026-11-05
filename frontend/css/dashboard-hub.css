@@ -1,0 +1,60 @@
+/* Mitt PassitOn - responsive account hub. Inherits the site's existing green/neutral design tokens. */
+#dashboard .section-intro { margin-bottom: 48px; }
+#dashboard .stats-row { grid-template-columns: repeat(4,minmax(0,1fr)); }
+#dashboard .stats-row div:last-child { border-right: 0; }
+.hub-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:stretch;margin-top:38px; }
+.hub-card { appearance:none;display:flex;flex-direction:column;align-items:stretch;text-align:left;min-height:220px;padding:27px 29px 23px;border:1px solid var(--line);background:#fff;border-radius:2px;color:var(--text);position:relative;overflow:hidden;transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease,background-color .24s ease; }
+.hub-card:hover { transform:translateY(-5px);border-color:#8aa898;box-shadow:0 20px 44px rgba(15,54,37,.10);background:#fcfdfb; }
+.hub-card:focus-visible { outline:2px solid var(--green);outline-offset:3px; }
+.hub-card-top { display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
+.hub-card .kicker { margin:0 0 18px;color:var(--green);font-size:10px; }
+.hub-card-icon { width:38px;height:38px;border:1px solid #dfebe3;background:var(--green-soft);display:grid;place-items:center;color:var(--green); }
+.hub-card-icon svg { width:20px;height:20px; }
+.hub-card-title { display:block;margin:0;font-size:clamp(20px,2.1vw,27px);font-weight:650;letter-spacing:-.045em;line-height:1.2; }
+.hub-card-description { display:block;font-size:13px;line-height:1.65;color:var(--muted);max-width:410px;margin:11px 0 26px; }
+.hub-card-arrow { display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:650;color:var(--green);margin-top:auto;border-top:1px solid var(--line);padding-top:15px; }
+.hub-card-arrow span { font-size:20px;transition:transform .2s ease;line-height:1; }
+.hub-card:hover .hub-card-arrow span { transform:translate(3px,-3px); }
+.hub-card-orders { grid-column:1/-1;max-width:calc(50% - 9px);justify-self:center;width:100%; }
+.hub-card-orders.hub-card-orders-reflow { grid-column:auto;max-width:none;justify-self:stretch; }
+.hub-content-store { display:none!important; }
+.hub-dialog { width:min(1080px,calc(100% - 32px));max-width:1080px;max-height:min(92dvh,950px);border:1px solid var(--line);border-radius:3px;background:white;color:var(--text);padding:0;box-shadow:0 28px 100px rgba(10,27,19,.22); }
+.hub-dialog::backdrop { background:rgba(12,28,20,.62);backdrop-filter:blur(4px); }
+.hub-dialog-shell { display:flex;flex-direction:column;max-height:min(92dvh,950px);min-height:min(460px,80dvh); }
+.hub-dialog-header { display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding:32px clamp(22px,4vw,44px) 23px;flex:0 0 auto; }
+.hub-dialog-header .kicker { margin:0 0 6px; }
+.hub-dialog-header h2 { margin:0;font-size:clamp(27px,3vw,40px);letter-spacing:-.05em;line-height:1.1;font-weight:600; }
+.hub-dialog-header p { margin:9px 0 0;color:var(--muted);font-size:13px;max-width:670px; }
+.hub-dialog-close { flex:0 0 40px;width:40px;height:40px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:25px;line-height:1;transition:background-color .16s,border-color .16s; }
+.hub-dialog-close:hover { background:var(--green-soft);border-color:var(--green); }
+.hub-dialog-body { overflow-y:auto;overscroll-behavior:contain;padding:28px clamp(22px,4vw,44px) 42px;flex:1; }
+.hub-dialog-body .dashboard-columns { margin:0 0 32px; }
+.hub-dialog-body .listing-management { margin-top:28px; }
+.hub-dialog-body .price-offers-panel { padding-top:0;margin-top:0;border:0; }
+.hub-dialog-body .price-offers-panel .offer-panel-head { padding-top:0; }
+.hub-dialog-body .hub-portal-section { display:block; }
+.hub-dialog-body .hub-saved-head { display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:18px; }
+.hub-saved-head h2 { font-size:25px;letter-spacing:-.04em;margin:0; }
+.hub-saved-head p { font-size:13px;color:var(--muted);margin:8px 0 0; }
+.hub-saved-count { font-size:12px;color:var(--green);font-weight:700;white-space:nowrap; }
+.hub-saved-note { font-size:12px;color:var(--muted);background:var(--soft);padding:13px 15px;margin:0 0 18px; }
+.hub-saved-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px; }
+.hub-saved-item { display:grid;grid-template-columns:52px 1fr auto;gap:15px;align-items:center;border:1px solid var(--line);padding:15px;min-width:0; }
+.hub-saved-brand { height:52px;display:grid;place-items:center;background:var(--soft);font-size:12px;font-weight:700; }
+.hub-saved-item strong { display:block;font-size:13px; }
+.hub-saved-item small { display:block;font-size:11px;color:var(--muted);margin-top:4px; }
+.hub-saved-item-actions { display:grid;gap:7px;justify-items:end; }
+.hub-saved-item-actions button { padding:6px 9px;border:1px solid var(--line-dark);background:white;color:var(--green);font-size:11px;font-weight:600; }
+.hub-saved-item-actions button:hover { background:var(--green-soft); }
+.hub-empty { background:var(--soft);padding:32px;color:var(--muted);font-size:13px;grid-column:1/-1; }
+.hub-dialog-body #disputes { display:block!important; }
+.hub-dialog-body #disputes .dispute-page { padding:0;width:100%;max-width:none; }
+.hub-dialog-body #disputes .section-intro { display:none; }
+.hub-dialog-body #disputes .dispute-layout { margin-top:0; }
+body:has(.hub-dialog[open]) { overflow:hidden; }
+@media(max-width:850px) { #dashboard .stats-row { grid-template-columns:repeat(2,minmax(0,1fr)); } #dashboard .stats-row div:nth-child(2) {border-right:0;} #dashboard .stats-row div:nth-child(-n+2) {border-bottom:1px solid var(--line);} .hub-dialog-body .dashboard-columns { grid-template-columns:1fr; } .hub-saved-grid {grid-template-columns:1fr;} }
+@media(max-width:650px) { #dashboard .stats-row {grid-template-columns:repeat(2,minmax(0,1fr));} .hub-grid {grid-template-columns:1fr;gap:12px;} .hub-card {min-height:180px;padding:22px;} .hub-card-orders {grid-column:auto;max-width:none;justify-self:stretch;} .hub-dialog {width:calc(100% - 12px);max-height:calc(100dvh - 16px);} .hub-dialog-shell {max-height:calc(100dvh - 16px);} .hub-dialog-header {padding:23px 20px 18px;} .hub-dialog-body {padding:23px 18px 28px;} .hub-saved-item {grid-template-columns:42px 1fr;gap:10px;} .hub-saved-brand {height:42px;} .hub-saved-item-actions {grid-column:2;grid-row:2;display:flex;justify-items:start;} }
+@media(prefers-reduced-motion:reduce) { .hub-card,.hub-card-arrow span {transition:none;} .hub-card:hover {transform:none;} }
+
+/* Keep the shopping bag visible on mobile after removing the favorites icon. */
+@media(max-width:760px){.header-actions .icon-btn:nth-child(3){display:grid;}}
