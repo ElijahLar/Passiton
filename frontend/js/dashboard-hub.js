@@ -133,6 +133,13 @@
       button.setAttribute('aria-label', saved ? 'Ta bort sparad annons' : 'Spara annons');
       button.title = saved ? 'Ta bort från sparade' : 'Spara annons';
     });
+    const detailSave = document.getElementById('detail-save-button');
+    if (detailSave) {
+      const saved = isSaved(state.selectedId);
+      detailSave.textContent = saved ? '♥ Sparad' : '♡ Spara';
+      detailSave.setAttribute('aria-pressed', String(saved));
+      detailSave.setAttribute('aria-label', saved ? 'Ta bort från sparade' : 'Spara annons');
+    }
   }
   function renderSaved(errorMessage = '') {
     const saved = getSaved();
