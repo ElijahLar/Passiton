@@ -224,7 +224,7 @@
     const unpaidAccepted = offerData.sent.filter(o => o.status === 'accepted_awaiting_payment' && !rules.expired(o.payment_due_at)).length;
     const totalOffers = (offerData.sent?.length || 0) + (offerData.received?.length || 0);
     const statOffers = document.getElementById('stat-offers');
-    if (statOffers) statOffers.textContent = totalOffers + ' st';
+    if (statOffers) statOffers.textContent = String(totalOffers);
     $offer('#offer-active-count').textContent = `${offerData.active_count}/5 aktiva`;
     $offer('#offer-missed-count').textContent = `${Math.min(strikes, 5)}/5 missade betalningar (30 dagar)`;
     const warning = $offer('#offer-warning');
