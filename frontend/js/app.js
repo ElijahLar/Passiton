@@ -115,7 +115,10 @@ function renderMarket(){
     card.addEventListener('click', open);
     card.addEventListener('keydown', e => {if(e.key === 'Enter') open(e)});
   });
-  $('.heart-float').forEach(btn => btn.addEventListener('click', e => {e.stopPropagation(); window.passitonHub?.toggleSaved(btn.dataset.saveId); }));
+  $('.heart-float').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    window.passitonHub?.toggleSaved(btn.dataset.saveId);
+  }));
   window.passitonHub?.syncHeartButtons();
 }
 
