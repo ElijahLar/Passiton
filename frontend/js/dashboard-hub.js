@@ -276,10 +276,16 @@
     if (!state.user && activeKey) close();
     const userId = state.user?.id || null;
     if (savedLoadedFor !== userId) {
-      savedLoadedFor = null;
-      savedIds = new Set();
-      if (userId && !savedLoading) loadSaved();
-      else { ++savedRequest; savedLoading = false; syncHeartButtons(); }
+      if (!userId) {
+        ++savedRequest;
+        savedLoading = false;
+        savedLoadedFor = null;
+        savedIds = new Set();
+        syncHeartButtons();
+      } else if (!savedLoading) {
+        savedIds = new Set();
+        loadSaved();
+      }
     }
     refreshAdmin();
     if (activeKey === 'saved') renderSaved();
