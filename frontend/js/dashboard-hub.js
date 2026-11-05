@@ -27,6 +27,7 @@
   let isAdmin = false;
   let adminUser = null;
   let adminRequest = 0;
+  let adminChecked = false;
   let previousFocus = null;
 
   function storageKey() {
@@ -160,11 +161,13 @@
     if (userId !== adminUser) {
       adminUser = userId;
       isAdmin = false;
+      adminChecked = false;
       showAdminCard();
       if (activeKey === 'admin') close();
     }
+    if (!userId || !authClient || adminChecked) return;
+    adminChecked = true;
     const current = ++adminRequest;
-    if (!userId || !authClient) return;
     try {
       const {data,error} = await authClient.rpc('is_passiton_admin');
       if (error) throw error;
