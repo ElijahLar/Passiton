@@ -19,7 +19,7 @@ Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 
 På branchen `feature/paypal-sandbox` finns en separat testsida:
 `http://localhost:8000/frontend/paypal-sandbox.html`.
-Den provar en fast betalning på 10,00 SEK i låtsaspengar till ett sandboxkonto;
+Den provar en fast betalning på 10,00 SEK i låtsaspengar via plattformsappen till en ansluten sandbox-säljare;
 den befintliga demokassan och annonserna används inte av testet.
 Supabase-funktionen och den nya tabellen behöver installeras separat.
 Se [installationsguiden](docs/PAYPAL_SANDBOX_SETUP.md).

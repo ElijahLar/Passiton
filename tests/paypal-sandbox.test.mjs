@@ -14,6 +14,7 @@ function harness(options = {}) {
     SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'secret-service-role',
     PAYPAL_SANDBOX_ENABLED: 'true', PAYPAL_SANDBOX_CLIENT_ID: 'sandbox-client',
     PAYPAL_SANDBOX_CLIENT_SECRET: 'paypal-secret', PAYPAL_SANDBOX_MERCHANT_ID: 'MERCHANT123',
+    PAYPAL_SANDBOX_PARTNER_ID: 'PARTNER123', PAYPAL_SANDBOX_BN_CODE: 'TEST_BN',
     PAYPAL_SANDBOX_TEST_USER_IDS: `${BUYER},${OTHER}`, ...options.env
   };
   const rows = [];
@@ -58,6 +59,12 @@ function harness(options = {}) {
       if (options.oauthFailure) return json({ secret: 'should-never-leak' }, 401);
       return json({ access_token: 'paypal-access-token' });
     }
+    if (parsed.pathname.startsWith('/v1/customer/partners/')) return json({
+      merchant_id: 'MERCHANT123', payments_receivable: !options.sellerNotReady, primary_email_confirmed: true,
+      oauth_integrations: [{ oauth_third_party: [{ partner_client_id: options.wrongApp ? 'wrong' : 'sandbox-client',
+        scopes: ['https://uri.paypal.com/services/payments/payment/authcapture'] }] }]
+    });
+    if (parsed.pathname === '/v2/customer/partner-referrals') return json({links:[{rel:'action_url',href:options.badLink ? 'https://evil.example' : 'https://www.sandbox.paypal.com/bizsignup/partner/entry'}]});
     if (parsed.pathname === '/v2/checkout/orders') {
       const body = JSON.parse(init.body);
       assert.match(init.headers['PayPal-Request-Id'], /^c[0-9a-f]{32}$/);
@@ -118,7 +125,7 @@ test('requires a real session and explicit tester allowlist even when gateway JW
 test('config returns only public sandbox settings', async () => {
   const result = await harness().invoke({ action: 'config' });
   assert.equal(result.status, 200);
-  assert.deepEqual(result.body, { clientId: 'sandbox-client', amount: '10.00', currency: 'SEK', environment: 'sandbox' });
+  assert.deepEqual(result.body, { clientId: 'sandbox-client', merchantId: 'MERCHANT123', amount: '10.00', currency: 'SEK', environment: 'sandbox' });
   assert.equal(result.headers.get('Cache-Control'), 'no-store');
 });
 
@@ -234,3 +241,30 @@ test('provider authentication failures do not leak secrets', async () => {
   assert.equal(result.status, 502);
   assert.doesNotMatch(JSON.stringify(result.body), /paypal-secret|secret-service-role|should-never-leak|paypal-access-token/);
 });
+
+ test('platform refuses payments until seller is ready and has granted this app permission', async () => {
+   for (const options of [{sellerNotReady:true},{wrongApp:true}]) {
+     const h=harness(options); assert.equal((await h.create()).status,409);
+     assert.equal(h.calls.filter(x=>x.url.endsWith('/v2/checkout/orders')).length,0);
+   }
+ });
+ test('onboarding requires consent and permits only PayPal sandbox redirect URLs', async () => {
+   const h=harness(); assert.equal((await h.invoke({action:'onboard'})).status,400);
+   assert.equal((await h.invoke({action:'onboard',consent:true})).status,200);
+   const request=JSON.parse(h.calls.find(x=>x.url.endsWith('/partner-referrals')).body);
+   assert.equal(request.operations[0].api_integration_preference.rest_api_integration.integration_type,'THIRD_PARTY');
+   assert.equal((await harness({badLink:true}).invoke({action:'onboard',consent:true})).status,502);
+ });
+ test('platform order carries seller assertion and partner attribution', async () => {
+   const h=harness(); await h.create();
+   const request=h.calls.find(x=>x.url.endsWith('/v2/checkout/orders'));
+   const assertion=JSON.parse(atob(request.headers['PayPal-Auth-Assertion'].split('.')[1]));
+   assert.equal(assertion.iss,'sandbox-client');assert.equal(assertion.payer_id,'MERCHANT123');
+   assert.equal(request.headers['PayPal-Partner-Attribution-Id'],'TEST_BN');
+   assert.equal(h.rows[0].seller_merchant_id,'MERCHANT123');
+ });
+ test('legacy orders cannot be paid using the platform credentials', async () => {
+   const h=harness();await h.create();h.rows[0].seller_merchant_id=null;
+   assert.equal((await h.invoke({action:'capture',orderId:ORDER})).status,409);
+   assert.equal(h.captures,0);
+ });

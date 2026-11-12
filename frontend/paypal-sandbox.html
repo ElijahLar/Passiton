@@ -33,6 +33,11 @@
       </div>
     </section>
     <section id="sandbox-payment" aria-labelledby="payment-heading" hidden>
+      <h2>Anslut säljaren till plattformen</h2>
+      <p>Skapa en länk och öppna den i ett separat fönster. Logga in med säljarens sandboxkonto och godkänn anslutningen.</p>
+      <button id="sandbox-onboard" type="button">Skapa anslutningslänk</button>
+      <a id="sandbox-onboard-link" target="_blank" rel="noopener noreferrer" hidden>Öppna PayPals säljaranslutning</a>
+      <button id="sandbox-seller-check" type="button">Kontrollera säljaranslutningen</button>
       <h2 id="payment-heading">2. Betala 10,00 kr i sandbox</h2>
       <p>Använd ett PayPal <strong>Personal sandbox-konto</strong> som skiljer sig från mottagarens Business sandbox-konto.</p>
       <div id="paypal-buttons"></div>
@@ -47,7 +52,7 @@
       </dl>
     </section>
     <p id="sandbox-status" role="status" aria-live="polite">Startar testmiljön …</p>
-    <p class="footnote">Detta första test går till ett sandboxkonto. Säljaranslutning, plattformsavgift och fördröjd utbetalning ingår inte ännu.</p>
+    <p class="footnote">Testet går via plattformsappen till den anslutna sandbox-säljaren. Plattformsavgift och fördröjd utbetalning ingår inte ännu.</p>
     <noscript>JavaScript krävs för betalningstestet.</noscript>
   </main>
 </body>

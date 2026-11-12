@@ -28,7 +28,7 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
   try {
     if (env.PAYPAL_SANDBOX_ENABLED !== 'true') throw new HttpError(503, 'PayPal-testet är inte aktiverat på servern.');
     for (const key of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'PAYPAL_SANDBOX_CLIENT_ID',
-      'PAYPAL_SANDBOX_CLIENT_SECRET', 'PAYPAL_SANDBOX_MERCHANT_ID']) {
+      'PAYPAL_SANDBOX_CLIENT_SECRET', 'PAYPAL_SANDBOX_MERCHANT_ID', 'PAYPAL_SANDBOX_PARTNER_ID', 'PAYPAL_SANDBOX_BN_CODE']) {
       if (!env[key]) throw new HttpError(503, 'PayPal-testets serverinställningar saknas.');
     }
     const bearer = request.headers.get('Authorization') || '';
@@ -49,9 +49,11 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     let input;
     try { input = JSON.parse(raw); } catch { throw new HttpError(400, 'Ogiltig JSON.'); }
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new HttpError(400, 'Ogiltig förfrågan.');
-    if (!['config', 'create', 'capture', 'status'].includes(input.action)) throw new HttpError(400, 'Okänd åtgärd.');
+    if (!['config', 'create', 'capture', 'status', 'onboard', 'seller-status'].includes(input.action)) throw new HttpError(400, 'Okänd åtgärd.');
+    if (input.action === 'create' && !UUID.test(input.requestId || '')) throw new HttpError(400, 'Ogiltigt test-id.');
+    if (['capture','status'].includes(input.action) && !ORDER_ID.test(input.orderId || '')) throw new HttpError(400, 'Ogiltigt order-id.');
     if (input.action === 'config') {
-      return reply(200, { clientId: env.PAYPAL_SANDBOX_CLIENT_ID, amount: AMOUNT, currency: CURRENCY, environment: 'sandbox' });
+      return reply(200, { clientId: env.PAYPAL_SANDBOX_CLIENT_ID, merchantId: env.PAYPAL_SANDBOX_MERCHANT_ID, amount: AMOUNT, currency: CURRENCY, environment: 'sandbox' });
     }
 
     const db = async (query, method = 'GET', body, prefer = 'return=representation') => {
@@ -90,12 +92,48 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
       const response = await fetchImpl(`${PAYPAL_API}${path}`, {
         method, headers: {
           Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Prefer: 'return=representation',
+          'PayPal-Partner-Attribution-Id': env.PAYPAL_SANDBOX_BN_CODE,
+          ...(path.startsWith('/v2/checkout/') ? { 'PayPal-Auth-Assertion': `${btoa(JSON.stringify({alg:'none'}))}.${btoa(JSON.stringify({iss:env.PAYPAL_SANDBOX_CLIENT_ID,payer_id:env.PAYPAL_SANDBOX_MERCHANT_ID}))}.` } : {}),
           ...(requestId ? { 'PayPal-Request-Id': requestId } : {})
         }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20000)
       });
+      if (response.status === 404 && path.startsWith('/v1/customer/partners/')) return {};
       if (!response.ok) throw new HttpError(502, 'PayPal kunde inte slutföra steget. Behåll samma test och försök igen eller kontrollera det i sandboxpanelen.');
       return response.json();
     };
+    const sellerId = env.PAYPAL_SANDBOX_MERCHANT_ID;
+    const partnerId = env.PAYPAL_SANDBOX_PARTNER_ID;
+    if (!/^[A-Z0-9]{8,32}$/.test(sellerId) || !/^[A-Z0-9]{8,32}$/.test(partnerId) || sellerId === partnerId) {
+      throw new HttpError(503, 'Ange olika giltiga Merchant ID för plattform och säljare.');
+    }
+    const sellerStatus = async () => {
+      const data = await paypal(`/v1/customer/partners/${partnerId}/merchant-integrations/${sellerId}`);
+      const permissions = (data.oauth_integrations || []).flatMap(x => x.oauth_third_party || []);
+      const ready = data.merchant_id === sellerId && data.payments_receivable === true &&
+        data.primary_email_confirmed === true && permissions.some(x =>
+          x.partner_client_id === env.PAYPAL_SANDBOX_CLIENT_ID &&
+          (x.scopes || []).includes('https://uri.paypal.com/services/payments/payment/authcapture'));
+      return { ready, merchantId: sellerId };
+    };
+    if (input.action === 'onboard') {
+      if (input.consent !== true) throw new HttpError(400, 'Godkänn att starta säljaranslutningen.');
+      const referral = await paypal('/v2/customer/partner-referrals', 'POST', {
+        tracking_id: `passiton-sandbox-${sellerId}`,
+        operations: [{ operation: 'API_INTEGRATION', api_integration_preference: {
+          rest_api_integration: { integration_method: 'PAYPAL', integration_type: 'THIRD_PARTY',
+            third_party_details: { features: ['PAYMENT', 'REFUND'] } }
+        }}], products: ['EXPRESS_CHECKOUT'],
+        legal_consents: [{ type: 'SHARE_DATA_CONSENT', granted: true }]
+      });
+      const link = referral.links?.find(x => x.rel === 'action_url')?.href;
+      const url = new URL(link || 'https://invalid.example');
+      if (url.protocol !== 'https:' || !['www.sandbox.paypal.com','sandbox.paypal.com'].includes(url.hostname)) {
+        throw new HttpError(502, 'PayPal returnerade ingen giltig sandboxlänk.');
+      }
+      return reply(200, { actionUrl: url.href });
+    }
+    if (input.action === 'seller-status') return reply(200, await sellerStatus());
+    if (!(await sellerStatus()).ready) throw new HttpError(409, 'Slutför säljaranslutningen och bekräfta säljarens e-post i sandbox först.');
     const summary = row => ({
       environment: 'sandbox', orderId: row.paypal_order_id, captureId: row.paypal_capture_id,
       status: row.status, amount: AMOUNT, currency: CURRENCY
@@ -132,11 +170,12 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
       let row = await selectRow(`request_id=eq.${input.requestId}`);
       if (!row) {
         const inserted = await db('on_conflict=buyer_id,request_id', 'POST', {
-          buyer_id: user.id, request_id: input.requestId
+          buyer_id: user.id, request_id: input.requestId, seller_merchant_id: sellerId
         }, 'resolution=ignore-duplicates,return=representation');
         row = inserted[0] || await selectRow(`request_id=eq.${input.requestId}`);
       }
       if (!row) throw new HttpError(503, 'Testet kunde inte skapas.');
+      if (row.seller_merchant_id !== sellerId) throw new HttpError(409, 'Starta ett nytt plattformstest; denna order tillhör tidigare inställningar.');
       if (row.paypal_order_id) return reply(200, summary(row));
       // PayPal retains create idempotency IDs for a limited time. Never recreate an old uncertain attempt.
       if (now() - Date.parse(row.created_at) > 3 * 60 * 60 * 1000) {
@@ -158,6 +197,7 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     if (!ORDER_ID.test(input.orderId || '')) throw new HttpError(400, 'Ogiltigt PayPal-order-id.');
     let row = await selectRow(`paypal_order_id=eq.${input.orderId}`);
     if (!row) throw new HttpError(404, 'Testbetalningen finns inte för ditt konto.');
+    if (row.seller_merchant_id !== sellerId) throw new HttpError(409, 'Ordern tillhör tidigare mottagarinställningar.');
     if (row.status === 'completed') return reply(200, summary(row));
     // GET first recovers a capture that succeeded even if its response/database write was lost.
     let order = await paypal(`/v2/checkout/orders/${row.paypal_order_id}`);

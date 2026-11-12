@@ -63,7 +63,7 @@
     if (window.paypal) { resolve(); return; }
     const script = document.createElement('script');
     const params = new URLSearchParams({
-      'client-id': clientId, currency: 'SEK', intent: 'capture', components: 'buttons',
+      'client-id': clientId, 'merchant-id': window.sandboxMerchantId, currency: 'SEK', intent: 'capture', components: 'buttons',
       'disable-funding': 'card,credit,paylater,venmo', locale: 'sv_SE'
     });
     script.src = `https://www.paypal.com/sdk/js?${params}`;
@@ -81,6 +81,7 @@
     }
     $('sandbox-payment').hidden = false;
     $('sandbox-new').disabled = false;
+    window.sandboxMerchantId = settings.merchantId;
     await loadSDK(settings.clientId);
     buttons = window.paypal.Buttons({
       fundingSource: window.paypal.FUNDING.PAYPAL,
@@ -127,6 +128,21 @@
       await startSession(data.session);
     } catch (error) { message(error.message, true); }
     finally { $('sandbox-password').value = ''; busy = false; submit.disabled = false; }
+  });
+  $('sandbox-onboard').addEventListener('click', async () => {
+    if (!confirm('Öppna PayPal för att ansluta test-säljaren och godkänna delning av kontouppgifter med plattformen?')) return;
+    try {
+      const result = await api({ action: 'onboard', consent: true });
+      const link = $('sandbox-onboard-link');
+      link.href = result.actionUrl; link.hidden = false;
+      message('Öppna anslutningslänken och logga in med SÄLJARENS sandboxkonto. Återvänd sedan och kontrollera anslutningen.');
+    } catch (error) { message(error.message, true); }
+  });
+  $('sandbox-seller-check').addEventListener('click', async () => {
+    try {
+      const result = await api({ action: 'seller-status' });
+      message(result.ready ? 'Säljaren är ansluten. Du kan nu prova betalningen med ett separat Personal sandbox-konto.' : 'Säljaren är inte klar. Slutför onboarding och bekräfta e-post i PayPal sandbox.');
+    } catch (error) { message(error.message, true); }
   });
   $('sandbox-logout').addEventListener('click', async () => {
     const { error } = await client.auth.signOut({ scope: 'local' });

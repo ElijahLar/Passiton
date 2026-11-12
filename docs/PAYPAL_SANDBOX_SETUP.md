@@ -1,164 +1,116 @@
-# PayPal sandbox – första betalningstestet
+# PayPal sandbox – Platform Partner App
 
-## Omfattning
+Testbranchen använder nu en Platform-app och en separat, fast konfigurerad
+sandbox-säljare. Säljaren ansluts genom Partner Referrals (THIRD_PARTY,
+EXPRESS_CHECKOUT). Därefter kan en Personal sandbox-köpare betala 10 SEK till
+säljaren genom plattformsappen. Ingen annons eller demoorder påverkas.
 
-Branch: `feature/paypal-sandbox`. Första steget är en **separat testbetalning på
-10,00 SEK** med PayPal Orders v2 och den fortsatt stödda JavaScript SDK v5.
-Inloggning sker med ett befintligt Passiton/Supabase-konto. Betalaren använder
-sedan ett annat Personal sandbox-konto i PayPal-fönstret.
+## 1. Uppdatera lokal kopia
 
-Detta är en vanlig testbetalning till **ett Business sandbox-konto**. Det är
-inte en färdig marknadsplatsintegration: säljaranslutning, förmedlingsavgift,
-uppdelning av betalning, 48 timmars innehållande, säljarutbetalning,
-återbetalning, webhook och leverans av värdebevis ingår inte. Ett lyckat test
-bekräftar den tekniska sandboxanslutningen, inte godkännande för livehandel.
-
-Testsidan laddar inte den befintliga appens kassa och gör inga anrop till
-`demo_create_orders`, `demo_buy_accepted_offer` eller annonsfunktionerna.
-Den ändrar inte annonser, demoorder, dispyter eller appens köphistorik.
-Den använder samma Supabase Auth-session på samma origin. Utloggning på
-testsidan loggar därför också ut den lokala appen i samma webbläsare.
-
-## Status vid leverans
-
-Koden och automatiserade tester är förberedda. SQL-filen har **inte** körts i
-det gemensamma Supabase-projektet. Edge Function och hemligheter har **inte**
-installerats där. Ingen faktisk PayPal sandboxbetalning har genomförts utan
-era uppgifter. Inget är sammanslaget till `main` eller publicerat på domänen.
-
-## 1. Hämta branchen och starta sidan
-
-I en separat lokal kopia av repot, från repots rot:
+På `feature/paypal-sandbox`, hämta ändringarna med `git pull --ff-only`.
+Kör från repots rot:
 
 ```bash
-git fetch origin
-git switch --track origin/feature/paypal-sandbox
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Om branchen redan finns lokalt: `git switch feature/paypal-sandbox`.
-Öppna **http://localhost:8000/frontend/paypal-sandbox.html**. Den vanliga sidan
-ligger kvar på `/frontend/`. Ändra inte GitHub Pages källa till testbranchen.
+Öppna http://localhost:8000/frontend/paypal-sandbox.html.
+Publicera inte testbranchen genom GitHub Pages.
 
-## 2. Lägg till endast den nya tabellen i gemensamma Supabase
+## 2. Uppdatera Supabase-tabellen
 
-Öppna ert befintliga projekt → SQL Editor och kör endast:
+Du har redan kört `202611120001_paypal_sandbox.sql`. Kör INTE om den.
+Kör nu endast `backend/supabase/migrations/202611120002_paypal_platform.sql`
+i SQL Editor. Den lägger till `seller_merchant_id` i testtabellen och behåller
+alla tidigare rader. Gamla testorder utan denna koppling får inte betalas
+med plattformsappen. Välj Nytt test på testsidan efter uppdateringen.
 
-`backend/supabase/migrations/202611120001_paypal_sandbox.sql`
+För en helt ny installation körs 001 först och sedan 002. Kör inte övriga
+äldre migrationer igen och använd inte db push mot gemensamma projektet.
 
-Filen skapar `public.paypal_sandbox_payments`, dess behörigheter och RLS.
-Inloggade användare kan bara läsa egna rader. Endast serverns `service_role`
-kan skriva. Tabellen har fasta begränsningar för sandbox, SEK och 10 kr.
-Den innehåller order-id, capture-id, testare och status; inga PayPal-lösenord,
-kortuppgifter, access tokens, API-hemligheter eller värdebeviskoder sparas.
+## 3. Inställningar i Supabase Edge Function Secrets
 
-Kör inte alla äldre migrationer igen och använd inte `supabase db push` mot
-det gemensamma projektet utan att först kontrollera dess migrationshistorik.
-Databasändringen gäller direkt oavsett GitHub-branch. Den nya filen ändrar
-inga befintliga tabeller, policies eller funktioner. Den ska köras en gång.
+| Namn | Värde |
+| --- | --- |
+| PAYPAL_SANDBOX_CLIENT_ID | Client ID från Platform Partner App i Sandbox |
+| PAYPAL_SANDBOX_CLIENT_SECRET | Secret från samma Platform-app |
+| PAYPAL_SANDBOX_PARTNER_ID | Plattformskontots Merchant ID |
+| PAYPAL_SANDBOX_MERCHANT_ID | Det separata säljarkontots Merchant ID |
+| PAYPAL_SANDBOX_BN_CODE | Appens/partnerintegrationens PayPal Partner Attribution ID (BN code) |
+| PAYPAL_SANDBOX_TEST_USER_IDS | Tillåtna Passiton-användares Supabase User UID, kommaseparerade |
+| PAYPAL_SANDBOX_ALLOWED_ORIGINS | http://localhost:8000,http://127.0.0.1:8000 |
+| PAYPAL_SANDBOX_ENABLED | true |
 
-## 3. Förbered sandboxkonton och inställningar
+BN-koden är inte appnamnet, Client ID eller Merchant ID. Om den inte visas i
+din Platform-app, kontrollera sandboxinställningarna med PayPal. Hitta inte
+på ett värde och använd inte en annan plattforms kod. Plattformens API-behörighet
+måste finnas i sandbox; att skapa två konton ger inte säljarmedgivande.
 
-I PayPal Developer Dashboard, välj **Sandbox**:
+SUPABASE_URL och SUPABASE_SERVICE_ROLE_KEY tillhandahålls av hostade Edge
+Functions. Lägg inga hemligheter i frontend, GitHub eller chatten.
+Säljarens API Secret behövs inte. Säljaren ger behörighet via PayPal-inloggning.
 
-1. Välj/skapa en REST-app för mottagarens **Business sandbox-konto**.
-2. Hämta appens sandbox **Client ID** och **Secret**.
-3. Hämta samma mottagarkontos **Merchant ID / Account ID**. Använd inte
-   köparens ID och inte appens Client ID som merchant-id.
-4. Ha ett separat **Personal sandbox-konto** med testsaldo som köpare.
+## 4. Installera serverfunktionen
 
-I Supabase → Authentication → Users, kopiera **User UID** för de befintliga
-Passiton-konton som ska få testa. En tom testlista nekar alla användare.
-
-Kopiera `backend/supabase/.env.example` till en fil **utanför repot och den
-lokala webbserverns mapp**, exempelvis `~/.config/passiton/paypal-sandbox.env`
-(skapa katalogen först). Fyll i värdena lokalt och sätt
-`PAYPAL_SANDBOX_ENABLED=true` när de är klara. Flera testares UID separeras
-med komma. `PAYPAL_SANDBOX_ALLOWED_ORIGINS` innehåller som standard endast
-localhost och 127.0.0.1 på port 8000. Lägg inte till produktionsdomänen.
-
-Lägg aldrig PayPal Secret eller Supabase service-role-nyckeln i frontend,
-GitHub, README, skärmbilder eller chatten. Supabases **publishable key** i
-befintlig frontend är däremot avsedd att vara offentlig.
-
-## 4. Installera endast den nya serverfunktionen
-
-Med Supabase CLI installerad och inloggad, från repots rot:
+Använd Supabase CLI inloggad på rätt projekt. Du kan lägga secrets direkt i
+Supabases panel eller kopiera `.env.example` till en privat fil UTANFÖR repot
+/webbserverns mapp, exempelvis ~/.config/passiton/paypal-sandbox.env.
 
 ```bash
 supabase secrets set --project-ref wcitckdgzjncglwymeks --env-file "$HOME/.config/passiton/paypal-sandbox.env"
 supabase --workdir backend functions deploy paypal-sandbox --project-ref wcitckdgzjncglwymeks
 ```
 
-Kontrollera projektref mot ert projekt innan kommandona körs.
-Konfigurationen gäller endast den nya funktionen `paypal-sandbox`.
-`verify_jwt=false` behövs för att funktionen själv ska kunna validera även
-nyare Supabase JWT-signering: **varje riktigt anrop** verifierar ändå
-Bearer-token med Supabase Auth `/auth/v1/user` och kontrollerar testlistan
-innan databas- eller PayPal-anrop tillåts. OPTIONS är endast CORS-preflight.
-Ingen anonym betalningsåtkomst ges. Ändra inte andra funktioners inställningar.
+Kontrollera projektref innan körning. verify_jwt=false gäller enbart denna
+funktion: den validerar varje Bearer-token med Supabase Auth och kräver att
+användaren finns i testlistan. Ändra inte andra funktioners inställningar.
 
-`SUPABASE_URL` och `SUPABASE_SERVICE_ROLE_KEY` injiceras av hostade Supabase
-Edge Functions och ska inte läggas i frontend eller exempel-filen.
+## 5. Anslut säljaren
 
-## 5. Prova betalningen
+1. Logga in på testsidan med ett tillåtet Passiton-konto.
+2. Välj Skapa anslutningslänk och godkänn att starta anslutningen.
+3. Öppna länken i ett separat fönster. Logga in med SÄLJARENS sandboxkonto,
+   inte plattformskontot. Godkänn PayPals behörigheter och slutför flödet.
+4. Återvänd manuellt till testsidan och välj Kontrollera säljaranslutningen.
 
-1. Öppna den lokala testsidan och logga in med ett tillåtet Passiton-testkonto.
-2. Klicka på PayPal och logga in med **Personal sandbox-kontot** i popupen.
-3. Godkänn 10,00 SEK. Servern kontrollerar orderns mottagare, interna
-   referens, valuta och belopp och genomför capture.
-4. Endast verifierad capture med status `COMPLETED` ger bekräftad betalning.
-   `PENDING` visas som väntande. Ingen vara eller värdebeviskod levereras.
-5. Kontrollera transaktionen i PayPals sandbox och motsvarande rad i
-   `paypal_sandbox_payments`. Du ska kunna se order-id och capture-id.
-6. Prova att stänga PayPal-fönstret och att återöppna sidan. Knappen
-   **Kontrollera betalningen** hämtar verklig orderstatus från PayPal igen.
+Servern kontrollerar den konfigurerade säljaren genom PayPals
+merchant-integrations API: mottagningsförmåga, bekräftad e-post och
+betalningsbehörighet för just plattformsappens Client ID. Parametrar från
+webbläsaren används aldrig som bevis för att onboarding är klar.
+Om du ansluter fel sandboxkonto tillåts ändå inte betalning till detta konto;
+anslut rätt säljare vars Merchant ID är konfigurerat på servern.
 
-Testets begärande-id och order-id sparas lokalt per Supabase-användare. De
-är inte hemligheter. Behåll samma test om ett svar försvinner. Create och
-capture använder stabila `PayPal-Request-Id` på servern för återförsök.
-Servern hämtar ordern före capture så att ett tidigare lyckat capture inte
-görs igen. Om PayPal hann genomföra capture men databasuppdateringen
-misslyckades, återställs status med nästa kontroll. Äldre osäkra create-försök
-utan sparat PayPal-order-id stoppas efter tre timmar; kontrollera då sandbox-
-panelen innan du väljer **Nytt test**. Radera inte lagringsdata mitt i ett test.
+## 6. Testköp
 
-Det finns ingen webhook i detta steg. Status uppdateras vid capture eller
-manuell kontroll. Därför finns ingen automatisk leverans eller utbetalning.
+Använd ett separat Personal sandbox-konto som köpare i PayPal-fönstret.
+Godkänn 10 SEK. Servern använder plattformens access token tillsammans med
+säljarens PayPal-Auth-Assertion och partnerns attribution-header. Mottagare,
+belopp och valuta styrs av servern och kontrolleras före bekräftelse.
 
-## Felsökning och avstängning
+Kontrollera resultatet i säljarens PayPal sandbox och i tabellen
+paypal_sandbox_payments. Ingen faktisk vara levereras. Vid avbrutet svar,
+använd Kontrollera betalningen innan Nytt test. Stabilt PayPal-Request-Id
+skyddar återförsök och servern hämtar ordern före capture. Pending visas inte
+som lyckad betalning. Osäkra create-försök äldre än tre timmar stoppas.
 
-| Meddelande | Kontrollera |
-| --- | --- |
-| Testet är inte aktiverat | `PAYPAL_SANDBOX_ENABLED=true` i funktionens secrets. |
-| Kontot är inte tillagt som testare | Supabase User UID finns i testlistan. |
-| Testsidans adress är inte tillåten | Origin inklusive port; ingen sökväg eller avslutande slash. |
-| Serverfunktionen kunde inte anropas / CORS-fel | Funktionen är installerad, rätt config används och origin är tillåten. |
-| Testbetalningen kunde inte sparas | Den nya SQL-filen har körts och tabellen är synlig i Data API. |
-| PayPal nekade sandboxinloggningen | Appens sandbox Client ID och Secret hör ihop. |
-| PayPal-ordern matchar inte | Merchant ID tillhör appens mottagarkonto. |
-| Betalningen behandlas | Kontrollera igen och jämför med PayPals sandboxpanel. |
+## Omfattning och verifiering
 
-Stäng av genom att sätta `PAYPAL_SANDBOX_ENABLED=false` i Supabase secrets.
-Det påverkar bara denna funktion. Ta inte bort andra projektinställningar.
+Detta test stöder en fast säljare, ingen publik säljarregistrering. Tillåtna
+testare kan skapa onboardinglänkar. Plattformsavgift, fördröjd utbetalning,
+återbetalningsgränssnitt, webhook och värdebevisleverans ingår inte ännu.
+REFUND begärs som del av partnerbehörigheterna men inga återbetalningsanrop
+är implementerade. Servern använder endast PayPals sandboxadress.
 
-## Verifiering
-
-Från repots rot, med Node.js 22 eller senare:
+Koden är testad med simulerade svar. Installation i Supabase och ett verkligt
+sandboxköp måste verifieras med era konton. Ingen automatisk deployment sker
+från denna branch. Stäng av med PAYPAL_SANDBOX_ENABLED=false.
 
 ```bash
 node --test tests/*.test.cjs tests/*.test.mjs
 ```
 
-De nya testerna kör den verkliga serverhanteraren med simulerade HTTP-svar:
-auth, testlista, origins, serverstyrt belopp/mottagare, ägarskap, idempotens,
-avbrutna capture-svar, databasfel och väntande/felaktiga betalningar.
-Det ersätter inte en faktisk körning av SQL/RLS i Supabase eller ett
-fullständigt sandboxköp efter installation.
-
-## Referenser
-
-- [PayPal Orders v2](https://developer.paypal.com/api/orders/v2)
-- [PayPal idempotency](https://developer.paypal.com/api/rest/reference/idempotency/)
-- [PayPal JavaScript SDK](https://developer.paypal.com/sdk/js/)
-- [Supabase – Securing Edge Functions](https://supabase.com/docs/guides/functions/auth)
+Referenser:
+- https://developer.paypal.com/platforms/seller-onboarding
+- https://developer.paypal.com/platforms/seller-onboarding/before-payment/
+- https://developer.paypal.com/platforms/checkout/standard/integrate
+- https://developer.paypal.com/api/rest/reference/idempotency/
