@@ -36,6 +36,7 @@
   <link rel="stylesheet" href="css/listing-management.css" />
   <link rel="stylesheet" href="css/price-offers.css" />
   <link rel="stylesheet" href="css/dashboard-hub.css" />
+  <link rel="stylesheet" href="css/privacy.css" />
 </head>
 <body>
   <header class="site-header">
@@ -354,6 +355,7 @@
               <label class="account-field" for="auth-password">Lösenord
                 <input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
               </label>
+              <label id="auth-policy-field" class="auth-privacy-check"><input id="auth-policy-confirm" type="checkbox" required><span>Jag bekräftar att jag har tagit del av <a href="integritetspolicy.html" target="_blank" rel="noopener">integritetspolicyn</a>. Detta är inte ett samtycke till frivilliga analyscookies.</span></label>
               <button id="auth-submit" class="primary-cta auth-submit" type="submit">Skapa konto</button>
               <button id="auth-mode-toggle" class="auth-mode-toggle" type="button">Har du redan ett konto? Logga in</button>
               <p id="auth-message" class="auth-message hidden" role="status" aria-live="polite"></p>
@@ -686,7 +688,7 @@
   </main>
 
   <footer class="site-footer">
-    <div class="page-width footer-inner"><strong>Passiton</strong><!--<span>Värde som får gå vidare.</span><span>Demo-MVP · Projektledningskurs 2026</span></div> -->
+    <div class="page-width footer-inner"><strong>Passiton</strong><span>Demo-MVP · Projektledningskurs 2026</span><a href="integritetspolicy.html">Integritetspolicy</a></div>
   </footer>
 
   <dialog id="offer-dialog" class="offer-dialog" aria-labelledby="offer-dialog-heading">
@@ -734,5 +736,6 @@
   <script src="js/offer-rules.js"></script>
   <script src="js/price-offers.js"></script>
   <script src="js/dashboard-hub.js"></script>
+  <script src="js/navigation-history.js"></script>
 </body>
 </html>
