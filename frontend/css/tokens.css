@@ -11,7 +11,7 @@
   --color-cream-deep: color-mix(in srgb,var(--color-brown) 7%,var(--color-cream));
   --color-orange-tint: color-mix(in srgb,var(--color-orange) 11%,var(--color-paper));
   --color-orange-hover: color-mix(in srgb,var(--color-orange) 88%,var(--color-paper));
-  --color-orange-pressed: color-mix(in srgb,var(--color-orange) 86%,var(--color-brown));
+  --color-orange-pressed: color-mix(in srgb,var(--color-orange) 95%,var(--color-brown));
   --color-shadow: color-mix(in srgb,var(--color-brown) 10%,transparent);
   --color-backdrop: color-mix(in srgb,var(--color-brown) 58%,transparent);
   --color-ink-inverse-muted: color-mix(in srgb,var(--color-paper) 78%,var(--color-brown));
