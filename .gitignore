@@ -1,0 +1,4 @@
+# Local sandbox credentials. Never commit secrets.
+backend/supabase/.env*
+!backend/supabase/.env.example
+backend/supabase/.temp/

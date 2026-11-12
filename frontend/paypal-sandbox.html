@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>PayPal sandbox · Passiton</title>
+  <link rel="stylesheet" href="css/paypal-sandbox.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/paypal-sandbox.js"></script>
+</head>
+<body>
+  <main>
+    <a class="back" href="./">← Passiton</a>
+    <p class="badge">PAYPAL SANDBOX</p>
+    <h1>Prova en testbetalning</h1>
+    <p class="intro">10,00 kr i låtsaspengar. Ingen annons köps och inget värdebevis levereras.</p>
+    <section aria-labelledby="account-heading">
+      <h2 id="account-heading">1. Ditt Passiton-testkonto</h2>
+      <p>Logga in med ett befintligt konto som lagts till som testare. PayPals testköpare används först i PayPal-fönstret.</p>
+      <form id="sandbox-login">
+        <label for="sandbox-email">E-post</label>
+        <input id="sandbox-email" type="email" autocomplete="username" required>
+        <label for="sandbox-password">Lösenord</label>
+        <input id="sandbox-password" type="password" autocomplete="current-password" required>
+        <button type="submit">Logga in</button>
+      </form>
+      <div id="sandbox-account" hidden>
+        <p id="sandbox-user"></p>
+        <button id="sandbox-logout" class="secondary" type="button">Logga ut</button>
+      </div>
+    </section>
+    <section id="sandbox-payment" aria-labelledby="payment-heading" hidden>
+      <h2 id="payment-heading">2. Betala 10,00 kr i sandbox</h2>
+      <p>Använd ett PayPal <strong>Personal sandbox-konto</strong> som skiljer sig från mottagarens Business sandbox-konto.</p>
+      <div id="paypal-buttons"></div>
+      <div class="actions">
+        <button id="sandbox-check" class="secondary" type="button" disabled>Kontrollera betalningen</button>
+        <button id="sandbox-new" class="secondary" type="button" disabled>Nytt test</button>
+      </div>
+      <dl id="sandbox-details" hidden>
+        <dt>Miljö</dt><dd>Sandbox</dd>
+        <dt>PayPal-order</dt><dd id="sandbox-order"></dd>
+        <dt>Betalnings-id</dt><dd id="sandbox-capture"></dd>
+      </dl>
+    </section>
+    <p id="sandbox-status" role="status" aria-live="polite">Startar testmiljön …</p>
+    <p class="footnote">Detta första test går till ett sandboxkonto. Säljaranslutning, plattformsavgift och fördröjd utbetalning ingår inte ännu.</p>
+    <noscript>JavaScript krävs för betalningstestet.</noscript>
+  </main>
+</body>
+</html>

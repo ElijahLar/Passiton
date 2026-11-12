@@ -14,6 +14,18 @@ Rotens `index.html` skickar också vidare till frontend och behåller query-para
 Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 
 ## Ingår
+
+### Separat PayPal-sandboxtest
+
+På branchen `feature/paypal-sandbox` finns en separat testsida:
+`http://localhost:8000/frontend/paypal-sandbox.html`.
+Den provar en fast betalning på 10,00 SEK i låtsaspengar till ett sandboxkonto;
+den befintliga demokassan och annonserna används inte av testet.
+Supabase-funktionen och den nya tabellen behöver installeras separat.
+Se [installationsguiden](docs/PAYPAL_SANDBOX_SETUP.md).
+
+### Befintliga funktioner
+
 - Marknadsplats med sök, kategorier, rabattfilter och sortering
 - Produktdetaljsida inspirerad av ren skandinavisk e-handel
 - Demo-kassa med varukorg, testuppgifter, orderbekräftelse och lokal köphistorik
@@ -72,3 +84,4 @@ Scriptet kontrollerar först att hela patchen går att applicera. Vid konflikt
 avbryter det utan att applicera patchen. Det skapar ingen commit och gör ingen push.
 Efter applicering kan du granska ändringarna med `git diff` och göra en egen commit.
 Patchen är skapad mot commit `a7fb446344c2a9048331c46a30f78b8b34720ccc`.
+
