@@ -1,0 +1,17 @@
+/* PassItOn PT-03 — shared warm/minimal brand design tokens. */
+:root {
+  /* Identity colors */
+  --color-primary: #fff5ee;   /* Cream: main page background */
+  --color-secondary: #ff8c00; /* Orange: primary interactive elements */
+  --color-tertiary: #632713;  /* Brown: accessible body and heading text */
+  --color-accent: #ffc72c;    /* Yellow: small highlights only */
+
+  /* Semantic surfaces and accessible orange-related shades */
+  --color-surface: #fffdfa;
+  --color-surface-muted: #fff0e4;
+  --color-border: #e8d8ca;
+  --color-border-strong: #c9aa97;
+  --color-text-muted: #76574b;
+  --color-brand-text: #965000; /* Readable links on cream backgrounds */
+  --color-brand-hover: #ffa228;
+}
