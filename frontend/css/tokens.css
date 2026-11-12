@@ -1,0 +1,22 @@
+/* PassItOn PT-04 | Only four base colors; all other tones are mixes. */
+:root {
+  --color-cream: #FFF5EE;
+  --color-orange: #FF8C00;
+  --color-brown: #632713;
+  --color-paper: #FFFCF9;
+
+  --color-muted: color-mix(in srgb,var(--color-brown) 76%,var(--color-paper));
+  --color-border: color-mix(in srgb,var(--color-brown) 14%,var(--color-paper));
+  --color-border-strong: color-mix(in srgb,var(--color-brown) 34%,var(--color-paper));
+  --color-cream-deep: color-mix(in srgb,var(--color-brown) 7%,var(--color-cream));
+  --color-orange-tint: color-mix(in srgb,var(--color-orange) 11%,var(--color-paper));
+  --color-orange-hover: color-mix(in srgb,var(--color-orange) 88%,var(--color-paper));
+  --color-orange-pressed: color-mix(in srgb,var(--color-orange) 86%,var(--color-brown));
+  --color-shadow: color-mix(in srgb,var(--color-brown) 10%,transparent);
+  --color-backdrop: color-mix(in srgb,var(--color-brown) 58%,transparent);
+  --color-ink-inverse-muted: color-mix(in srgb,var(--color-paper) 78%,var(--color-brown));
+  --color-shape-1: color-mix(in srgb,var(--color-brown) 80%,var(--color-cream));
+  --color-shape-2: color-mix(in srgb,var(--color-brown) 66%,var(--color-cream));
+  --color-shape-3: color-mix(in srgb,var(--color-brown) 55%,var(--color-cream));
+  --color-shape-4: color-mix(in srgb,var(--color-brown) 40%,var(--color-cream));
+}
