@@ -1,0 +1,213 @@
+/* PassItOn PT-04 – premium editorial art direction.
+   Loaded last on both pages. Four pigments only; all tones derived via color-mix. */
+
+/* Foundations: quiet canvases and readable typography */
+html {background:var(--color-paper)}
+body,body.privacy-document {background:var(--color-paper);color:var(--color-brown)}
+::selection {background:var(--color-orange-tint);color:var(--color-brown)}
+h1,h2,h3,strong {text-wrap:pretty}
+:where(a,button,input,select,textarea,[role="button"]):focus-visible {
+  outline:2px solid var(--color-orange)!important;
+  outline-offset:3px!important;
+}
+
+/* Header stays light and editorial. One fine orange line marks the active page. */
+.site-header {
+  background:color-mix(in srgb,var(--color-paper) 95%,transparent);
+  border-bottom:1px solid var(--color-border);
+  box-shadow:none;
+}
+.header-search {background:var(--color-paper)}
+.wordmark {font-weight:750;letter-spacing:-.055em}
+.header-links button {position:relative;transition:color .18s ease}
+.header-links button::after {
+  content:"";position:absolute;left:0;right:100%;bottom:4px;height:2px;
+  background:var(--color-orange);transition:right .2s ease
+}
+.header-links button:is(:hover,:focus-visible,[aria-current="page"])::after {right:0}
+.header-links button:hover {text-decoration:none}
+.icon-btn:hover {background:var(--color-cream)}
+.bag-count {background:var(--color-orange);color:var(--color-brown)}
+
+/* Large type and whitespace create the hierarchy, not colorful rectangles. */
+.kicker,.preview-label,.signed-in-label {color:var(--color-muted)}
+.market-hero {border-bottom-color:var(--color-border)}
+.market-hero h1,.section-intro h1,.info-page h1 {
+  color:var(--color-brown);font-weight:650;letter-spacing:-.055em
+}
+.market-hero p,.section-intro p {line-height:1.6}
+.text-arrow {color:var(--color-brown)}
+.text-arrow:hover span {color:var(--color-orange)}
+.filter-note,.dispute-guest,.hub-empty {background:var(--color-cream)}
+
+/* Neutral cards/forms. Brand identity should not conflict with merchant imagery. */
+.filter-search,.filter-search input,.catalog-toolbar select,
+.form-section input,.form-section select,.account-field input,
+.checkout-fields input,.offer-number input,.lm-price,
+.dispute-start-form input,.dispute-start-form select,.dispute-start-form textarea,
+.dispute-message-form textarea {
+  background:var(--color-paper);color:var(--color-brown)
+}
+input::placeholder,textarea::placeholder {color:var(--color-muted);opacity:1}
+input[type="checkbox"],input[type="radio"],input[type="range"] {accent-color:var(--color-brown)}
+.check-list input:checked {background:var(--color-brown);border-color:var(--color-brown)}
+.check-list input:checked::after {border-color:var(--color-paper)}
+
+/* Gift-card mock art gets a monochrome, soft dimensional treatment.
+   Its text always contrasts its mock card. */
+.product-art,.gallery-shot,.seller-card-preview {background:var(--color-cream)}
+.product-art {
+  border:1px solid var(--color-border);
+  transition:border-color .2s ease,box-shadow .2s ease
+}
+.product-card {transition:transform .2s ease}
+.product-card:hover {transform:translateY(-2px)}
+.product-card:hover .product-art {
+  border-color:var(--color-border-strong);
+  box-shadow:0 12px 28px var(--color-shadow)
+}
+.brand-card,.scene-card {box-shadow:0 14px 27px var(--color-shadow)}
+.brand-ikea .brand-card,.brand-elgiganten .brand-card,
+.brand-stadium .brand-card,.brand-ahlens .brand-card,
+.brand-ica .brand-card {background:var(--color-brown);color:var(--color-paper)}
+.brand-zalando .brand-card,.brand-hm .brand-card,
+.brand-sj .brand-card {background:var(--color-paper);color:var(--color-brown)}
+.brand-zalando .brand-card::before {color:var(--color-orange)}
+.seller-card-preview::before,
+.seller-card-preview.brand-elgiganten::before,
+.seller-card-preview.brand-stadium::before,
+.seller-card-preview.brand-ahlens::before,
+.seller-card-preview.brand-ica::before {background:var(--color-brown)}
+.seller-card-preview.brand-zalando::before,
+.seller-card-preview.brand-hm::before,
+.seller-card-preview.brand-sj::before {background:var(--color-paper)}
+.preview-brand {color:var(--color-paper)}
+.seller-card-preview:is(.brand-zalando,.brand-hm,.brand-sj) .preview-brand {color:var(--color-brown)}
+.preview-caption {color:var(--color-paper)}
+.seller-card-preview:is(.brand-zalando,.brand-hm,.brand-sj) .preview-caption {color:var(--color-brown)}
+.heart-float {
+  background:var(--color-paper);color:var(--color-brown);
+  border:1px solid var(--color-border)
+}
+.heart-float:is(:hover,[aria-pressed="true"]) {
+  background:var(--color-orange-tint);color:var(--color-brown)
+}
+.product-meta-price span,.preview-title-row span,.activity-amount span {
+  color:var(--color-brown);font-weight:650
+}
+.product-meta-price span {display:inline-block;border-bottom:2px solid var(--color-orange)}
+
+/* Orange is deliberately reserved for conversion-critical actions. */
+.primary-cta,.privacy-cookie-button {
+  background:var(--color-orange);color:var(--color-brown);
+  transition:background-color .2s ease,box-shadow .2s ease,transform .2s ease
+}
+.primary-cta:hover:not(:disabled),.privacy-cookie-button:hover:not(:disabled) {
+  background:var(--color-orange-hover);
+  box-shadow:0 7px 20px var(--color-shadow);transform:translateY(-1px)
+}
+.primary-cta:active:not(:disabled),.privacy-cookie-button:active:not(:disabled) {
+  background:var(--color-orange-pressed);transform:translateY(0)
+}
+.primary-cta:disabled {background:var(--color-border-strong);color:var(--color-brown)}
+.secondary-cta,.hub-saved-item-actions button,.offer-close,.hub-dialog-close {
+  background:var(--color-paper);color:var(--color-brown);
+  transition:background-color .18s ease,border-color .18s ease
+}
+.secondary-cta:hover:not(:disabled),.hub-saved-item-actions button:hover,
+.offer-close:hover,.hub-dialog-close:hover {
+  background:var(--color-cream);border-color:var(--color-border-strong)
+}
+.verified-pill {background:var(--color-cream);color:var(--color-brown)}
+.verified-pill span {background:var(--color-orange);color:var(--color-brown)}
+.verified-pill.not-verified {
+  background:var(--color-cream);color:var(--color-brown);
+  border:1px solid var(--color-border-strong)
+}
+.verified-pill.not-verified #detail-status-icon {
+  background:var(--color-brown);color:var(--color-paper)
+}
+.save-badge {
+  background:var(--color-orange-tint)!important;color:var(--color-brown)!important;
+  border-left:3px solid var(--color-orange)
+}
+
+/* Dialogs, hub, admin panels and cart are calm paper surfaces. */
+.preview-sticky,.checkout-summary,.listing-management,
+.hub-card,.hub-dialog,.offer-dialog,.dispute-main,.dispute-sidebar {
+  background:var(--color-paper);color:var(--color-brown)
+}
+.hub-card {border-color:var(--color-border)}
+.hub-card:hover {
+  background:var(--color-paper);border-color:var(--color-border-strong);
+  transform:translateY(-2px);box-shadow:0 14px 32px var(--color-shadow)
+}
+.hub-card-icon {
+  background:var(--color-cream);color:var(--color-brown);
+  border-color:var(--color-border)
+}
+.hub-card .kicker,.hub-card-arrow,.hub-saved-count,
+.offer-panel-utility strong,.offer-values div:last-child strong {color:var(--color-brown)}
+.hub-card:hover .hub-card-arrow span {color:var(--color-orange)}
+.hub-dialog::backdrop,.offer-dialog::backdrop {background:var(--color-backdrop)}
+.offer-tab.is-active {color:var(--color-brown);border-bottom-color:var(--color-orange)}
+.offer-tag-active {background:var(--color-orange-tint);color:var(--color-brown)}
+.offer-warning,.checkout-disclaimer,.dispute-demo-warning {
+  background:var(--color-orange-tint);color:var(--color-brown);
+  border-left:3px solid var(--color-orange)
+}
+.offer-warning-blocked,.auth-message[data-tone="error"],
+.sell-form-message[data-tone="error"] {
+  background:var(--color-cream);color:var(--color-brown);
+  border-left:3px solid var(--color-brown)
+}
+.lm-message[data-tone="error"] {color:var(--color-brown)}
+.lm-warning,.dispute-info,.dispute-tag,
+.dispute-bubble.other,.dispute-bubble.system,.dispute-bubble.own {
+  background:var(--color-cream);color:var(--color-brown)
+}
+.dispute-order-row:is(:hover,.active) {
+  background:var(--color-cream);border-color:var(--color-border-strong)
+}
+
+/* One meaningful dark section anchors the account experience. */
+.account-panel {background:var(--color-brown);color:var(--color-paper)}
+.account-story h2,.account-story p {color:var(--color-paper)}
+.account-story .kicker {color:var(--color-orange)}
+.account-access {background:var(--color-paper);color:var(--color-brown)}
+.account-access .kicker {color:var(--color-muted)}
+.account-initials {background:var(--color-cream);color:var(--color-brown)}
+.route-person {border-color:var(--color-ink-inverse-muted)}
+.route-person svg {color:var(--color-paper)}
+.route-line {background:var(--color-ink-inverse-muted)}
+.route-line::after {color:var(--color-paper)}
+.route-line span {background:var(--color-brown);color:var(--color-paper)}
+
+/* Contrasting footer is intentional; the header remains light. */
+.site-footer,.privacy-footer {
+  background:var(--color-brown);border-color:var(--color-brown);
+  color:var(--color-ink-inverse-muted)
+}
+.footer-inner,.privacy-footer .privacy-frame {color:var(--color-ink-inverse-muted)}
+.footer-inner strong,.footer-inner a,
+.privacy-footer a,.privacy-footer strong {color:var(--color-paper)}
+.footer-inner a:hover,.privacy-footer a:hover {text-decoration-color:var(--color-orange)}
+
+/* Standalone policy shares the same editorial palette. */
+body.privacy-document {background:var(--color-paper);color:var(--color-brown)}
+.privacy-header {background:var(--color-paper)}
+.privacy-document .privacy-section p,.privacy-document .privacy-section li {
+  color:var(--color-muted)
+}
+.privacy-document .privacy-cookie-button {background:var(--color-orange);color:var(--color-brown)}
+.privacy-document .privacy-cookie-button:hover {background:var(--color-orange-hover)}
+
+@media(max-width:760px) {
+  .product-card:hover,.hub-card:hover {transform:none}
+  .market-hero {padding-top:42px}
+  .site-header {background:var(--color-paper)}
+}
+@media(prefers-reduced-motion:reduce) {
+  .primary-cta,.privacy-cookie-button,.product-card,.hub-card,
+  .header-links button::after {transition:none!important;transform:none!important}
+}

@@ -37,7 +37,11 @@ function navTo(id){
     id='dashboard';
   }
   if(id==='checkout'&&!state.checkoutItems.length)id='cart';
-  $$('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  document.querySelectorAll('.header-links [data-nav]').forEach(btn => {
+    if(btn.dataset.nav === id)btn.setAttribute('aria-current','page');
+    else btn.removeAttribute('aria-current');
+  });
   if(!window.passitonNavigationHistory?.isRestoring())window.scrollTo({top:0,behavior:'smooth'});
   if(id === 'market') renderMarket();
   if(id === 'cart') renderCart();
@@ -794,4 +798,5 @@ $('#sign-out').addEventListener('click',async()=>{
 
 let toastTimer;function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),2600)}
 
+document.querySelector('.header-links [data-nav="market"]')?.setAttribute('aria-current','page');
 renderMarket();renderDashboard();updateBag();initializeSupabaseAuth();
