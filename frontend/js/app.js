@@ -37,8 +37,8 @@ function navTo(id){
     id='dashboard';
   }
   if(id==='checkout'&&!state.checkoutItems.length)id='cart';
-  $('.view').forEach(v => v.classList.toggle('active', v.id === id));
-  $('.header-links [data-nav]').forEach(btn => {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  document.querySelectorAll('.header-links [data-nav]').forEach(btn => {
     if(btn.dataset.nav === id)btn.setAttribute('aria-current','page');
     else btn.removeAttribute('aria-current');
   });
