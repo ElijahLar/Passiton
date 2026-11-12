@@ -55,6 +55,16 @@ testa med två konton och granska privata dispyter.
 | `patches/001-project-structure.patch` | Patchen för denna omstrukturering. |
 | `scripts/apply_structure_patch.py` | Kontrollerar och applicerar patchen. |
 
+## Sidnavigering och integritetspolicy
+
+Passitons vyer stöder webbläsarens bakåt-/framåtknappar och delbara URL-fragment
+(`#passiton=market`, `#passiton=product&id=...`). Inga personuppgifter skrivs
+i URL:en. Autentiseringsfragment från Supabase lämnas orörda.
+Den särskilda policysidan finns på `frontend/integritetspolicy.html` och länkas
+i sidfoten och vid registrering. Grundläggande cookieval hanteras där via samma GTM/Cookiebot.
+Policytexten beskriver MVP:n utan att utge demobetalningar för riktiga PayPal-betalningar.
+Texten behöver slutlig juridisk granskning och anpassning till faktisk databehandling.
+
 ## Statistik och cookiehantering
 
 GTM-containern är integrerad i webbplatskoden och consent-standardvärden är satta till `denied` för frivillig statistik/annonsering. Cookiebanner och taggar måste fortfarande konfigureras **i GTM och en CMP** innan GA4 aktiveras. Se [guiden för GA4, GTM och Cookiebot](docs/analytics-gtm.md). Demoorder ska inte rapporteras som riktig omsättning.

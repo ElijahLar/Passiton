@@ -38,7 +38,7 @@ function navTo(id){
   }
   if(id==='checkout'&&!state.checkoutItems.length)id='cart';
   $$('.view').forEach(v => v.classList.toggle('active', v.id === id));
-  window.scrollTo({top:0,behavior:'smooth'});
+  if(!window.passitonNavigationHistory?.isRestoring())window.scrollTo({top:0,behavior:'smooth'});
   if(id === 'market') renderMarket();
   if(id === 'cart') renderCart();
   if(id === 'checkout') renderCheckout();
@@ -50,6 +50,7 @@ function navTo(id){
     if(state.pendingNavigation&&!state.user)setAuthMessage('Logga in eller skapa ett konto för att publicera en annons.','info');
   }
   window.passitonAnalytics?.virtualPageView(id);
+  window.passitonNavigationHistory?.record(id,state.selectedId);
 }
 
 $$('[data-nav]').forEach(btn => btn.addEventListener('click', () => navTo(btn.dataset.nav)));
@@ -600,6 +601,7 @@ async function refreshMarketplaceListings(){
   renderAccountState();
   if($('#market').classList.contains('active'))renderMarket();
   if($('#dashboard').classList.contains('active'))renderDashboard();
+  window.passitonNavigationHistory?.retryPendingProduct();
 }
 
 function continuePendingNavigation(){
@@ -629,6 +631,8 @@ function setAuthMode(mode){
   $('#auth-title').textContent=isSignup?'Skapa konto':'Logga in';
   $('#auth-copy').textContent=isSignup?'Använd din e-postadress och välj ett lösenord.':'Logga in med e-postadressen och lösenordet till ditt konto.';
   $('#auth-name-field').classList.toggle('hidden',!isSignup);
+  $('#auth-policy-field').classList.toggle('hidden',!isSignup);
+  $('#auth-policy-confirm').required=isSignup;
   $('#auth-name').required=isSignup;
   $('#auth-password').minLength=isSignup?8:1;
   $('#auth-password').autocomplete=isSignup?'new-password':'current-password';
