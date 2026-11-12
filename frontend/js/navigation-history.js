@@ -72,6 +72,10 @@
     if(!window.location.hash.startsWith('#passiton='))return;
     const route=routeFromURL();
     if(route){
+      const activeView=document.querySelector('.view.active')?.id;
+      // Back/Forward emits both popstate and hashchange: avoid restoring twice.
+      if(activeView===route.view &&
+        (route.view!=='product'||String(state.selectedId)===String(route.productId)))return;
       window.history.replaceState({passitonView:route.view,passitonProduct:route.productId??null},'');
       restore(route);
     }
@@ -81,8 +85,9 @@
   if(initial){
     window.history.replaceState({passitonView:initial.view,passitonProduct:initial.productId??null},'');
     restore(initial);
-  }else if(!window.history.state?.passitonView){
-    // Preserves Supabase recovery/login fragments and any existing query string.
+  }else{
+    // No Passiton fragment: initialize the visible market view. Preserve any
+    // Supabase confirmation token hash without treating it as navigation.
     window.history.replaceState({passitonView:'market',passitonProduct:null},'');
   }
 })();
