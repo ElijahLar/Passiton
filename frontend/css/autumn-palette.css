@@ -12,7 +12,7 @@
   --pio-brown-deep:#451A0C;
   --pio-brown-soft:#794832;
   --pio-orange:#FF8C00;
-  --pio-orange-hover:#F47E00;
+  --pio-orange-hover:#FF9900;
   --pio-yellow:#FFC72C;
   --pio-cream:#FFF5EE;
   --pio-white:#FFFCF9;
@@ -85,6 +85,7 @@ body::selection{background:var(--pio-yellow);color:var(--pio-brown)}
 .protection-box button{color:var(--pio-brown);font-weight:650}
 
 /* Primary actions: orange with BROWN labels gives 4.92:1 normal-text contrast.
+   A lighter orange hover preserves a >=4.5:1 contrast ratio too.
    White text on orange would not meet AA normal text contrast. */
 .primary-cta,
 .offer-form-actions .primary-cta{
