@@ -65,6 +65,19 @@ i sidfoten och vid registrering. Grundläggande cookieval hanteras där via samm
 Policytexten beskriver MVP:n utan att utge demobetalningar för riktiga PayPal-betalningar.
 Texten behöver slutlig juridisk granskning och anpassning till faktisk databehandling.
 
+## Visuell identitet: höstpalett (13 november 2026)
+
+En separat CSS-fil `frontend/css/autumn-palette.css` läses in sist på både
+marknadsplatsen och integritetspolicyn. Paletten är `#632713` (brun),
+`#FF8C00` (orange), `#FFC72C` (gul) och `#FFF5EE` (krämvit).
+Brun text används på orange/gul bakgrund för god kontrast. Filen ändrar
+inte Supabase, varukorg, betalningslogik eller sidnavigering.
+
+För att återgå till föregående färgtema: återställ ändringarna från
+`backup/main-before-autumn-palette-2026-11-13` eller ta bort
+`autumn-palette.css`-länkarna i båda HTML-filerna. Tidigare webbplats
+och data är bevarade i backup-branchen.
+
 ## Statistik och cookiehantering
 
 GTM-containern är integrerad i webbplatskoden och consent-standardvärden är satta till `denied` för frivillig statistik/annonsering. Cookiebanner och taggar måste fortfarande konfigureras **i GTM och en CMP** innan GA4 aktiveras. Se [guiden för GA4, GTM och Cookiebot](docs/analytics-gtm.md). Demoorder ska inte rapporteras som riktig omsättning.
