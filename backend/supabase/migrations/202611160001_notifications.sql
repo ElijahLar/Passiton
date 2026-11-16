@@ -139,7 +139,7 @@ declare
 begin
   v_category := case
     when new.type in ('offer_received','offer_accepted','offer_declined','offer_countered',
-      'offer_expired','offer_payment_due','offer_payment_expired') then 'offers'
+      'offer_expired','offer_expiring','offer_payment_due','offer_payment_expired') then 'offers'
     when new.type in ('demo_purchase','demo_sale') then 'purchases'
     when new.type in ('verification_approved','verification_rejected') then 'verification'
     when new.type in ('dispute_opened','dispute_updated','dispute_resolved','dispute_message') then 'cases'
@@ -327,6 +327,24 @@ create or replace function private.notify_offer_payment_reminders()
 returns integer language plpgsql security definer set search_path = '' as $$
 declare v_offer record; v_count integer := 0;
 begin
+  -- Expire overdue offers even if nobody has visited the offer dashboard.
+  for v_offer in select distinct buyer_id from public.price_offers
+    where (status in ('pending_seller','countered') and offer_expires_at <= now())
+       or (status='accepted_awaiting_payment' and payment_due_at <= now()) loop
+    perform private.expire_buyer_price_offers(v_offer.buyer_id);
+  end loop;
+
+  -- Warn about ordinary offers shortly before the seller's deadline.
+  for v_offer in select id,buyer_id,seller_id from public.price_offers
+    where status='pending_seller'
+      and offer_expires_at > now()
+      and offer_expires_at <= now() + interval '1 hour' loop
+    perform private.emit_passiton_notification(v_offer.seller_id,'offer_expiring',
+      'Prisförslag löper snart ut',
+      'Du har mindre än en timme på dig att besvara ett mottaget prisförslag.',
+      'offer',v_offer.id,'offer:' || v_offer.id::text || ':1h');
+  end loop;
+
   for v_offer in select id,buyer_id from public.price_offers
     where status='accepted_awaiting_payment'
       and payment_due_at > now()
