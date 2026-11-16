@@ -11,6 +11,7 @@
     commerce: document.getElementById('hub-commerce'),
     offers: document.getElementById('price-offers-panel'),
     saved: document.getElementById('hub-saved'),
+    notifications: document.getElementById('hub-notifications'),
     admin: document.getElementById('lm-admin-panel'),
     orders: document.getElementById('disputes')
   };
@@ -18,6 +19,7 @@
     commerce: ['Ditt konto', 'Köp och försäljning', 'Din köphistorik och dina egna annonser.'],
     offers: ['Förhandla tryggt', 'Mina prisförslag', 'Skickade och mottagna bud samt överenskomna priser.'],
     saved: ['Dina favoriter', 'Sparade annonser', 'Presentkort som du valt att spara för senare.'],
+    notifications: ['Håll dig uppdaterad', 'Notiser och inställningar', 'Se tidigare notiser och välj vilka mail du vill få.'],
     admin: ['Endast administratörer', 'Granska inkomna annonser', 'Granska inkomna fotobevis och fatta beslut.'],
     orders: ['PassitOn Trygg Affär', 'Order och dispyter', 'Orderhistorik och eventuella ärenden.']
   };
@@ -225,6 +227,7 @@
     document.getElementById('hub-dialog-description').textContent = description;
     body.append(panels[key]);
     if (key === 'saved') renderSaved();
+    if (key === 'notifications') window.passitonNotifications?.refresh();
     if (key === 'orders') {
       panels.orders.classList.add('active');
       window.passitonLoadDisputes?.();
