@@ -36,6 +36,7 @@
   <link rel="stylesheet" href="css/listing-management.css" />
   <link rel="stylesheet" href="css/price-offers.css" />
   <link rel="stylesheet" href="css/dashboard-hub.css" />
+  <link rel="stylesheet" href="css/notifications.css" />
   <link rel="stylesheet" href="css/privacy.css" />
   <link rel="stylesheet" href="css/autumn-palette.css" />
   <link rel="stylesheet" href="css/passiton-logo.css" />
@@ -57,6 +58,17 @@
         <button class="icon-btn search-toggle" title="Sök" aria-label="Sök">
           <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
         </button>
+        <div class="ns-bell-wrap">
+          <button type="button" id="ns-bell" class="icon-btn hidden" aria-label="Notiser" title="Notiser" aria-haspopup="true" aria-expanded="false" aria-controls="ns-dropdown">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+            <span id="ns-badge" class="ns-badge hidden">0</span>
+          </button>
+          <div id="ns-dropdown" class="ns-dropdown hidden" role="region" aria-label="Senaste notiser">
+            <div class="ns-dropdown-header"><h2>Notiser</h2><button type="button" class="ns-text-action" data-ns-read-all>Markera alla som lästa</button></div>
+            <div id="ns-dropdown-list" class="ns-dropdown-list"></div>
+            <div class="ns-dropdown-footer"><button type="button" class="ns-text-action" data-ns-history>Visa alla notiser →</button></div>
+          </div>
+        </div>
         <button id="account-nav" class="icon-btn" data-nav="dashboard" title="Logga in eller skapa konto" aria-label="Logga in eller skapa konto">
           <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
         </button>
@@ -357,6 +369,17 @@
               <label class="account-field" for="auth-password">Lösenord
                 <input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
               </label>
+              <fieldset id="ns-signup-field" class="ns-registration">
+                <legend class="visually-hidden">Mailinställningar</legend>
+                <h3>Håll dig uppdaterad</h3>
+                <p>Välj vilka händelser du vill få mail om. Du får fortfarande viktiga notiser direkt på PassItOn. Du kan ändra valen senare.</p>
+                <label class="ns-checkbox master"><input type="checkbox" data-ns-all="signup"> Välj alla</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="offers" data-ns-scope="signup"> Prisförslag</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="purchases" data-ns-scope="signup"> Köp och betalningar</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="verification" data-ns-scope="signup"> Verifiering</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="cases" data-ns-scope="signup"> Ärenden</label>
+                <p>Frivilliga mail är avstängda från början. Nödvändiga säkerhets- och kontomail kan fortfarande skickas.</p>
+              </fieldset>
               <label id="auth-policy-field" class="auth-privacy-check"><input id="auth-policy-confirm" type="checkbox" required><span>Jag bekräftar att jag har tagit del av <a href="integritetspolicy.html" target="_blank" rel="noopener">integritetspolicyn</a>. Detta är inte ett samtycke till frivilliga analyscookies.</span></label>
               <button id="auth-submit" class="primary-cta auth-submit" type="submit">Skapa konto</button>
               <button id="auth-mode-toggle" class="auth-mode-toggle" type="button">Har du redan ett konto? Logga in</button>
@@ -396,6 +419,12 @@
             <span class="hub-card-top"><span class="kicker">Dina favoriter</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></span></span>
             <span class="hub-card-title">Sparade annonser</span>
             <span class="hub-card-description">Samla intressanta presentkort på ett ställe och hitta tillbaka till dem.</span>
+            <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
+          </button>
+          <button type="button" class="hub-card" data-hub-open="notifications" aria-haspopup="dialog">
+            <span class="hub-card-top"><span class="kicker">Håll dig uppdaterad</span><span class="hub-card-icon" aria-hidden="true">♧</span></span>
+            <span class="hub-card-title">Notiser</span>
+            <span class="hub-card-description">Se notishistorik och hantera vilka mail du vill få.</span>
             <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
           </button>
           <button type="button" class="hub-card hub-card-admin hidden" data-hub-open="admin" aria-haspopup="dialog">
@@ -449,6 +478,34 @@
             </div>
             <p id="hub-saved-notice" class="hub-saved-note">Riktiga annonser sparas säkert i Supabase och följer med när du loggar in på andra enheter. Demokort lagras endast i den här webbläsaren.</p>
             <div id="hub-saved-list" class="hub-saved-grid" aria-live="polite"></div>
+          </section>
+          <section id="hub-notifications" class="hub-portal-section ns-settings" aria-label="Notiser och mailinställningar">
+            <div class="ns-history-top">
+              <div><h3>Notishistorik</h3><p id="ns-unread-total">0 olästa</p></div>
+              <button type="button" class="ns-text-action" data-ns-read-all>Markera alla som lästa</button>
+            </div>
+            <div class="ns-tabs" role="tablist" aria-label="Filtrera notiser">
+              <button type="button" class="is-active" role="tab" aria-selected="true" data-ns-filter="all">Alla</button>
+              <button type="button" role="tab" aria-selected="false" data-ns-filter="unread">Olästa</button>
+            </div>
+            <div id="ns-history-list" class="ns-history-list" aria-live="polite"></div>
+            <div class="ns-prefs-card" style="margin-top:30px">
+              <h3>Inställningar → Notiser</h3>
+              <p>Välj vilka frivilliga mail du vill få. Notiser på hemsidan visas ändå.</p>
+              <form id="ns-prefs-form">
+                <label class="ns-checkbox master"><input type="checkbox" data-ns-all="settings"> Välj alla</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="offers" data-ns-scope="settings"> Prisförslag</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="purchases" data-ns-scope="settings"> Köp och betalningar</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="verification" data-ns-scope="settings"> Verifiering</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="cases" data-ns-scope="settings"> Ärenden</label>
+                <h3 class="ns-settings-subtitle">Sparade presentkort</h3>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="saved_price_drop" data-ns-scope="settings"> Mail vid prissänkning</label>
+                <label class="ns-checkbox"><input type="checkbox" data-ns-pref="saved_sold" data-ns-scope="settings"> Mail när sparat presentkort säljs</label>
+                <p>Nödvändiga kontomail och säkerhetsmeddelanden kan skickas oavsett dina val.</p>
+                <button id="ns-save-prefs" class="primary-cta ns-save" type="submit">Spara mailinställningar</button>
+                <p id="ns-prefs-status" class="ns-prefs-status" aria-live="polite"></p>
+              </form>
+            </div>
           </section>
           <section id="lm-admin-panel" class="listing-management lm-admin-panel hidden" aria-label="Administratörens granskningskö">
             <div class="lm-header"><div><span class="kicker">Endast administratörer</span>
@@ -739,5 +796,6 @@
   <script src="js/price-offers.js"></script>
   <script src="js/dashboard-hub.js"></script>
   <script src="js/navigation-history.js"></script>
+  <script src="js/notifications.js"></script>
 </body>
 </html>
