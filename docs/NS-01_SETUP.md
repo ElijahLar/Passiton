@@ -62,7 +62,7 @@ I terminalen:
 ```bash
 npx supabase login
 npx supabase link --project-ref wcitckdgzjncglwymeks
-npx supabase secrets set RESEND_API_KEY="din-resend-api-nyckel" NOTIFICATION_FROM="PassItOn <notiser@din-verifierade-doman.se>" PASSITON_SITE_URL="https://din-publicerade-passiton-adress" NOTIFICATION_CRON_SECRET="en-lang-slumpad-hemlighet"
+npx supabase secrets set RESEND_API_KEY="din-resend-api-nyckel" NOTIFICATION_FROM="PassItOn <notiser@din-verifierade-doman.se>" PASSITON_SITE_URL="https://passiton.nu" NOTIFICATION_CRON_SECRET="en-lang-slumpad-hemlighet"
 npx supabase functions deploy send-notification-emails --no-verify-jwt
 ```
 
