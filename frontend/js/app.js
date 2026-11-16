@@ -632,6 +632,7 @@ function setAuthMode(mode){
   $('#auth-copy').textContent=isSignup?'Använd din e-postadress och välj ett lösenord.':'Logga in med e-postadressen och lösenordet till ditt konto.';
   $('#auth-name-field').classList.toggle('hidden',!isSignup);
   $('#auth-policy-field').classList.toggle('hidden',!isSignup);
+  $('#ns-signup-field').classList.toggle('hidden',!isSignup);
   $('#auth-policy-confirm').required=isSignup;
   $('#auth-name').required=isSignup;
   $('#auth-password').minLength=isSignup?8:1;
@@ -671,6 +672,7 @@ function renderAccountState(){
   refreshPhotoProofUI();
   window.passitonPriceOffers?.onAuthChange();
   window.passitonHub?.onAuthChange();
+  window.passitonNotifications?.onAuthChange();
 }
 
 function initializeSupabaseAuth(){
@@ -736,7 +738,7 @@ $('#auth-form').addEventListener('submit',async e=>{
         email,
         password,
         options:{
-          data:{full_name:name},
+          data:{full_name:name,passiton_email_preferences:window.passitonNotifications?.signupPreferences() || {offers:false,purchases:false,verification:false,cases:false}},
           emailRedirectTo:`${window.location.origin}${window.location.pathname}`
         }
       });
