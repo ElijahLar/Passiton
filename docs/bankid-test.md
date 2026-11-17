@@ -23,7 +23,7 @@ Setup hämtar BankID:s gemensamma testcertifikat och testmiljöns rotcertifikat 
 
 ### Om BankID säger att QR-koden har gått ut eller saknas
 
-Starta ett nytt test och använd **Skanna QR-kod** inuti BankID-appen på den enhet där ditt test-BankID finns. Om felet återkommer direkt, prova **Log in with a Test BankID** i [BankID:s testportal](https://developers.bankid.com/test-portal/testing) med samma enhet. Om portalens testinloggning fungerar, anteckna det exakta felmeddelandet från Passiton så att det går att jämföra.
+Starta ett nytt test och använd **Skanna QR-kod** inuti BankID-appen på den enhet där ditt test-BankID finns. Om felet återkommer direkt, prova **Log in with a Test BankID** i [BankID:s testportal](https://developers.bankid.com/test-portal/testing) med samma enhet. Om portalens testinloggning fungerar, anteckna vad BankID-appen visar och kopiera raderna som börjar med [BankID-test] i terminalen där npm start körs. Loggen visar om BankID skapade ordern, om appen startade och vilket fel BankID rapporterade. Den innehåller inga QR-data, namn eller personnummer.
 
 ## Testa med ett separat Supabase-konto
 

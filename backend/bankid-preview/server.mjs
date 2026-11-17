@@ -86,7 +86,7 @@ function createSessions(staging, fetchUser) {
   };
 }
 
-export function createPreviewServer({ bankId, staging = null, fetchUser = async (token) => {
+export function createPreviewServer({ bankId, staging = null, report, fetchUser = async (token) => {
   const response = await fetch(staging.url + '/auth/v1/user', {
     headers: { apikey: staging.publishableKey, Authorization: 'Bearer ' + token },
     redirect: 'error',
@@ -96,7 +96,7 @@ export function createPreviewServer({ bankId, staging = null, fetchUser = async 
   if (!response.ok) throw new Error('testAuthUnavailable');
   return (await response.json()).id;
 } }) {
-  const verification = createVerification({ bankId });
+  const verification = createVerification({ bankId, report });
   const getSession = createSessions(staging, fetchUser);
   const config = 'window.PASSITON_SUPABASE_CONFIG = ' + JSON.stringify(staging ?? {}) + ';\n' +
     'window.PASSITON_BANKID_PREVIEW = ' + JSON.stringify({ requiresAccount: Boolean(staging) }) + ';\n';
@@ -173,7 +173,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     const port = Number(process.env.PASSITON_BANKID_PORT ?? 8787);
     if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Choose a preview port from 1024 to 65535.');
     const staging = readStagingConfig(process.env);
-    const server = createPreviewServer({ bankId: createBankIdClient(), staging });
+    const server = createPreviewServer({
+      bankId: createBankIdClient(),
+      staging,
+      report: (message) => console.log('[BankID-test] ' + message)
+    });
     server.on('error', (error) => {
       console.error(error.message);
       process.exitCode = 1;

@@ -46,6 +46,36 @@ test('a slow collect keeps QR animation running, and completion stores only the 
   assert.doesNotMatch(JSON.stringify(session), /190000000000|Test Identifier|qr-secret/);
 });
 
+test('terminal diagnostics report changes without exposing BankID order or identity data', async () => {
+  let now = 1000;
+  let response = { status: 'pending', hintCode: 'outstandingTransaction' };
+  const reports = [];
+  const bankId = async (operation) => operation === 'auth' ? authResponse : response;
+  const flow = createVerification({ bankId, now: () => now, report: (message) => reports.push(message) });
+  const session = {};
+  await flow.start(session, '127.0.0.1');
+
+  const poll = async () => {
+    now += 2000;
+    await flow.poll(session);
+    await setImmediate();
+  };
+  await poll();
+  await poll();
+  response = { status: 'pending', hintCode: 'userSign' };
+  await poll();
+  response = { status: 'complete', completionData: { user: { personalNumber: '190000000000', name: 'Test Name' } } };
+  await poll();
+
+  assert.deepEqual(reports, [
+    'auth orderCreated',
+    'collect pending outstandingTransaction (2s)',
+    'collect pending userSign (6s)',
+    'collect complete (8s)'
+  ]);
+  assert.doesNotMatch(reports.join(' '), /qr-secret|order-reference|autostart-token|190000000000|Test Name/);
+});
+
 test('an unscanned QR disappears at 30 seconds while a scan can still complete', async () => {
   let now = 10_000;
   let response = { status: 'pending', hintCode: 'outstandingTransaction' };

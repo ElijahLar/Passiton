@@ -5,8 +5,18 @@ const collectInterval = 2000;
 const qrOrderLifetime = 30_000;
 const maxOrderAge = 5 * 60_000;
 const initialHints = new Set(['outstandingTransaction', 'noClient']);
+const diagnosticCode = (value) => typeof value === 'string' && /^[a-zA-Z][a-zA-Z0-9_]{0,49}$/.test(value)
+  ? value : undefined;
 
-export function createVerification({ bankId, now = Date.now }) {
+export function createVerification({ bankId, now = Date.now, report = () => {} }) {
+  function reportCollect(order, status, code) {
+    const message = ['collect', status, diagnosticCode(code)].filter(Boolean).join(' ');
+    if (message === order.lastDiagnostic) return;
+    order.lastDiagnostic = message;
+    const elapsed = Math.max(0, Math.floor((now() - order.startedAt) / 1000));
+    report(message + ' (' + elapsed + 's)');
+  }
+
   async function view(order, includeAppLink = false) {
     if (!order || now() - order.startedAt >= maxOrderAge) return { status: 'idle' };
     if (order.starting || order.cancelling) return { status: 'busy' };
@@ -50,9 +60,11 @@ export function createVerification({ bankId, now = Date.now }) {
       order.startedAt = now();
       order.nextCollectAt = order.startedAt + collectInterval;
       order.starting = false;
+      report('auth orderCreated');
       return view(order, true);
     } catch (error) {
       session.order = null;
+      report('auth error ' + (diagnosticCode(error.code) ?? 'invalidResponse'));
       throw error;
     }
   }
@@ -62,18 +74,23 @@ export function createVerification({ bankId, now = Date.now }) {
       const response = await bankId('collect', { orderRef: order.orderRef });
       if (session.order !== order) return;
       if (response.status === 'complete' && response.completionData?.user?.personalNumber) {
+        reportCollect(order, 'complete');
         session.verifiedAt = new Date(now()).toISOString();
         session.order = { status: 'complete', startedAt: order.startedAt };
       } else if (response.status === 'failed') {
+        reportCollect(order, 'failed', response.hintCode);
         session.order = { status: 'failed', hintCode: response.hintCode, startedAt: order.startedAt };
       } else if (response.status === 'pending') {
+        reportCollect(order, 'pending', response.hintCode);
         order.hintCode = response.hintCode;
         order.delayed = false;
       } else {
+        reportCollect(order, 'error', 'invalidResponse');
         order.delayed = true;
       }
     } catch (error) {
       if (session.order !== order) return;
+      reportCollect(order, 'error', diagnosticCode(error.code) ?? 'unexpectedError');
       if (error.code === 'notFound') {
         session.order = { status: 'failed', hintCode: 'expiredTransaction', startedAt: order.startedAt };
       } else {
