@@ -46,6 +46,54 @@ test('a slow collect keeps QR animation running, and completion stores only the 
   assert.doesNotMatch(JSON.stringify(session), /190000000000|Test Identifier|qr-secret/);
 });
 
+test('an unscanned QR disappears at 30 seconds while a scan can still complete', async () => {
+  let now = 10_000;
+  let response = { status: 'pending', hintCode: 'outstandingTransaction' };
+  const bankId = async (operation) => operation === 'auth' ? authResponse : response;
+  const session = {};
+  const flow = createVerification({ bankId, now: () => now });
+
+  assert.equal((await flow.start(session, '127.0.0.1')).qrValidForMs, 30_000);
+  now += 29_999;
+  assert.equal((await flow.status(session)).qrValidForMs, 1);
+  now++;
+  assert.deepEqual(await flow.status(session), {
+    status: 'pending', hintCode: undefined, delayed: undefined, qrExpired: true
+  });
+
+  response = { status: 'pending', hintCode: 'userSign' };
+  await flow.poll(session);
+  await setImmediate();
+  assert.equal((await flow.status(session)).hintCode, 'userSign');
+  assert.equal((await flow.status(session)).qr, undefined);
+  now += 2000;
+  response = { status: 'complete', completionData: { user: { personalNumber: '190000000000' } } };
+  await flow.poll(session);
+  await setImmediate();
+  assert.equal((await flow.status(session)).status, 'complete');
+});
+
+test('a failed QR order can be replaced after expiry', async () => {
+  let now = 10_000;
+  let starts = 0;
+  const bankId = async (operation) => {
+    if (operation === 'collect') return { status: 'failed', hintCode: 'startFailed' };
+    starts++;
+    return authResponse;
+  };
+  const session = {};
+  const flow = createVerification({ bankId, now: () => now });
+
+  await flow.start(session, '127.0.0.1');
+  now += 30_000;
+  await flow.poll(session);
+  await setImmediate();
+  assert.equal((await flow.status(session)).hintCode, 'startFailed');
+  const next = await flow.start(session, '127.0.0.1');
+  assert.equal(next.qrValidForMs, 30_000);
+  assert.equal(starts, 2);
+});
+
 test('repeated starts share the same order and cancellation permits a new attempt', async () => {
   let resolveAuth;
   const calls = [];

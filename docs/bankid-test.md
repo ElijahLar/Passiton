@@ -12,7 +12,7 @@ Klona testgrenen från GitHub, eller hämta den som ZIP och packa upp den. Kör 
     npm start
 
 1. Öppna [Sälj i förhandsvisningen](http://127.0.0.1:8787/frontend/#passiton=sell) på datorn.
-2. Klicka på **Starta BankID-test**. Öppna BankID-appen i testläge på telefonen och skanna den animerade QR-koden.
+2. Klicka på **Starta BankID-test**. Öppna BankID-appen i testläge på telefonen och skanna den animerade QR-koden direkt från datorskärmen. Koden kan skannas i upp till 30 sekunder efter att BankID har skapat ordern.
 3. Bekräfta i appen. Säljsidan visar **BankID-testet lyckades** när BankID:s test-API har bekräftat identifieringen.
 4. Ladda om sidan för att kontrollera status i samma webbläsare. För att testa ett nytt försök eller avbrott, öppna ett privat fönster.
 5. Avsluta den lokala servern med Ctrl+C.
@@ -20,6 +20,10 @@ Klona testgrenen från GitHub, eller hämta den som ZIP och packa upp den. Kör 
 För test utan testkonto kör du stegen ovan precis som de står. Förhandsvisningen lyssnar på loopback, så telefonen används för att skanna QR-koden på datorns skärm. Knappen **Öppna BankID** kan prova samma-enhetsstart när en kompatibel BankID-klient finns på den enhet där webbsidan körs. Gå tillbaka till webbsidan manuellt efter det lokala testet.
 
 Setup hämtar BankID:s gemensamma testcertifikat och testmiljöns rotcertifikat från en [versionslåst källa som dokumenterar certifikatens ursprung](https://docs.activelogin.net/articles/bankid.html#certificates) och verifierar filernas kontrollsummor. Certifikaten stannar i den git-ignorerade katalogen .bankid-test. Servern verifierar TLS och ansluter till appapi2.test.bankid.com på port 443. Om webbläsaren visar ett anslutningsfel, kontrollera att datorns nät når den adressen.
+
+### Om BankID säger att QR-koden har gått ut eller saknas
+
+Starta ett nytt test och använd **Skanna QR-kod** inuti BankID-appen på den enhet där ditt test-BankID finns. Om felet återkommer direkt, prova **Log in with a Test BankID** i [BankID:s testportal](https://developers.bankid.com/test-portal/testing) med samma enhet. Om portalens testinloggning fungerar, anteckna det exakta felmeddelandet från Passiton så att det går att jämföra.
 
 ## Testa med ett separat Supabase-konto
 

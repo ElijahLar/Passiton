@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import QRCode from 'qrcode';
 
 const collectInterval = 2000;
+const qrOrderLifetime = 30_000;
 const maxOrderAge = 5 * 60_000;
 const initialHints = new Set(['outstandingTransaction', 'noClient']);
 
@@ -13,13 +14,20 @@ export function createVerification({ bankId, now = Date.now }) {
 
     const result = { status: 'pending', hintCode: order.hintCode, delayed: order.delayed };
     if (!order.hintCode || initialHints.has(order.hintCode)) {
-      if (includeAppLink) result.autoStartToken = order.autoStartToken;
-      const time = String(Math.max(0, Math.floor((now() - order.startedAt) / 1000)));
-      const authCode = createHmac('sha256', order.qrStartSecret).update(time).digest('hex');
-      result.qr = await QRCode.toDataURL(
-        ['bankid', order.qrStartToken, time, authCode].join('.'),
-        { errorCorrectionLevel: 'L', margin: 4, width: 256 }
-      );
+      const elapsed = now() - order.startedAt;
+      if (elapsed < qrOrderLifetime) {
+        const time = String(Math.max(0, Math.floor(elapsed / 1000)));
+        const authCode = createHmac('sha256', order.qrStartSecret).update(time).digest('hex');
+        const qr = await QRCode.toDataURL(
+          ['bankid', order.qrStartToken, time, authCode].join('.'),
+          { errorCorrectionLevel: 'L', margin: 4, width: 256 }
+        );
+        const remaining = qrOrderLifetime - (now() - order.startedAt);
+        if (remaining > 0) {
+          return { ...result, qr, qrValidForMs: remaining, autoStartToken: includeAppLink ? order.autoStartToken : undefined };
+        }
+      }
+      result.qrExpired = true;
     }
     return result;
   }

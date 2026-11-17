@@ -9,6 +9,7 @@
   const openApp = document.querySelector('#bankid-preview-app');
   const cancel = document.querySelector('#bankid-preview-cancel');
   const qr = document.querySelector('#bankid-preview-qr');
+  const qrTime = document.querySelector('#bankid-preview-qr-time');
   const layout = document.querySelector('.sell-layout');
   const messages = {
     outstandingTransaction: 'Skanna QR-koden med BankID-appen i testläge eller öppna appen på den här enheten.',
@@ -19,13 +20,15 @@
     certificateErr: 'BankID kunde inte användas. Kontrollera att du använder ett test-BankID.',
     userCancel: 'Du avbröt identifieringen i BankID-appen.',
     cancelled: 'Identifieringen avbröts. Du kan starta ett nytt försök.',
-    startFailed: 'Appen startade inte i tid. Öppna testappen innan du skannar nästa QR-kod.'
+    startFailed: 'Tiden för att skanna koden gick ut. Starta ett nytt test och skanna direkt i BankID-appen.'
   };
 
   let account;
   let authClient;
   let result = { status: 'idle' };
   let timer;
+  let qrTimer;
+  let qrDeadline = 0;
   let busy = false;
   let retry = false;
   let generation = 0;
@@ -39,11 +42,21 @@
     start.disabled = busy;
     cancel.classList.toggle('hidden', !pending);
     cancel.disabled = busy;
-    qr.classList.toggle('hidden', !pending || !result.qr || retry);
-    if (pending && result.qr && !retry) qr.src = result.qr;
-    else qr.removeAttribute('src');
 
-    const token = pending && !retry ? result.autoStartToken : null;
+    clearTimeout(qrTimer);
+    const remaining = qrDeadline - performance.now();
+    const showQr = pending && result.qr && remaining > 0 && !retry;
+    qr.classList.toggle('hidden', !showQr);
+    qrTime.classList.toggle('hidden', !showQr);
+    if (showQr) {
+      if (qr.getAttribute('src') !== result.qr) qr.src = result.qr;
+      qrTime.textContent = 'Skanna inom ' + Math.ceil(remaining / 1000) + ' sekunder.';
+      qrTimer = setTimeout(render, remaining);
+    } else {
+      qr.removeAttribute('src');
+    }
+
+    const token = showQr ? result.autoStartToken : null;
     openApp.classList.toggle('hidden', !token);
     if (token) {
       const scheme = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ||
@@ -56,6 +69,8 @@
 
     const text = message ?? (result.status === 'complete' ?
       'BankID-testet lyckades. Testidentifieringen är klar.' :
+      (result.qrExpired || (pending && result.qr && remaining <= 0)) ?
+        'QR-koden har gått ut. Om du inte hann skanna, avbryt och starta ett nytt test.' :
       result.delayed ? 'BankID svarar långsamt. Vi fortsätter att kontrollera.' :
       messages[result.hintCode] ?? (pending ? messages.outstandingTransaction :
         result.status === 'failed' ? 'Identifieringen misslyckades. Försök igen.' :
@@ -85,13 +100,18 @@
         headers.Authorization = 'Bearer ' + data.session.access_token;
       }
       if (requestGeneration !== generation) return;
+      const requestStartedAt = performance.now();
       const response = await fetch('/api/bankid/' + action, { method: 'POST', headers, cache: 'no-store' });
       const payload = await response.json();
       if (requestGeneration !== generation) return;
       if (!response.ok) throw new Error(payload.error);
       retry = false;
       const wasVerified = Boolean(result.verifiedAt);
-      if (payload.status !== 'busy') result = payload;
+      if (payload.status !== 'busy') {
+        result = payload;
+        // Use the request start to conservatively account for local transit and parsing time.
+        qrDeadline = requestStartedAt + (payload.qrValidForMs ?? 0);
+      }
       if (wasVerified !== Boolean(result.verifiedAt)) renderAccountState();
       render(action === 'cancel' && result.status === 'idle' ? 'Identifieringen avbröts.' : undefined);
     } catch (error) {
@@ -132,6 +152,8 @@
       authClient = client;
       generation += 1;
       clearTimeout(timer);
+      clearTimeout(qrTimer);
+      qrDeadline = 0;
       busy = false;
       retry = false;
       result = { status: 'idle' };
