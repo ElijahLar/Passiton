@@ -32,7 +32,7 @@ const escapeHTML = str => String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<'
 
 function navTo(id){
   if(id==='disputes'&&window.passitonHub){window.passitonHub.open('orders');return;}
-  if(id==='sell'&&!state.user){
+  if(id==='sell'&&!state.user&&!window.passitonBankIdPreview?.openWithoutAccount){
     state.pendingNavigation='sell';
     id='dashboard';
   }
@@ -270,7 +270,7 @@ function refreshPhotoProofUI(){
 setInterval(refreshPhotoProofUI,1000);
 
 $('#sell-proof-generate').addEventListener('click',async()=>{
-  if(!state.user||!authClient||state.sellingBusy)return;
+  if(!state.user||!authClient||state.sellingBusy||window.passitonBankIdPreview?.canSell()===false)return;
   state.sellingBusy=true;
   setSellMessage('');
   renderAccountState();
@@ -307,6 +307,10 @@ $('#sell-form').addEventListener('submit', async e => {
     return;
   }
   if(state.sellingBusy)return;
+  if(window.passitonBankIdPreview?.canSell()===false){
+    setSellMessage('Slutför BankID-testet innan du skickar testannonsen.','error');
+    return;
+  }
   const proof=state.photoProof;
   const photo=$('#sell-proof-photo').files?.[0];
   if(!proof||proof.sellerId!==state.user.id||Date.parse(proof.expires_at)<=Date.now()){
@@ -660,7 +664,7 @@ function renderAccountState(){
   accountNav.title=signedIn?`Inloggad som ${state.user.email||name}`:'Logga in eller skapa konto';
   accountNav.setAttribute('aria-label',accountNav.title);
 
-  $('#sell-auth-notice').classList.toggle('hidden',signedIn);
+  $('#sell-auth-notice').classList.toggle('hidden',signedIn||Boolean(window.passitonBankIdPreview?.openWithoutAccount));
   $('#sell-service-notice').textContent=state.listingError;
   $('#sell-service-notice').classList.toggle('hidden',!state.listingError||!signedIn);
 
@@ -668,6 +672,12 @@ function renderAccountState(){
   $('#auth-form').querySelectorAll('input,button').forEach(control=>{control.disabled=locked;});
   $('#sign-out').disabled=state.authBusy;
   $('#sell-form').querySelectorAll('input,select,button').forEach(control=>{control.disabled=locked||!signedIn||Boolean(state.listingError);});
+  const bankIdPreview=window.passitonBankIdPreview;
+  bankIdPreview?.onAccount(state.user,authClient);
+  if(bankIdPreview?.canSell()===false){
+    $('#sell-proof-generate').disabled=true;
+    $('#sell-submit').disabled=true;
+  }
   if(state.photoProof&&state.photoProof.sellerId!==state.user?.id)state.photoProof=null;
   refreshPhotoProofUI();
   window.passitonPriceOffers?.onAuthChange();

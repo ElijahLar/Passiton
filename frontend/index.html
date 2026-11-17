@@ -248,6 +248,16 @@
         <p id="sell-auth-notice" class="sell-access-note hidden" role="status">Logga in eller skapa ett konto innan du publicerar en annons. <button type="button" data-nav="dashboard">Gå till mitt konto</button></p>
         <p id="sell-service-notice" class="sell-access-note hidden" role="status"></p>
 
+        <section id="bankid-preview" class="photo-proof-panel hidden" aria-labelledby="bankid-preview-title">
+          <h2 id="bankid-preview-title">Verifiera med BankID (test)</h2>
+          <p id="bankid-preview-scope"></p>
+          <p role="status" aria-live="polite"></p>
+          <img id="bankid-preview-qr" class="hidden" width="256" height="256" alt="Skanna den här QR-koden med BankID-appen i testläge." style="display:block;max-width:100%;height:auto;margin-bottom:1rem">
+          <button id="bankid-preview-start" type="button" class="secondary-cta">Starta BankID-test</button>
+          <a id="bankid-preview-app" class="hidden" referrerpolicy="origin">Öppna BankID</a>
+          <button id="bankid-preview-cancel" type="button" class="secondary-cta hidden">Avbryt</button>
+        </section>
+
         <div class="sell-layout">
           <form id="sell-form" class="sell-form">
             <div class="form-section">
@@ -789,6 +799,7 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/data/cards.js"></script>
   <script src="js/analytics.js"></script>
+  <script src="js/bankid-preview.js"></script>
   <script src="js/app.js"></script>
   <script src="js/disputes.js"></script>
   <script src="js/listing-management.js"></script>

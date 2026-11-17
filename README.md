@@ -13,6 +13,8 @@ python -m http.server 8000
 Rotens `index.html` skickar också vidare till frontend och behåller query-parametrar och hash.
 Det gör att den befintliga GitHub Pages-adressen fortsätter fungera.
 
+För att prova säljaridentifiering i BankID:s testmiljö, följ [guiden för den lokala BankID-förhandsvisningen](docs/bankid-test.md).
+
 ## Ingår
 - Marknadsplats med sök, kategorier, rabattfilter och sortering
 - Produktdetaljsida inspirerad av ren skandinavisk e-handel
