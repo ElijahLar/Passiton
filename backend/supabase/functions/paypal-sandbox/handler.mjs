@@ -223,9 +223,9 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     if (!row) throw new HttpError(404, 'Testbetalningen finns inte för ditt konto.');
     if (row.seller_merchant_id !== sellerId) throw new HttpError(409, 'Ordern tillhör tidigare mottagarinställningar.');
     const payoutRoot = '/v1/payments/referenced-payouts-items';
-    const payoutIdPattern = /^[A-Za-z0-9_-]{1,128}$/;
+    const validPayoutId = id => typeof id === 'string' && id.length <= 128 && /^[A-Za-z0-9_-]+={0,2}$/.test(id);
     const verifiedPayout = item => item.reference_id === row.paypal_capture_id &&
-      item.reference_type === 'TRANSACTION_ID' && payoutIdPattern.test(item.item_id || '');
+      item.reference_type === 'TRANSACTION_ID' && validPayoutId(item.item_id);
     const markAccepted = async item => {
       const saved = await db(`${ownFilter}&id=eq.${row.id}&release_status=eq.requested`, 'PATCH', {
         release_status: 'accepted', release_item_id: item.item_id, updated_at: new Date(now()).toISOString()
@@ -233,7 +233,7 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
       return saved[0] || await selectRow(`id=eq.${row.id}`);
     };
     const refreshRelease = async () => {
-      if (!payoutIdPattern.test(row.release_item_id || '')) return row;
+      if (!validPayoutId(row.release_item_id)) return row;
       const details = await paypal(`${payoutRoot}/${row.release_item_id}`);
       return verifiedPayout(details) && details.item_id === row.release_item_id ? markAccepted(details) : row;
     };
@@ -283,7 +283,7 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
             url.pathname.startsWith(payoutRoot + '/')) linkedId = url.pathname.slice(payoutRoot.length + 1);
       }
       const id = payout.item_id ?? linkedId;
-      if (!payoutIdPattern.test(id || '') || (linkedId && id !== linkedId)) return reply(200, summary(claimed[0]));
+      if (!validPayoutId(id) || (linkedId && id !== linkedId)) return reply(200, summary(claimed[0]));
       const saved = await db(`${ownFilter}&id=eq.${row.id}&release_status=eq.requested`, 'PATCH', {
         release_item_id: id, updated_at: new Date(now()).toISOString()
       });
