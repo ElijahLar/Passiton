@@ -222,6 +222,24 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     let row = await selectRow(`paypal_order_id=eq.${input.orderId}`);
     if (!row) throw new HttpError(404, 'Testbetalningen finns inte för ditt konto.');
     if (row.seller_merchant_id !== sellerId) throw new HttpError(409, 'Ordern tillhör tidigare mottagarinställningar.');
+    const payoutRoot = '/v1/payments/referenced-payouts-items';
+    const payoutIdPattern = /^[A-Za-z0-9_-]{1,128}$/;
+    const verifiedPayout = item => item.reference_id === row.paypal_capture_id &&
+      item.reference_type === 'TRANSACTION_ID' && payoutIdPattern.test(item.item_id || '');
+    const markAccepted = async item => {
+      const saved = await db(`${ownFilter}&id=eq.${row.id}&release_status=eq.requested`, 'PATCH', {
+        release_status: 'accepted', release_item_id: item.item_id, updated_at: new Date(now()).toISOString()
+      });
+      return saved[0] || await selectRow(`id=eq.${row.id}`);
+    };
+    const refreshRelease = async () => {
+      if (!payoutIdPattern.test(row.release_item_id || '')) return row;
+      const details = await paypal(`${payoutRoot}/${row.release_item_id}`);
+      return verifiedPayout(details) && details.item_id === row.release_item_id ? markAccepted(details) : row;
+    };
+    if (input.action === 'status' && row.release_status === 'requested') {
+      return reply(200, summary(await refreshRelease()));
+    }
     if (input.action === 'release') {
       if (input.confirm !== true) throw new HttpError(400, 'Bekräfta frigörandet av testpengarna.');
       if (row.flow_version !== FLOW_VERSION || row.partner_merchant_id !== partnerId ||
@@ -250,15 +268,28 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
         reference_id: capture.id, reference_type: 'TRANSACTION_ID'
       }, `r${row.id.replaceAll('-', '')}`);
       // A successful HTTP response means accepted, not proof that the seller received funds.
-      if (payout.reference_id !== capture.id || payout.reference_type !== 'TRANSACTION_ID' ||
-        !/^[A-Z0-9]{8,64}$/.test(payout.item_id || '')) {
-        throw new HttpError(502, 'Svaret på frigörandet kunde inte verifieras. Kontrollera transaktionen i PayPal sandbox; skicka inte ett nytt frigörande.');
+      if (verifiedPayout(payout)) return reply(200, summary(await markAccepted(payout)));
+      if ((payout.reference_id && payout.reference_id !== capture.id) ||
+          (payout.reference_type && payout.reference_type !== 'TRANSACTION_ID')) {
+        throw new HttpError(502, 'PayPals svar gäller en oväntad referens. Stäm av frigörandet i sandbox.');
       }
+      // Minimal replies can identify the resource through a self link. Construct all GETs
+      // from the fixed sandbox API root; never send credentials to a response-supplied URL.
+      const self = payout.links?.find(link => link.rel === 'self')?.href;
+      let linkedId;
+      if (typeof self === 'string') {
+        const url = URL.parse ? URL.parse(self) : new URL(self);
+        if (url && [PAYPAL_API, 'https://api.sandbox.paypal.com'].includes(url.origin) &&
+            url.pathname.startsWith(payoutRoot + '/')) linkedId = url.pathname.slice(payoutRoot.length + 1);
+      }
+      const id = payout.item_id ?? linkedId;
+      if (!payoutIdPattern.test(id || '') || (linkedId && id !== linkedId)) return reply(200, summary(claimed[0]));
       const saved = await db(`${ownFilter}&id=eq.${row.id}&release_status=eq.requested`, 'PATCH', {
-        release_status: 'accepted', release_item_id: payout.item_id, updated_at: new Date(now()).toISOString()
+        release_item_id: id, updated_at: new Date(now()).toISOString()
       });
-      if (!saved[0]) throw new HttpError(503, 'Frigörandet kunde inte sparas. Kontrollera transaktionen i PayPal sandbox.');
-      return reply(200, summary(saved[0]));
+      if (!saved.length) return reply(200, summary(await selectRow(`id=eq.${row.id}`)));
+      row = saved[0];
+      return reply(200, summary(await refreshRelease()));
     }
     if (row.status === 'completed') return reply(200, summary(row));
     // GET first recovers a capture that succeeded even if its response/database write was lost.

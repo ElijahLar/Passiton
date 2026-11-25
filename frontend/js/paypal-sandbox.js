@@ -35,7 +35,7 @@
       $('paypal-buttons').hidden = true;
       if (result.flowVersion !== 2) message('Testbetalningen är bekräftad från den äldre versionen. Välj Nytt test för avgift och fördröjd utbetalning.');
       else if (result.releaseStatus === 'accepted') message('PayPal har tagit emot frigörandet. Kontrollera att pengarna når säljarens sandboxkonto. Detta är inte en bekräftelse på slutförd utbetalning.');
-      else if (result.releaseStatus === 'requested') message('Frigörandet har påbörjats men resultatet är osäkert. Kontrollera PayPal sandbox innan något nytt försök.');
+      else if (result.releaseStatus === 'requested') message('Frigörandet har påbörjats men resultatet är osäkert. Välj Kontrollera betalningen för att läsa status. Om den förblir oklar, stäm av den befintliga transaktionen i PayPal sandbox.');
       else message('Testbetalningen är bekräftad: 10,00 SEK. Plattformsavgift: 1,00 SEK. Ordern använder fördröjd utbetalning. Kontrollera innehållet belopp hos säljaren innan du frigör det. PayPal frigör automatiskt efter 28 dagar.');
     } else if (result.status === 'pending') {
       $('paypal-buttons').hidden = true;
@@ -160,7 +160,7 @@
     busy = true; $('sandbox-release').disabled = true;
     message('Begär frigörande hos PayPal …');
     try { showResult(await api({ action: 'release', orderId: attempt.orderId, confirm: true })); }
-    catch (error) { message(`${error.message} Kontrollera betalningen och PayPal sandbox innan du försöker igen.`, true); }
+    catch (error) { message(`${error.message} Välj Kontrollera betalningen och stäm av i PayPal sandbox. Skicka inget nytt frigörande.`, true); }
     finally { busy = false; }
   });
   $('sandbox-logout').addEventListener('click', async () => {

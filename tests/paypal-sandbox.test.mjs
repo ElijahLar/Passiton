@@ -65,7 +65,11 @@ function harness(options = {}) {
         scopes: ['https://uri.paypal.com/services/payments/payment/authcapture'] }] }]
     });
     if (parsed.pathname === '/v2/customer/partner-referrals') return json({links:[{rel:'action_url',href:options.badLink ? 'https://evil.example' : 'https://www.sandbox.paypal.com/bizsignup/partner/entry'}]});
+    if (parsed.pathname === '/v1/payments/referenced-payouts-items/PAYOUTITEM12345') return json({
+      item_id:'PAYOUTITEM12345',reference_id:options.lookupPending ? null : 'CAPTURE123456789',reference_type:'TRANSACTION_ID'
+    });
     if (parsed.pathname === '/v1/payments/referenced-payouts-items') {
+      if (options.minimal) return json({links:[{rel:'self',href:'https://api-m.sandbox.paypal.com/v1/payments/referenced-payouts-items/PAYOUTITEM12345'}]},201);
       if (options.releaseFailure) throw Error('Lost release response');
       if (options.failReleaseSave) failSave = true;
       return json({ item_id: 'PAYOUTITEM12345', reference_id: options.wrongRelease ? 'WRONGCAPTURE' : 'CAPTURE123456789',
@@ -352,4 +356,14 @@ test('legacy, changed partner, refunded, mismatching capture and pending payment
     const h=harness(); await paid(h); mutate(h);
     assert.equal((await release(h)).status,409); assert.equal(releases(h).length,0);
   }
+});
+
+test('minimal response stores an item ID; later status verifies capture without another payout', async () => {
+  const options={minimal:true,lookupPending:true};
+  const h=harness(options); await paid(h);
+  assert.equal((await release(h)).body.releaseStatus,'requested');
+  assert.equal(h.rows[0].release_item_id,'PAYOUTITEM12345');
+  options.lookupPending=false;
+  assert.equal((await h.invoke({action:'status',orderId:ORDER})).body.releaseStatus,'accepted');
+  assert.equal(releases(h).length,1);
 });
