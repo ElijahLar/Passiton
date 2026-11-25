@@ -5,6 +5,7 @@
   const message = (text, error = false) => {
     $('sandbox-status').textContent = text;
     $('sandbox-status').dataset.error = String(error);
+    $('sandbox-status').scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
   };
   if (!['http:', 'https:'].includes(location.protocol)) {
     message('Starta sidan via en lokal webbserver, enligt sandboxguiden.', true); return;
@@ -29,9 +30,13 @@
   };
   const showResult = result => {
     details(result);
+    $('sandbox-release').disabled = !(result.status === 'completed' && result.flowVersion === 2 && result.releaseStatus === 'not_requested');
     if (result.status === 'completed') {
       $('paypal-buttons').hidden = true;
-      message('Testbetalningen är bekräftad: 10,00 SEK i PayPal sandbox. Ingen annons eller demoorder har ändrats.');
+      if (result.flowVersion !== 2) message('Testbetalningen är bekräftad från den äldre versionen. Välj Nytt test för avgift och fördröjd utbetalning.');
+      else if (result.releaseStatus === 'accepted') message('PayPal har tagit emot frigörandet. Kontrollera att pengarna når säljarens sandboxkonto. Detta är inte en bekräftelse på slutförd utbetalning.');
+      else if (result.releaseStatus === 'requested') message('Frigörandet har påbörjats men resultatet är osäkert. Kontrollera PayPal sandbox innan något nytt försök.');
+      else message('Testbetalningen är bekräftad: 10,00 SEK. Plattformsavgift: 1,00 SEK. Ordern använder fördröjd utbetalning. Kontrollera innehållet belopp hos säljaren innan du frigör det. PayPal frigör automatiskt efter 28 dagar.');
     } else if (result.status === 'pending') {
       $('paypal-buttons').hidden = true;
       message('PayPal behandlar testbetalningen. Den är inte bekräftad ännu. Använd Kontrollera betalningen igen.');
@@ -66,6 +71,7 @@
       'client-id': clientId, 'merchant-id': window.sandboxMerchantId, currency: 'SEK', intent: 'capture', components: 'buttons',
       'disable-funding': 'card,credit,paylater,venmo', locale: 'sv_SE'
     });
+    script.setAttribute('data-partner-attribution-id', window.sandboxBnCode);
     script.src = `https://www.paypal.com/sdk/js?${params}`;
     script.onload = resolve;
     script.onerror = () => reject(Error('PayPals testknapp kunde inte laddas. Kontrollera nätverket och sandboxnyckeln.'));
@@ -82,6 +88,7 @@
     $('sandbox-payment').hidden = false;
     $('sandbox-new').disabled = false;
     window.sandboxMerchantId = settings.merchantId;
+    window.sandboxBnCode = settings.bnCode;
     await loadSDK(settings.clientId);
     buttons = window.paypal.Buttons({
       fundingSource: window.paypal.FUNDING.PAYPAL,
@@ -139,10 +146,22 @@
     } catch (error) { message(error.message, true); }
   });
   $('sandbox-seller-check').addEventListener('click', async () => {
+    $('sandbox-seller-check').disabled = true;
+    message('Kontrollerar säljaranslutningen hos PayPal …');
     try {
       const result = await api({ action: 'seller-status' });
-      message(result.ready ? 'Säljaren är ansluten. Du kan nu prova betalningen med ett separat Personal sandbox-konto.' : 'Säljaren är inte klar. Slutför onboarding och bekräfta e-post i PayPal sandbox.');
+      message(result.ready ? 'Säljarens grundanslutning är klar. Efter ny anslutning med avgift och fördröjning kan du prova ett nytt köp; PayPal kontrollerar de extra behörigheterna när ordern skapas.' : 'Säljaren är inte klar. Slutför onboarding och bekräfta e-post i PayPal sandbox.');
     } catch (error) { message(error.message, true); }
+    finally { $('sandbox-seller-check').disabled = false; }
+  });
+  $('sandbox-release').addEventListener('click', async () => {
+    if (busy || !attempt?.orderId || $('sandbox-release').disabled) return;
+    if (!confirm('Frigör testbetalningen till sandbox-säljaren? Kontrollera först att pengarna hålls hos PayPal.')) return;
+    busy = true; $('sandbox-release').disabled = true;
+    message('Begär frigörande hos PayPal …');
+    try { showResult(await api({ action: 'release', orderId: attempt.orderId, confirm: true })); }
+    catch (error) { message(`${error.message} Kontrollera betalningen och PayPal sandbox innan du försöker igen.`, true); }
+    finally { busy = false; }
   });
   $('sandbox-logout').addEventListener('click', async () => {
     const { error } = await client.auth.signOut({ scope: 'local' });

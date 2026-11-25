@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
 const source = fs.readFileSync(path.join(__dirname, '../frontend/js/paypal-sandbox.js'), 'utf8');
 
-async function harness({ signedIn = true, stored, status = 'created', configFailure = false } = {}) {
+async function harness({ signedIn = true, stored, status = 'created', configFailure = false, flowVersion = 1, releaseStatus = 'not_requested' } = {}) {
   const elements = new Map();
   const calls = [];
   const values = new Map(stored ? [['passiton-paypal-sandbox:buyer', JSON.stringify(stored)]] : []);
@@ -47,7 +47,7 @@ async function harness({ signedIn = true, stored, status = 'created', configFail
         ? { error: 'Kontot är inte tillagt som PayPal-testare.' }
         : { environment: 'sandbox', clientId: 'public-client', amount: '10.00', currency: 'SEK' } };
       return { ok: true, json: async () => ({ orderId: 'TESTORDER123456789', status: body.action === 'create' ? 'created' : status,
-        captureId: status === 'completed' ? 'CAPTURE123' : null }) };
+        flowVersion, releaseStatus: body.action === 'release' ? 'accepted' : releaseStatus, captureId: status === 'completed' ? 'CAPTURE123' : null }) };
     }
   };
   await vm.runInNewContext(source, context);
@@ -89,4 +89,22 @@ test('non-allowlisted user sees setup error and never loads a payment button', a
   assert.equal(h.callbacks, undefined);
   assert.equal(h.element('sandbox-payment').hidden, true);
   assert.match(h.element('sandbox-status').textContent, /inte tillagt/);
+});
+
+
+test('completed delayed test enables release, accepted request is never called paid out', async () => {
+  const h = await harness({stored:{requestId:'req',orderId:'TESTORDER123456789'},status:'completed',flowVersion:2});
+  assert.equal(h.element('sandbox-release').disabled,false);
+  await h.element('sandbox-release').handlers.click();
+  assert.equal(h.calls.filter(c=>c.action==='release').length,1);
+  assert.equal(h.element('sandbox-release').disabled,true);
+  assert.match(h.element('sandbox-status').textContent,/inte en bekräftelse på slutförd utbetalning/);
+});
+test('legacy and uncertain release stay disabled after reload', async () => {
+  for(const settings of [{flowVersion:1},{flowVersion:2,releaseStatus:'requested'}]) {
+    const h=await harness({stored:{requestId:'req',orderId:'TESTORDER123456789'},status:'completed',...settings});
+    assert.equal(h.element('sandbox-release').disabled,true);
+    await h.element('sandbox-release').handlers.click();
+    assert.equal(h.calls.filter(c=>c.action==='release').length,0);
+  }
 });

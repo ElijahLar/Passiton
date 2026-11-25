@@ -16,7 +16,7 @@
     <a class="back" href="./">← Passiton</a>
     <p class="badge">PAYPAL SANDBOX</p>
     <h1>Prova en testbetalning</h1>
-    <p class="intro">10,00 kr i låtsaspengar. Ingen annons köps och inget värdebevis levereras.</p>
+    <p class="intro">10,00 kr i låtsaspengar: 1,00 kr plattformsavgift och 9,00 kr till säljaren före PayPals avgifter. Ingen annons köps och inget värdebevis levereras.</p>
     <section aria-labelledby="account-heading">
       <h2 id="account-heading">1. Ditt Passiton-testkonto</h2>
       <p>Logga in med ett befintligt konto som lagts till som testare. PayPals testköpare används först i PayPal-fönstret.</p>
@@ -34,7 +34,7 @@
     </section>
     <section id="sandbox-payment" aria-labelledby="payment-heading" hidden>
       <h2>Anslut säljaren till plattformen</h2>
-      <p>Skapa en länk och öppna den i ett separat fönster. Logga in med säljarens sandboxkonto och godkänn anslutningen.</p>
+      <p>Skapa en länk och öppna den i ett separat fönster. Logga in med säljarens sandboxkonto och godkänn anslutningen med plattformsavgift och fördröjd utbetalning. Gör detta igen även om säljaren anslöts till det tidigare testet.</p>
       <button id="sandbox-onboard" type="button">Skapa anslutningslänk</button>
       <a id="sandbox-onboard-link" target="_blank" rel="noopener noreferrer" hidden>Öppna PayPals säljaranslutning</a>
       <button id="sandbox-seller-check" type="button">Kontrollera säljaranslutningen</button>
@@ -43,6 +43,7 @@
       <div id="paypal-buttons"></div>
       <div class="actions">
         <button id="sandbox-check" class="secondary" type="button" disabled>Kontrollera betalningen</button>
+        <button id="sandbox-release" type="button" disabled>Frigör testpengarna till säljaren</button>
         <button id="sandbox-new" class="secondary" type="button" disabled>Nytt test</button>
       </div>
       <dl id="sandbox-details" hidden>
@@ -52,7 +53,7 @@
       </dl>
     </section>
     <p id="sandbox-status" role="status" aria-live="polite">Startar testmiljön …</p>
-    <p class="footnote">Testet går via plattformsappen till den anslutna sandbox-säljaren. Plattformsavgift och fördröjd utbetalning ingår inte ännu.</p>
+    <p class="footnote">Testet går via plattformsappen till den anslutna sandbox-säljaren. PayPal frigör automatiskt pengarna efter 28 dagar. Knappen begär tidigare frigörande till säljarens PayPal-konto; kontrollera resultatet i sandbox. Detta är ingen bankutbetalning.</p>
     <noscript>JavaScript krävs för betalningstestet.</noscript>
   </main>
 </body>

@@ -65,6 +65,12 @@ function harness(options = {}) {
         scopes: ['https://uri.paypal.com/services/payments/payment/authcapture'] }] }]
     });
     if (parsed.pathname === '/v2/customer/partner-referrals') return json({links:[{rel:'action_url',href:options.badLink ? 'https://evil.example' : 'https://www.sandbox.paypal.com/bizsignup/partner/entry'}]});
+    if (parsed.pathname === '/v1/payments/referenced-payouts-items') {
+      if (options.releaseFailure) throw Error('Lost release response');
+      if (options.failReleaseSave) failSave = true;
+      return json({ item_id: 'PAYOUTITEM12345', reference_id: options.wrongRelease ? 'WRONGCAPTURE' : 'CAPTURE123456789',
+        reference_type: 'TRANSACTION_ID', processing_state: { status: 'PROCESSING' } }, 201);
+    }
     if (parsed.pathname === '/v2/checkout/orders') {
       const body = JSON.parse(init.body);
       assert.match(init.headers['PayPal-Request-Id'], /^c[0-9a-f]{32}$/);
@@ -125,7 +131,7 @@ test('requires a real session and explicit tester allowlist even when gateway JW
 test('config returns only public sandbox settings', async () => {
   const result = await harness().invoke({ action: 'config' });
   assert.equal(result.status, 200);
-  assert.deepEqual(result.body, { clientId: 'sandbox-client', merchantId: 'MERCHANT123', amount: '10.00', currency: 'SEK', environment: 'sandbox' });
+  assert.deepEqual(result.body, { clientId: 'sandbox-client', merchantId: 'MERCHANT123', amount: '10.00', currency: 'SEK', environment: 'sandbox', bnCode: 'TEST_BN', platformFee: '1.00', disbursementMode: 'DELAYED', flowVersion: 2 });
   assert.equal(result.headers.get('Cache-Control'), 'no-store');
 });
 
@@ -268,3 +274,82 @@ test('provider authentication failures do not leak secrets', async () => {
    assert.equal((await h.invoke({action:'capture',orderId:ORDER})).status,409);
    assert.equal(h.captures,0);
  });
+
+
+test('fee and delayed disbursement are server controlled and onboarding requests both', async () => {
+  const h = harness();
+  await h.invoke({ action: 'onboard', consent: true });
+  const referral = JSON.parse(h.calls.find(c => c.url.endsWith('partner-referrals')).body);
+  assert.deepEqual(referral.operations[0].api_integration_preference.rest_api_integration.third_party_details.features,
+    ['PAYMENT', 'REFUND', 'PARTNER_FEE', 'DELAY_FUNDS_DISBURSEMENT']);
+  await h.invoke({action:'create', requestId:REQUEST, platformFee:'0.00', disbursementMode:'INSTANT'});
+  assert.deepEqual(h.order.purchase_units[0].payment_instruction, {
+    disbursement_mode:'DELAYED', platform_fees:[{amount:{currency_code:'SEK',value:'1.00'}}]
+  });
+});
+
+test('wrong fee or disbursement mode prevents capture', async () => {
+  for (const mutate of [u => u.payment_instruction.disbursement_mode='INSTANT',
+    u => u.payment_instruction.platform_fees[0].amount.value='2.00',
+    u => u.payment_instruction.platform_fees[0].payee={merchant_id:'OTHERPARTNER'}]) {
+    const h=harness(); await h.create(); h.order.status='APPROVED'; mutate(h.order.purchase_units[0]);
+    assert.equal((await h.invoke({action:'capture',orderId:ORDER})).status,502);
+    assert.equal(h.captures,0);
+  }
+});
+
+async function paid(h) {
+  await h.create(); h.order.status='APPROVED';
+  assert.equal((await h.invoke({action:'capture',orderId:ORDER})).body.status,'completed');
+}
+const release = h => h.invoke({action:'release',orderId:ORDER,confirm:true});
+const releases = h => h.calls.filter(c => c.url.endsWith('/referenced-payouts-items'));
+
+test('release needs confirmation, ownership and a completed capture', async () => {
+  const h=harness(); await h.create();
+  assert.equal((await h.invoke({action:'release',orderId:ORDER})).status,400);
+  assert.equal((await release(h)).status,409);
+  assert.equal((await h.invoke({action:'release',orderId:ORDER,confirm:true},{token:'other-token'})).status,404);
+  assert.equal(releases(h).length,0);
+});
+
+test('release is accepted separately from capture; repeat and concurrent calls send only once', async () => {
+  const h=harness(); await paid(h);
+  const results=await Promise.all([release(h),release(h)]);
+  assert.ok(results.every(r=>r.status===200));
+  assert.equal((await release(h)).body.releaseStatus,'accepted');
+  assert.equal(releases(h).length,1);
+  assert.equal(h.captures,1);
+  const req=releases(h)[0];
+  assert.deepEqual(JSON.parse(req.body),{reference_id:'CAPTURE123456789',reference_type:'TRANSACTION_ID'});
+  assert.match(req.headers['PayPal-Request-Id'],/^r[0-9a-f]{32}$/);
+  assert.equal(req.headers['PayPal-Partner-Attribution-Id'],'TEST_BN');
+  assert.equal(req.headers['PayPal-Auth-Assertion'],undefined);
+  assert.equal((await h.invoke({action:'status',orderId:ORDER})).body.releaseStatus,'accepted');
+});
+
+test('lost release response or save stays uncertain and never automatically posts again', async () => {
+  for(const options of [{releaseFailure:true},{failReleaseSave:true},{wrongRelease:true}]) {
+    const h=harness(options); await paid(h);
+    assert.ok((await release(h)).status>=500);
+    assert.equal((await release(h)).body.releaseStatus,'requested');
+    assert.equal(releases(h).length,1);
+  }
+});
+
+test('failed claim cannot send release', async () => {
+  const h=harness(); await paid(h); h.failNextSave();
+  assert.equal((await release(h)).status,503);
+  assert.equal(releases(h).length,0);
+});
+
+test('legacy, changed partner, refunded, mismatching capture and pending payments cannot release', async () => {
+  for (const mutate of [h=>h.rows[0].flow_version=1,
+    h=>h.env.PAYPAL_SANDBOX_PARTNER_ID='NEWPARTNER123',
+    h=>h.order.purchase_units[0].payments.refunds=[{id:'REFUND123'}],
+    h=>h.order.purchase_units[0].payments.captures[0].id='OTHERCAPTURE123',
+    h=>h.order.purchase_units[0].payments.captures[0].status='PENDING']) {
+    const h=harness(); await paid(h); mutate(h);
+    assert.equal((await release(h)).status,409); assert.equal(releases(h).length,0);
+  }
+});

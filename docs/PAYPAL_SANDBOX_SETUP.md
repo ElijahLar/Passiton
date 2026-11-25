@@ -2,8 +2,55 @@
 
 Testbranchen använder nu en Platform-app och en separat, fast konfigurerad
 sandbox-säljare. Säljaren ansluts genom Partner Referrals (THIRD_PARTY,
-EXPRESS_CHECKOUT). Därefter kan en Personal sandbox-köpare betala 10 SEK till
+EXPRESS_CHECKOUT) med PAYMENT, REFUND, PARTNER_FEE och DELAY_FUNDS_DISBURSEMENT. Därefter kan en Personal sandbox-köpare betala 10 SEK till
 säljaren genom plattformsappen. Ingen annons eller demoorder påverkas.
+
+## Uppgradera det fungerande testet: avgift och fördröjning
+
+1. I Sandbox → Platform Partner App: slå på **Platform Fee**. Appen måste även
+   tillåta **DELAY_FUNDS_DISBURSEMENT**. Om inställningen saknas eller PayPal nekar
+   API-anropet, be PayPal aktivera funktionen för just sandboxplattformen.
+2. Kör endast `backend/supabase/migrations/202611250001_paypal_fee_disbursement.sql`
+   i en ny SQL-snippet. Kör inte om 001 eller 002. Ingen `db push`.
+3. Hämta testbranchen med `git pull --ff-only` och installera om endast funktionen:
+   `supabase --workdir backend functions deploy paypal-sandbox --remote=wcitckdgzjncglwymeks`
+   (CLI 3). Alla åtta befintliga Secrets används; inga nya behövs.
+4. Starta den lokala webbservern enligt nedan, ladda om testsidan och välj **Nytt test**.
+5. Skapa en **ny anslutningslänk** och logga in som säljaren för att godkänna även
+   PARTNER_FEE och DELAY_FUNDS_DISBURSEMENT. Den gamla anslutningen räcker inte som
+   bevis för dessa rättigheter. Knappen för säljarstatus kontrollerar grundanslutningen;
+   PayPal kontrollerar de extra funktionerna vid onboarding/orderanrop.
+6. Betala 10 SEK med ett separat Personal-sandboxkonto. Servern sätter 1 SEK i
+   plattformsavgift och DELAYED. Säljaren får 9 SEK **före PayPals egna avgifter**.
+7. Kontrollera avgiften och det innehållna beloppet i PayPal sandbox innan frigörande.
+   Databasens `status=completed` betyder capture klar, inte att säljaren fått pengarna.
+8. Klicka **Frigör testpengarna till säljaren** och bekräfta. Det skickar en referenced
+   payout för den sparade capture-transaktionen, inte en separat vanlig Payouts-betalning.
+9. Kontrollera slutresultatet hos säljaren och plattformen i PayPal sandbox. `accepted`
+   på testsidan betyder endast att PayPal accepterat anropet, inte slutförd utbetalning.
+
+PayPal frigör automatiskt efter **28 dagar**. Detta är fördröjning hos PayPal, inte
+obegränsad escrow och inte utbetalning till säljarens bankkonto. Live-behörighet och
+Godkännande för PassItOns affärsmodell följer inte av ett lyckat sandboxtest.
+
+### Avstämning och avbrutna frigöranden
+
+Nya rader har `flow_version=2`, `platform_fee_amount=1.00`, `disbursement_mode=DELAYED`
+och plattformens Merchant ID. Äldre rader behåller version 1 och kan inte frigöras här.
+Belopp, avgift, mottagare, valuta och orderreferens kontrolleras på servern.
+
+`release_status` är separat från betalningsstatus:
+- `not_requested`: inget frigörande har påbörjats av testsidan.
+- `requested`: anropet har reserverats atomärt och kan ha skickats; resultatet kan vara osäkert.
+- `accepted`: ett svar med rätt capture-referens och payout item-ID har sparats.
+
+Dubbelklick, samtidiga anrop och omladdning får aldrig skicka två frigöranden.
+Vid timeout, oväntat svar eller databasfel efter frigörande lämnas `requested` kvar.
+Testsidan skickar då INTE igen automatiskt, även om PayPal nekade första anropet.
+Kontrollera PayPals transaktion och eventuell debug-ID med PayPal innan någon manuell
+återställning. Det finns ingen knapp som återställer denna spärr. Automatisk avstämning
+via webhook/utbetalningsstatus är ett framtida steg. Ett lyckat HTTP-svar är inte bevis
+för att säljaren faktiskt fått pengarna. Kontrollera detta manuellt även för `accepted`.
 
 ## 1. Uppdatera lokal kopia
 
@@ -25,7 +72,7 @@ i SQL Editor. Den lägger till `seller_merchant_id` i testtabellen och behåller
 alla tidigare rader. Gamla testorder utan denna koppling får inte betalas
 med plattformsappen. Välj Nytt test på testsidan efter uppdateringen.
 
-För en helt ny installation körs 001 först och sedan 002. Kör inte övriga
+För en helt ny installation körs 001, sedan 002 och slutligen 202611250001_paypal_fee_disbursement.sql. Kör inte övriga
 äldre migrationer igen och använd inte db push mot gemensamma projektet.
 
 ## 3. Inställningar i Supabase Edge Function Secrets
@@ -58,7 +105,7 @@ Supabases panel eller kopiera `.env.example` till en privat fil UTANFÖR repot
 
 ```bash
 supabase secrets set --project-ref wcitckdgzjncglwymeks --env-file "$HOME/.config/passiton/paypal-sandbox.env"
-supabase --workdir backend functions deploy paypal-sandbox --project-ref wcitckdgzjncglwymeks
+supabase --workdir backend functions deploy paypal-sandbox --remote=wcitckdgzjncglwymeks
 ```
 
 Kontrollera projektref innan körning. verify_jwt=false gäller enbart denna
@@ -96,8 +143,8 @@ som lyckad betalning. Osäkra create-försök äldre än tre timmar stoppas.
 ## Omfattning och verifiering
 
 Detta test stöder en fast säljare, ingen publik säljarregistrering. Tillåtna
-testare kan skapa onboardinglänkar. Plattformsavgift, fördröjd utbetalning,
-återbetalningsgränssnitt, webhook och värdebevisleverans ingår inte ännu.
+testare kan skapa onboardinglänkar. Plattformsavgift (1 SEK), fördröjd utbetalning och manuellt frigörande ingår i version 2.
+Återbetalningsgränssnitt, webhook, automatisk utbetalningsavstämning och värdebevisleverans ingår inte.
 REFUND begärs som del av partnerbehörigheterna men inga återbetalningsanrop
 är implementerade. Servern använder endast PayPals sandboxadress.
 
@@ -114,3 +161,7 @@ Referenser:
 - https://developer.paypal.com/platforms/seller-onboarding/before-payment/
 - https://developer.paypal.com/platforms/checkout/standard/integrate
 - https://developer.paypal.com/api/rest/reference/idempotency/
+
+Referenser för avgift och fördröjning:
+- https://developer.paypal.com/platforms/checkout/delayed-disbursement/
+- https://developer.paypal.com/platforms/seller-onboarding/onboarding-checklist/

@@ -5,6 +5,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const ORDER_ID = /^[A-Z0-9]{10,32}$/;
 const AMOUNT = '10.00';
 const CURRENCY = 'SEK';
+const PLATFORM_FEE = '1.00';
+const FLOW_VERSION = 2;
 
 class HttpError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -49,11 +51,11 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     let input;
     try { input = JSON.parse(raw); } catch { throw new HttpError(400, 'Ogiltig JSON.'); }
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new HttpError(400, 'Ogiltig förfrågan.');
-    if (!['config', 'create', 'capture', 'status', 'onboard', 'seller-status'].includes(input.action)) throw new HttpError(400, 'Okänd åtgärd.');
+    if (!['config', 'create', 'capture', 'status', 'onboard', 'seller-status', 'release'].includes(input.action)) throw new HttpError(400, 'Okänd åtgärd.');
     if (input.action === 'create' && !UUID.test(input.requestId || '')) throw new HttpError(400, 'Ogiltigt test-id.');
-    if (['capture','status'].includes(input.action) && !ORDER_ID.test(input.orderId || '')) throw new HttpError(400, 'Ogiltigt order-id.');
+    if (['capture','status','release'].includes(input.action) && !ORDER_ID.test(input.orderId || '')) throw new HttpError(400, 'Ogiltigt order-id.');
     if (input.action === 'config') {
-      return reply(200, { clientId: env.PAYPAL_SANDBOX_CLIENT_ID, merchantId: env.PAYPAL_SANDBOX_MERCHANT_ID, amount: AMOUNT, currency: CURRENCY, environment: 'sandbox' });
+      return reply(200, { clientId: env.PAYPAL_SANDBOX_CLIENT_ID, merchantId: env.PAYPAL_SANDBOX_MERCHANT_ID, amount: AMOUNT, currency: CURRENCY, environment: 'sandbox', bnCode: env.PAYPAL_SANDBOX_BN_CODE, platformFee: PLATFORM_FEE, disbursementMode: 'DELAYED', flowVersion: FLOW_VERSION });
     }
 
     const db = async (query, method = 'GET', body, prefer = 'return=representation') => {
@@ -98,7 +100,12 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
         }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20000)
       });
       if (response.status === 404 && path.startsWith('/v1/customer/partners/')) return {};
-      if (!response.ok) throw new HttpError(502, 'PayPal kunde inte slutföra steget. Behåll samma test och försök igen eller kontrollera det i sandboxpanelen.');
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({}));
+        const safe = value => typeof value === 'string' && /^[A-Z0-9_-]{1,80}$/i.test(value) ? value : '';
+        const codes = [safe(failure.name), safe(failure.details?.[0]?.issue), safe(failure.debug_id)].filter(Boolean).join(' / ');
+        throw new HttpError(502, `PayPal nekade steget${codes ? ` (${codes})` : ''}. Kontrollera appens Platform Fee, säljarens nya medgivande och behörighet för delayed disbursement. Vid frigörande: kontrollera sandboxpanelen innan nytt försök.`);
+      }
       return response.json();
     };
     const sellerId = env.PAYPAL_SANDBOX_MERCHANT_ID;
@@ -121,7 +128,7 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
         tracking_id: `passiton-sandbox-${sellerId}`,
         operations: [{ operation: 'API_INTEGRATION', api_integration_preference: {
           rest_api_integration: { integration_method: 'PAYPAL', integration_type: 'THIRD_PARTY',
-            third_party_details: { features: ['PAYMENT', 'REFUND'] } }
+            third_party_details: { features: ['PAYMENT', 'REFUND', 'PARTNER_FEE', 'DELAY_FUNDS_DISBURSEMENT'] } }
         }}], products: ['EXPRESS_CHECKOUT'],
         legal_consents: [{ type: 'SHARE_DATA_CONSENT', granted: true }]
       });
@@ -136,7 +143,10 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     if (!(await sellerStatus()).ready) throw new HttpError(409, 'Slutför säljaranslutningen och bekräfta säljarens e-post i sandbox först.');
     const summary = row => ({
       environment: 'sandbox', orderId: row.paypal_order_id, captureId: row.paypal_capture_id,
-      status: row.status, amount: AMOUNT, currency: CURRENCY
+      status: row.status, amount: AMOUNT, currency: CURRENCY,
+      platformFee: row.platform_fee_amount ?? '0.00', disbursementMode: row.disbursement_mode ?? 'INSTANT',
+      releaseStatus: row.release_status ?? 'not_requested', releaseItemId: row.release_item_id ?? null,
+      flowVersion: row.flow_version ?? 1
     });
     const validateOrder = (order, row) => {
       const units = order.purchase_units;
@@ -145,6 +155,15 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
         unit.custom_id !== row.id || unit.payee?.merchant_id !== env.PAYPAL_SANDBOX_MERCHANT_ID ||
         unit.amount?.currency_code !== CURRENCY || unit.amount?.value !== AMOUNT) {
         throw new HttpError(502, 'PayPals order matchar inte den sparade testbetalningen.');
+      }
+      if (row.flow_version === FLOW_VERSION) {
+        const instruction = unit.payment_instruction;
+        const fees = instruction?.platform_fees;
+        if (instruction?.disbursement_mode !== 'DELAYED' || fees?.length !== 1 ||
+          fees[0].amount?.currency_code !== CURRENCY || fees[0].amount?.value !== PLATFORM_FEE ||
+          (fees[0].payee?.merchant_id && fees[0].payee.merchant_id !== row.partner_merchant_id)) {
+          throw new HttpError(502, 'PayPals avgift eller utbetalningsläge matchar inte testet. Ingen utbetalning görs här.');
+        }
       }
       return unit;
     };
@@ -170,12 +189,15 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
       let row = await selectRow(`request_id=eq.${input.requestId}`);
       if (!row) {
         const inserted = await db('on_conflict=buyer_id,request_id', 'POST', {
-          buyer_id: user.id, request_id: input.requestId, seller_merchant_id: sellerId
+          buyer_id: user.id, request_id: input.requestId, seller_merchant_id: sellerId,
+          flow_version: FLOW_VERSION, platform_fee_amount: PLATFORM_FEE, disbursement_mode: 'DELAYED',
+          partner_merchant_id: partnerId, release_status: 'not_requested'
         }, 'resolution=ignore-duplicates,return=representation');
         row = inserted[0] || await selectRow(`request_id=eq.${input.requestId}`);
       }
       if (!row) throw new HttpError(503, 'Testet kunde inte skapas.');
       if (row.seller_merchant_id !== sellerId) throw new HttpError(409, 'Starta ett nytt plattformstest; denna order tillhör tidigare inställningar.');
+      if (row.flow_version !== FLOW_VERSION || row.partner_merchant_id !== partnerId) throw new HttpError(409, 'Välj Nytt test för att prova avgift och fördröjd utbetalning.');
       if (row.paypal_order_id) return reply(200, summary(row));
       // PayPal retains create idempotency IDs for a limited time. Never recreate an old uncertain attempt.
       if (now() - Date.parse(row.created_at) > 3 * 60 * 60 * 1000) {
@@ -186,7 +208,9 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
           reference_id: 'sandbox-test', custom_id: row.id,
           description: 'Passiton sandboxtest – ingen vara levereras',
           payee: { merchant_id: env.PAYPAL_SANDBOX_MERCHANT_ID },
-          amount: { currency_code: CURRENCY, value: AMOUNT }
+          amount: { currency_code: CURRENCY, value: AMOUNT },
+          payment_instruction: { disbursement_mode: 'DELAYED',
+            platform_fees: [{ amount: { currency_code: CURRENCY, value: PLATFORM_FEE } }] }
         }], payment_source: { paypal: { experience_context: { shipping_preference: 'NO_SHIPPING' } } }
       }, `c${row.id.replaceAll('-', '')}`);
       if (!ORDER_ID.test(order.id || '')) throw new HttpError(502, 'PayPal returnerade ett ogiltigt order-id.');
@@ -198,6 +222,44 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     let row = await selectRow(`paypal_order_id=eq.${input.orderId}`);
     if (!row) throw new HttpError(404, 'Testbetalningen finns inte för ditt konto.');
     if (row.seller_merchant_id !== sellerId) throw new HttpError(409, 'Ordern tillhör tidigare mottagarinställningar.');
+    if (input.action === 'release') {
+      if (input.confirm !== true) throw new HttpError(400, 'Bekräfta frigörandet av testpengarna.');
+      if (row.flow_version !== FLOW_VERSION || row.partner_merchant_id !== partnerId ||
+        row.disbursement_mode !== 'DELAYED' || Number(row.platform_fee_amount) !== Number(PLATFORM_FEE)) {
+        throw new HttpError(409, 'Bara nya tester med avgift och fördröjd utbetalning kan frigöras här.');
+      }
+      if (row.release_status !== 'not_requested') return reply(200, summary(row));
+      // Always verify the actual capture, even when the database says completed.
+      const order = await paypal(`/v2/checkout/orders/${row.paypal_order_id}`);
+      const unit = validateOrder(order, row);
+      const captures = unit.payments?.captures || [];
+      const capture = captures[0];
+      if (order.status !== 'COMPLETED' || captures.length !== 1 || capture?.status !== 'COMPLETED' ||
+        !ORDER_ID.test(capture.id || '') || capture.id !== row.paypal_capture_id || row.status !== 'completed' ||
+        capture.amount?.value !== AMOUNT || capture.amount?.currency_code !== CURRENCY ||
+        unit.payments?.refunds?.length) {
+        throw new HttpError(409, 'Frigörande kräver en bekräftad, ej återbetald testbetalning. Kontrollera betalningen först.');
+      }
+      // Atomic claim: never automatically repeat an uncertain financial operation.
+      // A lost response or a crashed worker leaves "requested" for manual reconciliation.
+      const claimed = await db(`${ownFilter}&id=eq.${row.id}&release_status=eq.not_requested&status=eq.completed`, 'PATCH', {
+        release_status: 'requested', release_requested_at: new Date(now()).toISOString(), updated_at: new Date(now()).toISOString()
+      });
+      if (!claimed.length) return reply(200, summary(await selectRow(`id=eq.${row.id}`)));
+      const payout = await paypal('/v1/payments/referenced-payouts-items', 'POST', {
+        reference_id: capture.id, reference_type: 'TRANSACTION_ID'
+      }, `r${row.id.replaceAll('-', '')}`);
+      // A successful HTTP response means accepted, not proof that the seller received funds.
+      if (payout.reference_id !== capture.id || payout.reference_type !== 'TRANSACTION_ID' ||
+        !/^[A-Z0-9]{8,64}$/.test(payout.item_id || '')) {
+        throw new HttpError(502, 'Svaret på frigörandet kunde inte verifieras. Kontrollera transaktionen i PayPal sandbox; skicka inte ett nytt frigörande.');
+      }
+      const saved = await db(`${ownFilter}&id=eq.${row.id}&release_status=eq.requested`, 'PATCH', {
+        release_status: 'accepted', release_item_id: payout.item_id, updated_at: new Date(now()).toISOString()
+      });
+      if (!saved[0]) throw new HttpError(503, 'Frigörandet kunde inte sparas. Kontrollera transaktionen i PayPal sandbox.');
+      return reply(200, summary(saved[0]));
+    }
     if (row.status === 'completed') return reply(200, summary(row));
     // GET first recovers a capture that succeeded even if its response/database write was lost.
     let order = await paypal(`/v2/checkout/orders/${row.paypal_order_id}`);
