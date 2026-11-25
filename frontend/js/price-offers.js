@@ -36,13 +36,13 @@
   }
   function signedIn() { return Boolean(state.user && authClient); }
   function canOffer(card) {
-    return Boolean(card?.isLive && card.photoReviewStatus === 'approved' && card.sellerId !== state.user?.id);
+    return Boolean(card?.isLive && card.saleVerified && card.sellerId !== state.user?.id);
   }
   function applyAvailability(card, reserved) {
     if (String(state.selectedId) !== String(card.id)) return;
     const own = card.sellerId === state.user?.id;
     available = canOffer(card) && !reserved;
-    offerButton.classList.toggle('hidden', !card?.isLive || card.photoReviewStatus !== 'approved' || own);
+    offerButton.classList.toggle('hidden', !card?.isLive || !card.saleVerified || own);
     offerButton.disabled = !available;
     offerButton.textContent = reserved ? 'Tillfälligt reserverat' : 'Lämna prisförslag';
     if (reserved) {
@@ -56,10 +56,10 @@
     selectedCard = card;
     const seq = ++requestId;
     available = canOffer(card);
-    offerButton.classList.toggle('hidden', !canOffer(card) && !(card?.isLive && card.photoReviewStatus === 'approved' && card.sellerId !== state.user?.id));
+    offerButton.classList.toggle('hidden', !canOffer(card) && !(card?.isLive && card.saleVerified && card.sellerId !== state.user?.id));
     offerButton.disabled = !available;
     offerButton.textContent = 'Lämna prisförslag';
-    if (!card?.isLive || card.photoReviewStatus !== 'approved' || !authClient) return;
+    if (!card?.isLive || !card.saleVerified || !authClient) return;
     try {
       const {data, error} = await authClient.rpc('price_offer_is_reserved', {p_listing_id: card.listingId});
       if (error) throw error;

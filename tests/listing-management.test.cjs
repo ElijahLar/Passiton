@@ -93,11 +93,11 @@ test('admin can review only with server RPC and a reason for rejection', async (
   await h.window.passitonListingManagement.refresh();
   assert.match(h.elements.get('lm-admin-list').innerHTML,/PASS-TEST123/);
   assert.equal(h.elements.get('lm-admin-panel').classList.values.has('hidden'),false);
-  const article={dataset:{lmReviewId:queueItem.listing_id}};
+  const article={dataset:{lmReviewId:queueItem.listing_id},querySelector(){return {value:""}},querySelectorAll(){return []}};
   const control={dataset:{lmDecision:'rejected'},closest(selector){return selector==='button'?this:selector==='[data-lm-review-id]'?article:null}};
   const adminPanel=h.elements.get('lm-admin-panel');
   await adminPanel.clickHandler({target:control});
-  const action=h.calls.find(c=>c.name==='admin_review_listing');
+  const action=h.calls.find(c=>c.name==='review_card');
   assert.equal(action.args.p_decision,'rejected');
   assert.match(action.args.p_reason,/Fotot visar inte/);
 });

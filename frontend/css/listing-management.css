@@ -46,3 +46,7 @@
 @media (max-width: 680px) {
   .lm-admin-panel { margin-top: 1.25rem; }
 }
+#brand-config-form,.lm-check-fields {display:grid;gap:.75rem;padding:1rem 0}
+#brand-config-form label,.lm-check-fields label {display:block;overflow-wrap:anywhere}
+#brand-config-form :is(input:not([type=checkbox]),textarea,select),.lm-check-fields :is(input:not([type=checkbox]),textarea,select) {display:block;width:100%;max-width:34rem}
+#pin-label[hidden] {display:none}

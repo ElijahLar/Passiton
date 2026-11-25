@@ -164,7 +164,7 @@
             <div id="gallery" class="gallery"></div>
             <section class="about-card">
               <h2>Om presentkortet</h2>
-              <p id="about-copy">Presentkortet kan användas i butik och online. Ett enkelt sätt att få mer för pengarna.</p>
+              <p id="about-copy">Presentkortet kan användas i butik och online. Ett enkelt sätt att få mer för pengarna.</p><a id="detail-balance-link" hidden target="_blank" rel="noopener noreferrer">Företagets officiella saldokontroll</a>
               <div class="fact-grid">
                 <div class="fact-item">
                   <svg viewBox="0 0 24 24"><path d="M7 2v4m10-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z"/></svg>
@@ -256,13 +256,10 @@
               <label>Varumärke
                 <select id="sell-brand" required>
                   <option value="">Välj varumärke</option>
-                  <option>IKEA</option><option>Zalando</option><option>H&M</option><option>Elgiganten</option><option>Stadium</option><option>ICA</option><option>Åhléns</option><option>SJ</option>
                 </select>
               </label>
               <label>Kategori
-                <select id="sell-category" required>
-                  <option value="Hem">Hem & inredning</option><option value="Mode">Mode</option><option value="Elektronik">Elektronik</option><option value="Mat">Mat & dagligvaror</option><option value="Sport">Sport & fritid</option><option value="Resor">Resor & transport</option>
-                </select>
+                <input id="sell-category" readonly>
               </label>
             </div>
 
@@ -286,8 +283,10 @@
               <span class="form-step">03</span>
               <h2>Verifiering</h2>
               <label>Presentkortskod <span class="field-note">(lagras privat)</span>
-                <input id="sell-code" type="text" placeholder="XXXX-XXXX-XXXX" autocomplete="off" maxlength="200" required>
-              </label>
+                <input id="sell-code" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="off" maxlength="200" required>
+              </label><label id="pin-label" hidden>PIN<input id="sell-pin" type="password" autocomplete="off" maxlength="80"></label>
+              <p id="brand-help" aria-live="polite"></p>
+              <p>Vi granskar fotot och saldot. Vid ett framtida riktigt köp kontrollerar vi saldot igen innan köparen får koden.</p>
               <div class="photo-proof-panel" aria-label="Fotobevis för annons">
                 <h3>Fotobevis med engångskod</h3>
                 <p>Generera din unika kod (giltig i 30 minuter). Skriv koden på en papperslapp och ta <strong>ett nytt foto</strong> där papperslappen, presentkortets saldo och aktuellt datum/klockslag syns tillsammans. Dölj kortnummer, PIN och inlösningskod.</p>
@@ -430,7 +429,7 @@
           <button type="button" class="hub-card hub-card-admin hidden" data-hub-open="admin" aria-haspopup="dialog">
             <span class="hub-card-top"><span class="kicker">Endast administratörer</span><span class="hub-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span></span>
             <span class="hub-card-title">Granska inkomna annonser</span>
-            <span class="hub-card-description">Granska fotobevis och hantera annonser som väntar på beslut.</span>
+            <span class="hub-card-description">Kontrollera fotobevis och saldo för inkomna annonser.</span>
             <span class="hub-card-arrow" aria-hidden="true">Utforska <span>↗</span></span>
           </button>
           <button type="button" class="hub-card hub-card-orders" data-hub-open="orders" aria-haspopup="dialog">
@@ -510,9 +509,21 @@
           <section id="lm-admin-panel" class="listing-management lm-admin-panel hidden" aria-label="Administratörens granskningskö">
             <div class="lm-header"><div><span class="kicker">Endast administratörer</span>
               <h2>Granska inkomna annonser</h2>
-              <p>Granska bild och engångskod manuellt. Bilden verifierar inte kortets faktiska saldo.</p>
+              <p>Jämför fotot med engångskoden och dokumentera saldot hos utfärdaren.</p>
             </div></div>
             <p id="lm-admin-status" class="lm-message" role="status" aria-live="polite"></p>
+            <details id="verification-config"><summary>Företagsregister och granskningsregler</summary>
+              <form id="brand-config-form"><label>Företag<select name="brand"></select></label>
+              <label>Status<select name="status"><option value="candidate">Kandidat</option><option value="active">Aktivt</option><option value="paused">Pausat</option></select></label>
+              <label><input type="checkbox" name="digital">Digital inlösen med enbart kod och eventuell PIN har bekräftats</label>
+              <label>Kategori<input name="category" required></label><label>Officiell saldolänk<input type="url" name="balance_url"></label>
+              <label>Kontrollmetod<input name="method"></label><label>Giltighetsinformation<input name="validity_info"></label>
+              <label>Kodformat (reguljärt uttryck)<input name="code_pattern" required></label><label><input type="checkbox" name="pin_required">PIN krävs</label>
+              <label><input type="checkbox" name="ignore_spaces">Mellanslag saknar betydelse i kortnumret</label>
+              <label><input type="checkbox" name="ignore_hyphens">Bindestreck saknar betydelse i kortnumret</label>
+              <label>PIN-format<input name="pin_pattern" required></label><label>Intern granskningsinstruktion<textarea name="notes"></textarea></label>
+              <label>Kontrollens giltighet för alla företag (dagar)<input type="number" min="1" max="365" name="days" required></label>
+              <button class="secondary-cta">Spara granskningsregler</button></form><p role="status" id="config-status"></p></details>
             <div id="lm-admin-list" class="lm-list"></div>
             <div class="lm-pagination">
               <button type="button" id="lm-prev" class="secondary-cta lm-small">Föregående</button>

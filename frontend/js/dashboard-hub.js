@@ -20,7 +20,7 @@
     offers: ['Förhandla tryggt', 'Mina prisförslag', 'Skickade och mottagna bud samt överenskomna priser.'],
     saved: ['Dina favoriter', 'Sparade annonser', 'Presentkort som du valt att spara för senare.'],
     notifications: ['Håll dig uppdaterad', 'Notiser och inställningar', 'Se tidigare notiser och välj vilka mail du vill få.'],
-    admin: ['Endast administratörer', 'Granska inkomna annonser', 'Granska inkomna fotobevis och fatta beslut.'],
+    admin: ['Endast administratörer', 'Granska inkomna annonser', 'Granska fotobevis, kontrollera saldo och fatta beslut.'],
     orders: ['PassitOn Trygg Affär', 'Order och dispyter', 'Orderhistorik och eventuella ärenden.']
   };
   const originalOrdersParent = panels.orders.parentElement;

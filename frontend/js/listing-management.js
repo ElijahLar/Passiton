@@ -44,6 +44,8 @@
     if (row.status === 'sold') return 'Såld';
     if (row.expires_on < today()) return 'Utgången';
     if (row.status === 'paused') return 'Pausad';
+    if (row.balance_status === 'supplement') return 'Komplettering krävs – skicka en ny annons med nytt foto';
+    if (row.balance_status === 'expired') return 'Väntar på ny saldokontroll';
     if (row.photo_review_status === 'pending') return 'Väntar på granskning';
     if (row.photo_review_status === 'rejected') return 'Underkänd';
     return 'Aktiv';
@@ -92,13 +94,25 @@
         <p>Värde ${money(Number(row.face_value))} · Pris ${money(Number(row.asking_price))}</p>
         <p>Inskickad ${new Date(row.submitted_at).toLocaleString('sv-SE')} · Giltigt till ${safe(row.expires_on)}</p>
       </div><span class="lm-tag">Väntar</span></div>
+      <p>${safe(row.category)} · Säljarkonto ${safe(row.seller)}</p>
+      <p>${safe((row.risks||[]).join(' · '))}</p>
       <p class="lm-proof-code">Förväntad kod i fotot: <strong>${safe(row.proof_code)}</strong></p>
       <p class="lm-warning">Jämför kod, datum/klockslag och saldo med bilden. Ett foto bevisar inte att saldot faktiskt finns eller att koden är oanvänd.</p>
-      <div class="lm-buttons">
-        <button class="secondary-cta lm-small" data-lm-proof="${safe(row.listing_id)}">Visa privat fotobevis</button>
-        <button class="primary-cta lm-small" data-lm-decision="approved">Godkänn foto</button>
+      <p>${safe(row.method)} ${safe(row.notes)}</p>
+      ${row.balance_url ? `<a href="${safe(row.balance_url)}" target="_blank" rel="noopener noreferrer">Öppna officiell saldokontroll</a>` : 'Företaget saknar kontrollsida.'}
+      <div class="lm-check-fields"><button type="button" data-show-code>Visa kod och PIN för kontroll</button>
+      <label>Resultat<select name="result"><option value="unavailable">Kunde inte genomföras</option><option value="passed">Godkänd</option><option value="failed">Misslyckad</option></select></label>
+      <label>Kontrollerat saldo (kr)<input name="amount" type="number" min="0" step="0.01"></label>
+      <label>Verifierad giltighetstid, om tillgänglig<input name="expiry" type="date"></label>
+      <label><input type="checkbox" name="block">Spärra koden vid dokumenterat bedrägeri (kräver avslag)</label>
+      <label>Intern kommentar (utelämna kod och PIN)<textarea name="comment" maxlength="500"></textarea></label>
+      ${['Fotot och engångskoden stämmer','Företag och korttyp är godkända','Koden och eventuell PIN fungerar','Saldot motsvarar annonsens värde','Giltigheten kontrollerad där det är möjligt','Ingen blockerande risk eller dubblett'].map(label=>`<label><input type="checkbox" name="check"> ${label}</label>`).join('')}
+      </div><div class="lm-buttons">
+        <button class="secondary-cta lm-small" data-lm-proof="${safe(row.listing_id)}" ${row.photo_path ? '' : 'disabled'}>Visa privat fotobevis</button>
+        <button class="primary-cta lm-small" data-lm-decision="approved">Godkänn annons</button>
+        <button class="secondary-cta lm-small" data-lm-decision="supplement">Begär komplettering</button>
         <button class="secondary-cta lm-small lm-danger" data-lm-decision="rejected">Avslå</button>
-      </div><img class="lm-proof-image" alt="Privat fotobevis för granskning" hidden></article>`;
+      </div><a data-enlarge hidden target="_blank" rel="noopener noreferrer">Öppna fotot i full storlek</a><img class="lm-proof-image" alt="Privat fotobevis för granskning" hidden></article>`;
   }
   function renderAdmin() {
     adminPanel.classList.toggle('hidden', !admin);
@@ -128,7 +142,7 @@
     try {
       const [mine, canAdmin] = await Promise.all([
         authClient.from('gift_card_listings')
-          .select('id,brand,value,price,expires_on,status,photo_review_status,photo_review_reason,created_at')
+          .select('id,brand,value,price,expires_on,status,photo_review_status,photo_review_reason,balance_status,created_at')
           .eq('seller_id', userId).order('created_at', { ascending: false }).limit(200),
         rpc('is_passiton_admin', {})
       ]);
@@ -218,25 +232,43 @@
         const img = reviewArticle.querySelector('.lm-proof-image');
         img.src = data.signedUrl;
         img.hidden = false;
+        const enlarge = reviewArticle.querySelector('[data-enlarge]');
+        enlarge.href=data.signedUrl;
+        enlarge.hidden=false;
       } catch (error) {
         console.error('Proof image could not be opened', error);
         note('Fotot kunde inte öppnas. Kontrollera Storage-policyn.', true, adminStatus);
       } finally { control.disabled = false; }
       return;
     }
+    if (control.hasAttribute?.('data-show-code')) {
+      const userId = state.user?.id;
+      try {
+        const data = await rpc('review_credentials',{p_listing:id});
+        if (userId && state.user?.id===userId && reviewArticle.isConnected)
+          window.alert(`Presentkortskod: ${data.code}${data.pin ? '\nPIN: '+data.pin : ''}`);
+      } catch { note('Uppgifterna kunde inte öppnas.',true,adminStatus); }
+      return;
+    }
     const decision = control.dataset.lmDecision;
-    if (!['approved', 'rejected'].includes(decision)) return;
-    const reason = decision === 'rejected'
-      ? window.prompt('Ange varför fotot avslås (minst 10 tecken). Skicka aldrig med själva presentkortskoden här.')
+    if (!['approved', 'rejected', 'supplement'].includes(decision)) return;
+    const reason = decision !== 'approved'
+      ? window.prompt('Ange vad säljaren behöver åtgärda (minst 10 tecken). Skicka aldrig med själva presentkortskoden här.')
       : null;
-    if (decision === 'rejected' && (reason === null || reason.trim().length < 10)) {
+    if (decision !== 'approved' && (reason === null || reason.trim().length < 10)) {
       if (reason !== null) note('Ange minst 10 tecken som förklaring.', true, adminStatus);
       return;
     }
-    if (decision === 'approved' && !window.confirm('Har du kontrollerat engångskoden, saldot och datumet på fotot? Godkänn endast fotobeviset, inte kortets giltighet.')) return;
+    const field = name => reviewArticle.querySelector(`[name="${name}"]`).value;
+    const checks = [...reviewArticle.querySelectorAll('[name="check"]')].map(input=>input.checked);
+    const amount = field('amount');
+    if (decision==='approved' && (checks.includes(false) || field('result')!=='passed' || !amount || Number(amount)!==Number(row.face_value))) {
+      note('Fyll i kontrollen och stäm av samtliga sex punkter.',true,adminStatus);return;
+    }
     await mutate(async () => {
-      await rpc('admin_review_listing', {
-        p_listing_id: id, p_decision: decision, p_reason: reason
+      await rpc('review_card', {
+        p_listing:id,p_decision:decision,p_reason:reason,p_block:reviewArticle.querySelector('[name="block"]').checked===true,p_checks:checks,p_result:field('result'),
+        p_amount:amount===''?null:Number(amount),p_expiry:field('expiry')||null,p_comment:field('comment')||null
       });
       page = 0;
     }, adminStatus);
@@ -251,4 +283,56 @@
     authClient.auth.onAuthStateChange(() => queueMicrotask(refresh));
     authClient.auth.getSession().then(() => queueMicrotask(refresh)).catch(() => {});
   }
+})();
+
+(() => {
+  const panel=document.querySelector?.('#verification-config');
+  if (!panel) return;
+  const form=panel.querySelector('form');
+  const fields=form.elements;
+  const status=panel.querySelector('[role=status]');
+  let brands=[];
+  function showBrand() {
+    const brand=brands.find(row=>row.name===fields.brand.value);
+    if (!brand) return;
+    for (const [name,value] of Object.entries(brand)) {
+      const field=fields.namedItem(name);
+      if (!field) continue;
+      if (field.type==='checkbox') field.checked=value;
+      else field.value=value??'';
+    }
+  }
+  const clear = () => {
+    brands=[]; fields.brand.replaceChildren(); form.reset(); status.textContent='';
+    panel.open=false;
+  };
+  if(authClient) authClient.auth.onAuthStateChange((event)=>{
+    if(event==='SIGNED_OUT' || event==='SIGNED_IN') clear();
+  });
+  panel.addEventListener('toggle',async()=>{
+    if (!panel.open) return;
+    const userId=state.user?.id;
+    const {data,error}=await authClient.rpc('verification_admin_config');
+    if(!userId || userId!==state.user?.id || !panel.open)return;
+    if(error){status.textContent='Kunde inte läsa företagsregistret.';return;}
+    brands=data.brands; fields.days.value=data.days;
+    fields.brand.replaceChildren(...brands.map(b=>new Option(b.name,b.name)));
+    showBrand();
+  });
+  fields.brand.addEventListener('change',showBrand);
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const config=Object.fromEntries(new FormData(form));
+    for (const name of ['digital','pin_required','ignore_spaces','ignore_hyphens']) config[name]=fields[name].checked;
+    try { new RegExp(config.code_pattern); new RegExp(config.pin_pattern); }
+    catch {status.textContent='Ange giltiga reguljära uttryck för kod och PIN.';return;}
+    if(config.status==='active' && !window.confirm('Har du verifierat den officiella kontrollmetoden och att kortet kan lösas in digitalt med kod och eventuell PIN?'))return;
+    const {error}=await authClient.rpc('save_verification_brand',{p_brand:fields.brand.value,p_days:Number(fields.days.value),p_data:config});
+    status.textContent=error?'Kontrollera uppgifterna och försök igen.':'Reglerna har sparats.';
+    if(!error){
+      Object.assign(brands.find(b=>b.name===fields.brand.value),config);
+      await loadVerifiedBrands();
+      await window.passitonListingManagement.refresh();
+    }
+  });
 })();

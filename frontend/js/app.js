@@ -66,14 +66,14 @@ function cardHTML(card){
   return `<article class="product-card" data-card-id="${card.id}" tabindex="0" role="button" aria-label="Öppna ${escapeHTML(card.brand)} presentkort">
     ${artHTML(card)}
     <div class="product-meta">
-      <div><h3>${escapeHTML(card.brand)} presentkort</h3><p>Värde ${money(card.value)} · ${card.isLive?'Foto granskat':'Demokort'}</p></div>
+      <div><h3>${escapeHTML(card.brand)} presentkort</h3><p>Värde ${money(card.value)} · ${card.isLive?'Foto och saldo granskade':'Demokort'}</p></div>
       <div class="product-meta-price"><strong>${money(card.price)}</strong><span>Spara ${pct(card)}%</span></div>
     </div>
   </article>`;
 }
 
 const categoryLabels={Hem:'Hem & inredning',Mode:'Mode',Elektronik:'Elektronik',Mat:'Mat & dagligvaror',Sport:'Sport & fritid',Resor:'Resor & transport'};
-function availableCards(){return [...state.liveListings.filter(card=>card.photoReviewStatus==='approved'),...cards]}
+function availableCards(){return [...state.liveListings.filter(card=>card.saleVerified),...cards]}
 function findProductCard(id){
   const existing=[...state.liveListings,...cards].find(card=>String(card.id)===String(id));
   if(existing)return existing;
@@ -139,7 +139,7 @@ function openProduct(id){
   const card = findProductCard(id) || cards[0];
   const isOwnListing=card.isLive&&card.sellerId===state.user?.id;
   const awaitingReview=Boolean(card.isLive&&card.photoReviewStatus!=='approved');
-  const isInspectionListing=Boolean(awaitingReview||!card.isLive);
+  const isInspectionListing=Boolean(!card.saleVerified||!card.isLive);
   state.selectedId = card.id;
   $('#gallery').innerHTML = galleryHTML(card);
   $('#breadcrumbs').innerHTML = `Köp <span>›</span> ${escapeHTML(card.categoryLabel)} <span>›</span> ${escapeHTML(card.brand)} <span>›</span> ${escapeHTML(card.brand)} presentkort`;
@@ -156,7 +156,10 @@ function openProduct(id){
   $('#detail-seller-status').classList.toggle('not-verified',true);
   $('#fact-expiry').textContent = new Date(card.expiry).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
   $('#fact-use').textContent = card.isLive?'Presentkortskoden lagras privat. Koden skickas inte i den här demon.':card.isDemoListing?'Demoposten finns bara i den här webbläsaren.':card.use;
-  $('#about-copy').textContent = card.isLive?(awaitingReview?'Annonsen väntar på manuell fotogranskning och är ännu inte synlig för köpare.':'Ett färskt fotobevis har granskats manuellt. Detta garanterar inte kortets saldo eller giltighet.'):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet är ett demokort.`;
+  $('#about-copy').textContent = card.isLive?(awaitingReview?'Annonsen väntar på manuell fotogranskning och är ännu inte synlig för köpare.':(card.balanceCheckedAt ? `Saldo kontrollerat av PassItOn den ${new Date(card.balanceCheckedAt).toLocaleDateString('sv-SE',{dateStyle:'long'})}. Saldot kan ha ändrats sedan dess.` : 'Inväntar saldokontroll.')):card.isDemoListing?'Det här är en lokal demoannons och den är inte publicerad i marknadsplatsen.':`${card.brand}-presentkortet är ett demokort.`;
+  const link=$('#detail-balance-link');
+  link.hidden=!card.saleVerified || !card.balanceUrl;
+  if(link.hidden)link.removeAttribute('href'); else link.href=card.balanceUrl;
   const suggested = Math.round(card.value * .90 / 10) * 10;
   const fee = Math.round(suggested * .05);
   $('#similar-sale').textContent = money(suggested);
@@ -184,13 +187,13 @@ $('#detail-save-button').addEventListener('click', () => {
 $('#back-to-market').addEventListener('click', () => navTo('market'));
 $('#buy-now').addEventListener('click', () => {
   const card = findProductCard(state.selectedId);
-  if(!card||card.isDemoListing||(card.isLive&&card.photoReviewStatus!=='approved'))return;
+  if(!card||card.isDemoListing||(card.isLive&&!card.saleVerified))return;
   beginCheckout([card]);
 });
 
 $('#add-to-cart').addEventListener('click',()=>{
   const card=findProductCard(state.selectedId);
-  if(!card||card.isDemoListing||(card.isLive&&card.photoReviewStatus!=='approved'))return;
+  if(!card||card.isDemoListing||(card.isLive&&!card.saleVerified))return;
   if(state.cart.some(item=>String(item.id)===String(card.id))){
     toast('Presentkortet finns redan i varukorgen.');
     return;
@@ -231,6 +234,34 @@ $('#global-search').addEventListener('keydown', e => {
 
 const expiryInput = $('#sell-expiry');
 const future = new Date(); future.setFullYear(future.getFullYear()+1); expiryInput.value = future.toISOString().slice(0,10);
+let verifiedBrands = [];
+async function loadVerifiedBrands() {
+  const {data,error} = await authClient.from('gift_card_brands').select('name,category,pin_required,pin_pattern,code_pattern,validity_info,ignore_spaces,ignore_hyphens').eq('status','active').order('category').order('name');
+  verifiedBrands = error ? [] : data;
+  const select = $('#sell-brand');
+  select.replaceChildren(new Option(verifiedBrands.length ? 'Välj företag' : 'Inga godkända företag tillgängliga',''));
+  let group;
+  for (const brand of verifiedBrands) {
+    if (group?.label !== brand.category) {
+      group = document.createElement('optgroup');
+      group.label = brand.category;
+      select.append(group);
+    }
+    group.append(new Option(brand.name,brand.name));
+  }
+  syncBrandFields();
+}
+function syncBrandFields() {
+  const brand = verifiedBrands.find(b => b.name === $('#sell-brand').value);
+  $('#sell-category').value = brand?.category || '';
+  $('#sell-pin').value = '';
+  $('#sell-code').value = '';
+  $('#pin-label').hidden = !brand?.pin_required;
+  $('#sell-pin').required = Boolean(brand?.pin_required);
+  $('#brand-help').textContent = brand ? `Ditt presentkort från ${brand.name} måste kunna lösas in digitalt. ${brand.validity_info}` : '';
+}
+$('#sell-brand').addEventListener('change',syncBrandFields);
+
 const brandClass = brand => ({IKEA:'ikea',Zalando:'zalando','H&M':'hm',Elgiganten:'elgiganten',Stadium:'stadium',ICA:'ica','Åhléns':'ahlens',SJ:'sj'}[brand] || 'ikea');
 
 function updateSellerPreview(){
@@ -323,31 +354,49 @@ $('#sell-form').addEventListener('submit', async e => {
     return;
   }
   const brand=$('#sell-brand').value, category=$('#sell-category').value, value=Number($('#sell-value').value), price=Number($('#sell-price').value);
+  const config=verifiedBrands.find(b=>b.name===brand);
+  let code=$('#sell-code').value;
+  if(config?.ignore_spaces)code=code.replaceAll(' ','');
+  if(config?.ignore_hyphens)code=code.replaceAll('-','');
+  if(!config || !new RegExp('^(?:'+config.code_pattern+')$').test(code) ||
+     (config.pin_required && !new RegExp('^(?:'+config.pin_pattern+')$').test($('#sell-pin').value))){
+    setSellMessage('Kontrollera företag, presentkortskod och eventuell PIN.','error'); return;
+  }
   if(price >= value){toast('Priset måste vara lägre än presentkortets värde.');return;}
   const expiry=$('#sell-expiry').value;
   if(expiry<new Date().toISOString().slice(0,10)){setSellMessage('Välj ett giltighetsdatum som inte har passerat.','error');return;}
   state.sellingBusy=true;setSellMessage('');renderAccountState();
   try{
-    const photoPath=`${state.user.id}/${proof.challenge_id}/${crypto.randomUUID()}.${extension}`;
+    const bitmap=await createImageBitmap(photo);
+    const canvas=document.createElement('canvas');
+    const scale=Math.min(1,2400/Math.max(bitmap.width,bitmap.height));
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale)); canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    bitmap.close();
+    const sanitized=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.88));
+    if(!sanitized || sanitized.size>5*1024*1024)throw Error('Ogiltig bild');
+    const photoPath=`${state.user.id}/${proof.challenge_id}/${crypto.randomUUID()}.jpg`;
     const {error:uploadError}=await authClient.storage.from('passiton-photo-proofs')
-      .upload(photoPath,photo,{upsert:false,contentType:photo.type,cacheControl:'0'});
+      .upload(photoPath,sanitized,{upsert:false,contentType:'image/jpeg',cacheControl:'0'});
     if(uploadError)throw uploadError;
-    const {error}=await authClient.rpc('create_gift_card_listing',{
+    const {data:listingId,error}=await authClient.rpc('create_gift_card_listing',{
       p_brand:brand,
       p_category:category,
       p_value:value,
       p_price:price,
       p_expires_on:expiry,
-      p_gift_card_code:$('#sell-code').value.trim(),
+      p_gift_card_code:code,
+      p_pin:config.pin_required?$('#sell-pin').value:null,
       p_proof_challenge_id:proof.challenge_id,
       p_proof_photo_path:photoPath
     });
     if(error)throw error;
+    if(!listingId){state.photoProof=null;refreshPhotoProofUI();setSellMessage('Kortet kan inte registreras. Kontrollera om det redan har skickats in.','error');return;}
     window.passitonAnalytics?.track('passiton_listing_submitted',{
       item_brand:brand,item_category:category,listing_type:'pending_review'
     });
 
-    e.target.reset();
+    e.target.reset();syncBrandFields();
     state.photoProof=null;
     $('#sell-proof-photo-name').textContent='';
     refreshPhotoProofUI();
@@ -568,7 +617,7 @@ async function refreshMarketplaceListings(){
   if(!authClient)return;
   const today=new Date().toISOString().slice(0,10);
   const {data,error}=await authClient.from('gift_card_listings')
-    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status,photo_review_status')
+    .select('id,seller_id,seller_name,brand,category,value,price,expires_on,created_at,status,photo_review_status,balance_checked_at,sale_verified,gift_card_brands(balance_url)')
     .eq('status','active')
     .gte('expires_on',today)
     .order('created_at',{ascending:false});
@@ -586,6 +635,9 @@ async function refreshMarketplaceListings(){
     sellerId:row.seller_id,
     sellerName:row.seller_name,
     photoReviewStatus:row.photo_review_status,
+    balanceCheckedAt:row.balance_checked_at,
+    saleVerified:row.sale_verified,
+    balanceUrl:row.gift_card_brands?.balance_url,
     brand:row.brand,
     category:row.category,
     categoryLabel:categoryLabels[row.category]||row.category,
@@ -689,11 +741,12 @@ function initializeSupabaseAuth(){
   }else{
     try{
       authClient=window.supabase.createClient(config.url,config.publishableKey);
+      void loadVerifiedBrands();
       authClient.auth.onAuthStateChange((_event,session)=>{
         state.authUnavailable='';
         state.authReady=true;
         state.user=session?.user||null;
-        if(!state.user)window.passitonResetDisputes?.();
+        if(!state.user){window.passitonResetDisputes?.();syncBrandFields();}
         renderAccountState();
         if($('#dashboard').classList.contains('active'))renderDashboard();
         continuePendingNavigation();
