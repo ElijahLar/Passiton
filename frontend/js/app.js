@@ -732,7 +732,10 @@ $('#auth-form').addEventListener('submit',async e=>{
         email,
         password,
         options:{
-          data:{full_name:name},
+          data:{
+            full_name:name,
+            passiton_email_preferences:{offers:false,purchases:false,verification:false,cases:false}
+          },
           emailRedirectTo:`${window.location.origin}${window.location.pathname}`
         }
       });
