@@ -40,6 +40,19 @@
   <link rel="stylesheet" href="css/privacy.css" />
   <link rel="stylesheet" href="css/autumn-palette.css" />
   <link rel="stylesheet" href="css/passiton-logo.css" />
+  <style>
+    /* Team portraits: replace the SVG in each card with a photo when available. */
+    #about .team-section{margin-top:clamp(48px,7vw,82px);border-top:1px solid var(--line);padding-top:36px}
+    #about .team-section h2{margin:0 0 28px;font-size:clamp(28px,4vw,40px);line-height:1.15;letter-spacing:-.04em;font-weight:600}
+    #about .team-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 24px}
+    #about .team-member{min-width:0;text-align:center}
+    #about .team-portrait{aspect-ratio:4/5;display:grid;place-items:center;overflow:hidden;border:1px solid var(--pio-line);border-radius:12px;background:var(--pio-paper);color:var(--pio-brown-soft)}
+    #about .team-portrait svg{width:30%;max-width:84px;height:auto;stroke-width:1.5}
+    #about .team-portrait img{display:block;width:100%;height:100%;object-fit:cover;min-height:0}
+    #about .team-member h3{font-size:clamp(15px,2vw,19px);line-height:1.3;margin:12px 0 0;font-weight:600;overflow-wrap:anywhere}
+    .footer-inner .footer-page-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px 18px}
+    @media(max-width:760px){#about .team-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 14px}.footer-inner .footer-page-links{justify-content:flex-start}.mobile-nav{grid-template-columns:repeat(4,minmax(0,1fr))}.mobile-nav .about-mobile-icon{display:grid;place-items:center;height:26px}.mobile-nav .about-mobile-icon svg{width:20px;height:20px}}
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -48,7 +61,7 @@
         <button data-nav="market">Köp</button>
         <button data-nav="sell">Sälj</button>
         <button data-nav="how">Så fungerar det</button>
-        <!--  <button data-nav="about">Om oss</button>*/-->
+        <button type="button" data-nav="about">Om oss</button>
     
       </nav>
 
@@ -734,7 +747,7 @@
 
     <section id="about" class="view info-page">
       <div class="page-width info-narrow">
-        <span class="kicker">Om Passiton</span>
+        <span class="kicker">Om oss</span>
         <h1>Oanvänt värde behöver inte gå till spillo.</h1>
         <p class="large-copy">Passiton är ett kursprojekt: en marknadsplats där illikvida värden som presentkort kan omvandlas till pengar, samtidigt som andra får rabatt på något de ändå tänkt köpa.</p>
         <div class="about-grid">
@@ -742,12 +755,81 @@
           <article><strong>Köparen</strong><p>Får mer köpkraft genom att köpa värdet till rabatt.</p></article>
           <article><strong>Passiton</strong><p>Skapar tryggheten mellan parterna och tar en transaktionsavgift när affären genomförs.</p></article>
         </div>
+        <section class="team-section" aria-labelledby="team-heading">
+          <span class="kicker">Människorna bakom Passiton</span>
+          <h2 id="team-heading">Möt teamet</h2>
+          <ul class="team-grid">
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/tea-hylander.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Tea Hylander</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/anna-hortlund.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Anna Hortlund</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/ellinor-nilsson.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Ellinor Nilsson</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/ebba-sundh.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Ebba Sundh</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/elijah-larsson.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Elijah Larsson</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/malek-malla.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Malek Malla</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/johan-persson.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Johan Persson</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/flora-billgren.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Flora Billgren</h3>
+            </li>
+            <li class="team-member">
+              <div class="team-portrait">
+                <!-- Replace the decorative SVG with <img src="assets/team/algot-olofsson.jpg" alt="" loading="lazy"> when a photo is available. -->
+                <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="22" r="11"/><path d="M12 53v-3a20 20 0 0 1 40 0v3"/></svg>
+              </div>
+              <h3>Algot Olofsson</h3>
+            </li>
+          </ul>
+        </section>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="page-width footer-inner"><a class="footer-brand" href="index.html#passiton=market" aria-label="Passiton startsida"><img src="assets/passiton-logo-orange.svg" alt="" width="823" height="303" loading="lazy"></a><span>Demo-MVP · Projektledningskurs 2026</span><a href="integritetspolicy.html">Integritetspolicy</a></div>
+    <div class="page-width footer-inner"><a class="footer-brand" href="index.html#passiton=market" aria-label="Passiton startsida"><img src="assets/passiton-logo-orange.svg" alt="" width="823" height="303" loading="lazy"></a><span>Demo-MVP · Projektledningskurs 2026</span><div class="footer-page-links"><a href="#passiton=about">Om oss</a><a href="integritetspolicy.html">Integritetspolicy</a></div></div>
   </footer>
 
   <dialog id="offer-dialog" class="offer-dialog" aria-labelledby="offer-dialog-heading">
@@ -783,6 +865,7 @@
     <button data-nav="market"><span>⌂</span>Köp</button>
     <button data-nav="sell"><span>＋</span>Sälj</button>
     <button data-nav="dashboard"><span>♡</span>Mina</button>
+    <button type="button" data-nav="about"><span class="about-mobile-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m1 3a5 5 0 0 1 4 5v1"/></svg></span>Om oss</button>
   </nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
