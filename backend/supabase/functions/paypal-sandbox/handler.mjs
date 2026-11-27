@@ -51,15 +51,15 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     let input;
     try { input = JSON.parse(raw); } catch { throw new HttpError(400, 'Ogiltig JSON.'); }
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new HttpError(400, 'Ogiltig förfrågan.');
-    if (!['config', 'create', 'capture', 'status', 'onboard', 'seller-status', 'release'].includes(input.action)) throw new HttpError(400, 'Okänd åtgärd.');
+    if (!['config', 'create', 'capture', 'status', 'onboard', 'seller-status', 'link-seller', 'verify-seller', 'release'].includes(input.action)) throw new HttpError(400, 'Okänd åtgärd.');
     if (input.action === 'create' && !UUID.test(input.requestId || '')) throw new HttpError(400, 'Ogiltigt test-id.');
     if (['capture','status','release'].includes(input.action) && !ORDER_ID.test(input.orderId || '')) throw new HttpError(400, 'Ogiltigt order-id.');
     if (input.action === 'config') {
       return reply(200, { clientId: env.PAYPAL_SANDBOX_CLIENT_ID, merchantId: env.PAYPAL_SANDBOX_MERCHANT_ID, amount: AMOUNT, currency: CURRENCY, environment: 'sandbox', bnCode: env.PAYPAL_SANDBOX_BN_CODE, platformFee: PLATFORM_FEE, disbursementMode: 'DELAYED', flowVersion: FLOW_VERSION });
     }
 
-    const db = async (query, method = 'GET', body, prefer = 'return=representation') => {
-      const response = await fetchImpl(`${env.SUPABASE_URL}/rest/v1/paypal_sandbox_payments?${query}`, {
+    const db = async (query, method = 'GET', body, prefer = 'return=representation', table = 'paypal_sandbox_payments') => {
+      const response = await fetchImpl(`${env.SUPABASE_URL}/rest/v1/${table}?${query}`, {
         method, headers: {
           apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json', Prefer: prefer
@@ -113,19 +113,34 @@ export async function handleRequest(request, { env, fetchImpl = fetch, now = () 
     if (!/^[A-Z0-9]{8,32}$/.test(sellerId) || !/^[A-Z0-9]{8,32}$/.test(partnerId) || sellerId === partnerId) {
       throw new HttpError(503, 'Ange olika giltiga Merchant ID för plattform och säljare.');
     }
-    const sellerStatus = async () => {
-      const data = await paypal(`/v1/customer/partners/${partnerId}/merchant-integrations/${sellerId}`);
+    const sellerStatus = async (merchantId = sellerId) => {
+      const data = await paypal(`/v1/customer/partners/${partnerId}/merchant-integrations/${merchantId}`);
       const permissions = (data.oauth_integrations || []).flatMap(x => x.oauth_third_party || []);
-      const ready = data.merchant_id === sellerId && data.payments_receivable === true &&
+      const ready = data.merchant_id === merchantId && data.payments_receivable === true &&
         data.primary_email_confirmed === true && permissions.some(x =>
           x.partner_client_id === env.PAYPAL_SANDBOX_CLIENT_ID &&
           (x.scopes || []).includes('https://uri.paypal.com/services/payments/payment/authcapture'));
-      return { ready, merchantId: sellerId };
+      return { ready, merchantId };
     };
-    if (input.action === 'onboard') {
+    const trackingId = `pio-seller-${user.id}`;
+    if (input.action === 'verify-seller') {
+      const lookup = await paypal(`/v1/customer/partners/${partnerId}/merchant-integrations?tracking_id=${trackingId}`);
+      const id = lookup.merchant_id;
+      if (!id) return reply(200, { ready: false });
+      if (!/^[A-Z0-9]{8,32}$/.test(id) || id === partnerId) throw new HttpError(409, 'Ogiltigt säljarkonto.');
+      const status = await sellerStatus(id);
+      if (!status.ready) return reply(200, { ready: false });
+      const table = 'paypal_sandbox_sellers';
+      await db('', 'POST', { user_id: user.id, merchant_id: id, partner_id: partnerId },
+        'resolution=ignore-duplicates,return=representation', table);
+      const rows = await db(`user_id=eq.${user.id}&partner_id=eq.${partnerId}&select=merchant_id`, 'GET', undefined, undefined, table);
+      if (rows[0]?.merchant_id !== id) throw new HttpError(409, 'Kontot har redan en annan säljarkoppling.');
+      return reply(200, status);
+    }
+    if (input.action === 'onboard' || input.action === 'link-seller') {
       if (input.consent !== true) throw new HttpError(400, 'Godkänn att starta säljaranslutningen.');
       const referral = await paypal('/v2/customer/partner-referrals', 'POST', {
-        tracking_id: `passiton-sandbox-${sellerId}`,
+        tracking_id: input.action === 'link-seller' ? trackingId : `passiton-sandbox-${sellerId}`,
         operations: [{ operation: 'API_INTEGRATION', api_integration_preference: {
           rest_api_integration: { integration_method: 'PAYPAL', integration_type: 'THIRD_PARTY',
             third_party_details: { features: ['PAYMENT', 'REFUND', 'PARTNER_FEE', 'DELAY_FUNDS_DISBURSEMENT'] } }

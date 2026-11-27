@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anslut säljarkonto · PassItOn sandbox</title>
+<link rel="stylesheet" href="css/paypal-sandbox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="js/supabase-config.js"></script>
+<script defer src="js/paypal-seller.js"></script></head>
+<body><main><a href="./">Till PassItOn</a><h1>Anslut ditt PayPal-sandboxkonto</h1>
+<p>Logga in i PassItOn som testsäljare. Genom att skapa länken godkänner du att PayPal delar kontouppgifter med PassItOn.</p>
+<button id="connect">Skapa anslutningslänk</button>
+<a hidden id="referral" target="_blank" rel="noopener noreferrer">Öppna PayPal och anslut säljarkontot</a>
+<button id="verify">Kontrollera och spara kopplingen</button>
+<p id="status" role="status"></p></main></body></html>
